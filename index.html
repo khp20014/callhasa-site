@@ -2717,6 +2717,16 @@ updateClock(); setInterval(updateClock,1000);
       try{ sessionStorage.removeItem('ahsaCallCenterAuth'); }catch(err){}
       app.style.display = 'none';
       gate.style.display = 'flex';
+      // نعيد الشاشة لواجهة تسجيل الدخول الأساسية صراحة — لو كان آخر مسار مر
+      // منه الموظف هو شاشة التحقق الإضافي (PIN / سؤال أمان)، تكون verifyView
+      // ظاهرة وloginView مخفية من وقتها، وبدون هذا السطر تظل الشاشة فارغة
+      // بعد تسجيل الخروج بدل ما ترجع لحقول اسم المستخدم وكلمة السر.
+      const verifyViewEl = document.getElementById('verifyView');
+      const resetViewEl = document.getElementById('resetView');
+      const loginViewEl = document.getElementById('loginView');
+      if(verifyViewEl) verifyViewEl.style.display = 'none';
+      if(resetViewEl) resetViewEl.style.display = 'none';
+      if(loginViewEl) loginViewEl.style.display = 'block';
       userInput.value = '';
       passInput.value = '';
       hideError();
@@ -2741,6 +2751,12 @@ updateClock(); setInterval(updateClock,1000);
     const gate = document.getElementById('loginGate');
     if(app) app.style.display = 'none';
     if(gate) gate.style.display = 'flex';
+    const verifyViewEl = document.getElementById('verifyView');
+    const resetViewEl = document.getElementById('resetView');
+    const loginViewEl = document.getElementById('loginView');
+    if(verifyViewEl) verifyViewEl.style.display = 'none';
+    if(resetViewEl) resetViewEl.style.display = 'none';
+    if(loginViewEl) loginViewEl.style.display = 'block';
     const err = document.getElementById('loginError');
     if(err){ err.textContent = '🔒 تم تسجيل خروجك تلقائيا بعد 20 دقيقة من عدم الاستخدام، لحماية حسابك.'; err.style.display = 'block'; }
   }
