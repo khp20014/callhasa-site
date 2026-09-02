@@ -1321,6 +1321,14 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="employeeSummaryModal">
+    <div class="modal-box" style="max-width:640px;">
+      <button class="modal-close" id="closeEmployeeSummaryModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title" id="empSummaryTitle"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> ملخص الموظف</h3>
+      <div id="empSummaryBody" style="display:flex;flex-direction:column;gap:14px;margin-top:10px;max-height:70vh;overflow:auto;"></div>
+    </div>
+  </div>
+
   <!-- AUDIT LOG MODAL (owner-only): سجل مبسّط بأوقات حفظ أي تعديل إداري ومين
        كان مسجّل دخوله وقتها — نقطة انطلاق لسجل تدقيق أوسع لاحقا لو احتجت. -->
   <div class="modal-overlay" id="auditLogModal">
@@ -1701,8 +1709,12 @@ function loadAdminOverrides(){
     // تصدير، مسمى، نطاق مشرف...) — بما أنها كلها تمر من نفس نقطة الحفظ هذي —
     // يُسجَّل هنا وقت الحفظة ومين سجّل الدخول وقتها. يحتفظ بآخر 200 حركة فقط.
     ov.auditLog = ov.auditLog || [];
+    // سجل المخالفات/الملاحظات التأديبية لكل موظف — خريطة {رقم_وظيفي: [مخالفة, ...]}
+    // كل مخالفة: {id, date, type, note, addedBy, addedAt}. يُستخدم في صفحة
+    // "ملخص الموظف" الجديدة إلى جانب الأداء والحضور.
+    ov.violations = ov.violations || {};
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{} }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -5371,6 +5383,149 @@ function buildKpiCatDetail(c){
   }
 }
 // يرجع أحدث شهر (index) متوفر له تفصيل مؤشرات مستورد من الإكسل لهذا الموظف، أو null إن لم يوجد أي شهر
+// ---------- ملخص الموظف: تقييمات + حضور + مخالفات بمكان واحد ----------
+const VIOLATION_TYPES = ['تأخر عن الدوام', 'غياب بدون إذن', 'مخالفة سلوكية', 'مخالفة إجرائية', 'أخرى'];
+
+// يجمع بيانات الحضور من كل الأشهر المتوفرة لموظف معيّن (من نفس بيانات
+// مؤشر "الحضور والانصراف" الموجودة أصلا داخل بطاقة الأداء الشهرية، بدون
+// الحاجة لمصدر بيانات جديد).
+function employeeAttendanceSummary(jobNo){
+  let rostered = 0, absent = 0, monthsCounted = 0;
+  for(let i=0;i<PERF_MONTH_LABELS.length;i++){
+    const mb = MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo];
+    if(!mb) continue;
+    const att = (mb.cats||[]).find(c=>c.key==='attendance');
+    if(!att) continue;
+    rostered += (att.rostered||0);
+    absent += (att.absent||0);
+    monthsCounted++;
+  }
+  const rate = rostered>0 ? (1 - absent/rostered) : null;
+  return { rostered, absent, monthsCounted, rate };
+}
+// يجمع النتيجة النهائية الشهرية (final) من كل الأشهر المتوفرة، ويحسب المتوسط
+// وأفضل/أضعف شهر.
+function employeePerformanceSummary(jobNo){
+  const scores = [];
+  for(let i=0;i<PERF_MONTH_LABELS.length;i++){
+    const mb = MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo];
+    if(mb && typeof mb.final === 'number') scores.push({month:i, final:mb.final});
+  }
+  if(!scores.length) return { count:0, avg:null, best:null, worst:null, scores:[] };
+  const avg = scores.reduce((s,x)=>s+x.final,0)/scores.length;
+  const best = scores.reduce((a,b)=> b.final>a.final?b:a);
+  const worst = scores.reduce((a,b)=> b.final<a.final?b:a);
+  return { count: scores.length, avg, best, worst, scores };
+}
+function employeeViolations(jobNo){
+  const ov = loadAdminOverrides();
+  return (ov.violations[jobNo] || []).slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+}
+function addEmployeeViolation(jobNo, type, note, date){
+  const ov = loadAdminOverrides();
+  ov.violations[jobNo] = ov.violations[jobNo] || [];
+  const actor = (window.__currentEmployee && window.__currentEmployee.name) || 'غير معروف';
+  ov.violations[jobNo].push({
+    id: 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    date: date || new Date().toISOString().slice(0,10),
+    type: type || 'أخرى', note: note||'',
+    addedBy: actor, addedAt: new Date().toISOString()
+  });
+  saveAdminOverrides(ov);
+}
+function deleteEmployeeViolation(jobNo, violationId){
+  const ov = loadAdminOverrides();
+  ov.violations[jobNo] = (ov.violations[jobNo]||[]).filter(v=>v.id !== violationId);
+  saveAdminOverrides(ov);
+}
+function buildEmployeeSummaryHTML(e){
+  const jobNo = e.job_no;
+  const perf = employeePerformanceSummary(jobNo);
+  const att = employeeAttendanceSummary(jobNo);
+  const viols = employeeViolations(jobNo);
+  const perfHTML = `
+    <div class="col" style="border:1px solid var(--hair);border-radius:10px;padding:12px 14px;">
+      <h4 style="margin:0 0 8px;"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> تقييمات الأداء</h4>
+      ${perf.count ? `
+        <div style="font-size:13px;line-height:1.9;">
+          متوسط النتيجة النهائية (${perf.count} شهر مسجل): <b style="color:${kpiBarColor(perf.avg)};">${kpiPctText(perf.avg)}</b><br>
+          أفضل شهر: <b>${PERF_MONTH_LABELS[perf.best.month]}</b> (${kpiPctText(perf.best.final)})<br>
+          أضعف شهر: <b>${PERF_MONTH_LABELS[perf.worst.month]}</b> (${kpiPctText(perf.worst.final)})
+        </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات تقييم مسجلة لهذا الموظف.</div>`}
+    </div>`;
+  const attHTML = `
+    <div class="col" style="border:1px solid var(--hair);border-radius:10px;padding:12px 14px;">
+      <h4 style="margin:0 0 8px;"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> الحضور والانصراف</h4>
+      ${att.monthsCounted ? `
+        <div style="font-size:13px;line-height:1.9;">
+          أيام العمل المجدولة (${att.monthsCounted} شهر مسجل): <b>${att.rostered}</b><br>
+          أيام الغياب: <b style="color:${att.absent>0?'var(--coral)':'inherit'};">${att.absent}</b><br>
+          نسبة الحضور: <b style="color:${kpiBarColor(att.rate)};">${kpiPctText(att.rate)}</b>
+        </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات حضور مسجلة لهذا الموظف.</div>`}
+    </div>`;
+  const violRows = viols.length ? viols.map(v=>`
+    <div style="border:1px solid var(--hair);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+      <div style="font-size:12px;line-height:1.7;">
+        <b>${v.type}</b> — ${v.date}${v.note?`<br><span style="color:var(--muted);">${v.note}</span>`:''}
+        <br><span style="color:var(--muted-2);font-size:10.5px;">أضافها: ${v.addedBy||'—'}</span>
+      </div>
+      <button type="button" class="act-btn owner-only emp-viol-delete" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;background:#fff;color:#c0392b;border-color:#c0392b;flex-shrink:0;">حذف</button>
+    </div>`).join('') : `<div style="color:var(--muted);font-size:12.5px;">لا توجد مخالفات مسجلة لهذا الموظف.</div>`;
+  const violHTML = `
+    <div class="col" style="border:1px solid var(--hair);border-radius:10px;padding:12px 14px;">
+      <h4 style="margin:0 0 8px;"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.5 18a1.7 1.7 0 0 0 1.5 2.5h16a1.7 1.7 0 0 0 1.5-2.5L13.7 3.9a1.7 1.7 0 0 0-3.4 0Z"/></svg> سجل المخالفات</h4>
+      <div style="display:flex;flex-direction:column;gap:6px;">${violRows}</div>
+      <div class="owner-only" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--hair);display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <select id="empViolType" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+            ${VIOLATION_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}
+          </select>
+          <input type="date" id="empViolDate" value="${new Date().toISOString().slice(0,10)}" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+        </div>
+        <textarea id="empViolNote" placeholder="ملاحظة أو تفاصيل إضافية (اختياري)" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;resize:vertical;min-height:44px;"></textarea>
+        <button type="button" id="empViolAddBtn" class="act-btn" style="background:var(--navy);color:#fff;align-self:flex-start;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة مخالفة
+        </button>
+      </div>
+    </div>`;
+  return perfHTML + attHTML + violHTML;
+}
+function openEmployeeSummary(e){
+  const modal = document.getElementById('employeeSummaryModal');
+  const title = document.getElementById('empSummaryTitle');
+  const body = document.getElementById('empSummaryBody');
+  if(!modal || !body) return;
+  title.innerHTML = `<svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> ملخص الموظف — ${e.name||''}`;
+  function render(){
+    body.innerHTML = buildEmployeeSummaryHTML(e);
+    const addBtn = document.getElementById('empViolAddBtn');
+    if(addBtn) addBtn.addEventListener('click', ()=>{
+      const type = document.getElementById('empViolType').value;
+      const date = document.getElementById('empViolDate').value;
+      const note = document.getElementById('empViolNote').value.trim();
+      addEmployeeViolation(e.job_no, type, note, date);
+      render();
+    });
+    body.querySelectorAll('.emp-viol-delete').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(!confirm('حذف هذه المخالفة نهائيا؟')) return;
+        deleteEmployeeViolation(e.job_no, btn.getAttribute('data-vid'));
+        render();
+      });
+    });
+    if(typeof refreshOwnerOnlyVisibility === 'function') refreshOwnerOnlyVisibility();
+  }
+  render();
+  modal.classList.add('open');
+}
+(function employeeSummaryModalWiring(){
+  const modal = document.getElementById('employeeSummaryModal');
+  const closeBtn = document.getElementById('closeEmployeeSummaryModal');
+  if(!modal) return;
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+})();
 function latestKpiMonthFor(jobNo){
   for(let i=PERF_MONTH_LABELS.length-1;i>=0;i--){
     if(MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo]) return i;
@@ -6408,6 +6563,7 @@ function renderList(items){
           <button class="act-btn act-print" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M7 8.5V3.5h10v5"/><rect x="3.5" y="8.5" width="17" height="8" rx="1.5"/><path d="M7 15.5h10v5H7Z"/></svg> طباعة</button>
           ${e.is_supervisor?`<button class="act-btn act-export-team" type="button" style="background:var(--teal-dim,rgba(14,106,90,.12));border-color:var(--teal,#0e6a5a);color:var(--teal,#0e6a5a);"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تنزيل بيانات فريقي (Excel/PDF)</button>`:''}
           ${showPerf?`<button class="act-btn act-export-perf" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> تصدير بطاقة الأداء (PDF)</button>`:''}
+          ${showPerf?`<button class="act-btn act-emp-summary" type="button" style="background:var(--teal-dim,rgba(14,106,90,.12));border-color:var(--teal,#0e6a5a);color:var(--teal,#0e6a5a);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> ملخص الموظف (أداء · حضور · مخالفات)</button>`:''}
           <button class="act-btn act-send-msg owner-only" type="button" style="display:none;"><svg class="ico" viewBox="0 0 24 24"><path d="M21.5 2.5 10.5 13.5"/><path d="M21.5 2.5 15 21.5l-4.5-8-8-4.5Z"/></svg> إرسال رسالة للموظف</button>
           <button class="act-btn act-toggle-block owner-only" type="button" data-jn="${e.job_no}" style="display:none;${e.access_disabled?'background:var(--navy);color:#fff;':'color:var(--coral);'}">${e.access_disabled?'<svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> فك الحظر عن هذا الموظف':'<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M5.5 5.5l13 13"/></svg> حظر دخول هذا الموظف'}</button>
           <button class="act-btn act-reset-2fa owner-only" type="button" data-jn="${e.job_no}" style="display:none;background:var(--coral);color:#fff;"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2.5 20 6v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6Z"/><circle cx="12" cy="10.3" r="1.9"/><path d="M12 12.2V16"/></svg> تصفير رمز الأمان لهذا الموظف</button>
@@ -6434,6 +6590,8 @@ function renderList(items){
     });
     const exportPerfBtn = card.querySelector('.act-export-perf');
     if(exportPerfBtn) exportPerfBtn.addEventListener('click', ev=>{ ev.stopPropagation(); exportEmployeePerfCard(e); });
+    const empSummaryBtn = card.querySelector('.act-emp-summary');
+    if(empSummaryBtn) empSummaryBtn.addEventListener('click', ev=>{ ev.stopPropagation(); if(typeof openEmployeeSummary === 'function') openEmployeeSummary(e); });
     const supDashBtn = card.querySelector('.act-sup-dashboard');
     if(supDashBtn) supDashBtn.addEventListener('click', ev=>{ ev.stopPropagation(); copySupervisorDashboardLink(e.sup_canonical_name||e.name, supDashBtn); });
     const sendMsgBtn = card.querySelector('.act-send-msg');
