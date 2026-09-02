@@ -6486,16 +6486,18 @@ function employeeCertHTML(e, opts){
   const supervisorForCert = resolveSupervisorForCert(e);
 
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
     <title>بيانات الموظف - ${e.name}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet"></noscript>
     ${opts.headExtra||''}
     <style>
       @page{ size:A4; margin:8mm 9mm; }
       *{box-sizing:border-box;
         -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-      html,body{margin:0;padding:0;}
+      html,body{margin:0;padding:0;background:#fff !important;color-scheme:light;}
       body{font-family:'Almarai',Tajawal,'Segoe UI',Tahoma,Arial,sans-serif;color:#16233f;font-size:9.3px;line-height:1.28;}
       .sheet{width:100%;}
 
@@ -6684,15 +6686,17 @@ function employeePerfCardHTML(e){
   const trendSVG = (!e.is_supervisor && e.perf_filled_count>0) ? e.perf_trend_svg : '';
 
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
     <title>بطاقة الأداء - ${e.name}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet"></noscript>
     <style>
       @page{ size:A4; margin:14mm 14mm; }
       *{box-sizing:border-box;
         -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-      html,body{margin:0;padding:0;}
+      html,body{margin:0;padding:0;background:#fff !important;color-scheme:light;}
       body{font-family:'Almarai',Tajawal,'Segoe UI',Tahoma,Arial,sans-serif;color:#0a0e19;font-size:11.5px;line-height:1.5;}
       .sheet{width:100%;}
       .doc-header{display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -6778,7 +6782,9 @@ function employeePerfCardHTML(e){
     <script>
       document.title = ${JSON.stringify('بطاقة_اداء_' + (e.name||''))};
       window.addEventListener('load', function(){
-        (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve())
+        var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+        var maxWait = new Promise(function(res){ setTimeout(res, 1200); });
+        Promise.race([fontsReady, maxWait])
           .then(function(){ setTimeout(function(){ window.print(); }, 150); });
       });
     <\/script>
@@ -6816,7 +6822,9 @@ function exportEmployeePDF(e){
       <script>
         document.title = ${JSON.stringify(filename)};
         window.addEventListener('load', function(){
-          (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve())
+          var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+          var maxWait = new Promise(function(res){ setTimeout(res, 1200); });
+          Promise.race([fontsReady, maxWait])
             .then(function(){ setTimeout(function(){ window.print(); }, 150); });
         });
       <\/script>`
@@ -7374,15 +7382,17 @@ function bulkCertsDocHTML(list, sections, fields){
   }).join('');
 
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
     <title>تصدير بيانات ${list.length} موظف</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet"></noscript>
     <style>
       @page{ size:A4; margin:8mm 9mm; }
       *{box-sizing:border-box;
         -webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-      html,body{margin:0;padding:0;}
+      html,body{margin:0;padding:0;background:#fff !important;color-scheme:light;}
       body{font-family:'Almarai',Tajawal,'Segoe UI',Tahoma,Arial,sans-serif;color:#16233f;font-size:9.3px;line-height:1.28;}
       .sheet{width:100%;}
       .doc-header{display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -7448,7 +7458,9 @@ function bulkCertsDocHTML(list, sections, fields){
     <script>
       document.title = ${JSON.stringify('تصدير_بيانات_' + list.length + '_موظف')};
       window.addEventListener('load', function(){
-        (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve())
+        var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+        var maxWait = new Promise(function(res){ setTimeout(res, 1200); });
+        Promise.race([fontsReady, maxWait])
           .then(function(){ setTimeout(function(){ window.print(); }, 150); });
       });
     <\/script>
