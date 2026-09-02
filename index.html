@@ -1709,12 +1709,15 @@ function loadAdminOverrides(){
     // تصدير، مسمى، نطاق مشرف...) — بما أنها كلها تمر من نفس نقطة الحفظ هذي —
     // يُسجَّل هنا وقت الحفظة ومين سجّل الدخول وقتها. يحتفظ بآخر 200 حركة فقط.
     ov.auditLog = ov.auditLog || [];
-    // سجل المخالفات/الملاحظات التأديبية لكل موظف — خريطة {رقم_وظيفي: [مخالفة, ...]}
-    // كل مخالفة: {id, date, type, note, addedBy, addedAt}. يُستخدم في صفحة
-    // "ملخص الموظف" الجديدة إلى جانب الأداء والحضور.
-    ov.violations = ov.violations || {};
+    // سجل "التوجيهات التحسينية وتطوير الأداء" لكل موظف — خريطة {رقم_وظيفي: [توجيه, ...]}
+    // كل توجيه: {id, date, type, note, addedBy, addedAt}. يُستخدم في صفحة
+    // "ملخص الموظف" إلى جانب الأداء والحضور. الإدارة (إضافة/حذف/أنواع جديدة)
+    // مقصورة على أحمد الجاسم وإبراهيم العيد (انظر PERF_NOTES_EDITOR_JOBNOS).
+    ov.violations = ov.violations || {}; // اسم تخزين قديم — أُبقي عليه للتوافق
+    ov.perfNotes = ov.perfNotes || {};
+    ov.perfNoteTypes = ov.perfNoteTypes || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{} }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -5383,8 +5386,57 @@ function buildKpiCatDetail(c){
   }
 }
 // يرجع أحدث شهر (index) متوفر له تفصيل مؤشرات مستورد من الإكسل لهذا الموظف، أو null إن لم يوجد أي شهر
-// ---------- ملخص الموظف: تقييمات + حضور + مخالفات بمكان واحد ----------
-const VIOLATION_TYPES = ['تأخر عن الدوام', 'غياب بدون إذن', 'مخالفة سلوكية', 'مخالفة إجرائية', 'أخرى'];
+// ---------- ملخص الموظف: تقييمات + حضور + توجيهات تطوير الأداء بمكان واحد ----------
+
+// صلاحية إدارة "توجيهات تطوير الأداء" مخصّصة لهذه الميزة فقط (منفصلة عن صلاحية
+// المالك الكاملة على باقي النظام): أحمد الجاسم (مالك البرنامج) وإبراهيم العيد
+// (مدير المركز). أي شخص آخر يشاهد القسم للقراءة فقط.
+const PERF_NOTES_EDITOR_JOBNOS = ['123169', '1470'];
+function canEditPerfNotes(){
+  const me = window.__currentEmployee;
+  return !!(me && PERF_NOTES_EDITOR_JOBNOS.includes(String(me.job_no)));
+}
+
+// الأنواع الأساسية الجاهزة — بصياغة إيجابية ومهنية (تنبيه/توجيه وليس "مخالفة").
+// يمكن لمن يملك صلاحية التعديل إضافة أنواع أخرى حسب الحاجة، وتُحفظ وتُشارك
+// لكل من يفتح النظام بعدها.
+const PERF_NOTE_BASE_TYPES = [
+  'إشادة وتقدير',
+  'ملاحظة تحسين أداء',
+  'توجيه سلوكي',
+  'تنبيه التزام بالدوام',
+  'توجيه إجرائي',
+  'أخرى'
+];
+// مظهر كل نوع (لون + أيقونة) لإعطاء القسم شكلا احترافيا يميّز بين توجيه إيجابي
+// (إشادة) وتوجيه تحسيني/تنبيهي بنظرة سريعة.
+const PERF_NOTE_TYPE_META = {
+  'إشادة وتقدير':          { color:'var(--teal)',  bg:'var(--teal-dim)'  },
+  'ملاحظة تحسين أداء':     { color:'var(--amber)', bg:'var(--amber-dim)' },
+  'توجيه سلوكي':           { color:'var(--amber)', bg:'var(--amber-dim)' },
+  'تنبيه التزام بالدوام':  { color:'var(--coral)', bg:'var(--coral-dim)' },
+  'توجيه إجرائي':          { color:'var(--navy)',  bg:'var(--navy-dim)'  },
+};
+function perfNoteTypeMeta(type){
+  return PERF_NOTE_TYPE_META[type] || { color:'var(--muted)', bg:'var(--hair-soft)' };
+}
+function getAllPerfNoteTypes(){
+  const ov = loadAdminOverrides();
+  const custom = Array.isArray(ov.perfNoteTypes) ? ov.perfNoteTypes : [];
+  const merged = PERF_NOTE_BASE_TYPES.slice(0, -1).concat(custom.filter(t=>!PERF_NOTE_BASE_TYPES.includes(t)), 'أخرى');
+  return merged;
+}
+function addCustomPerfNoteType(typeName){
+  typeName = (typeName||'').trim();
+  if(!typeName) return false;
+  const ov = loadAdminOverrides();
+  ov.perfNoteTypes = Array.isArray(ov.perfNoteTypes) ? ov.perfNoteTypes : [];
+  if(!ov.perfNoteTypes.includes(typeName) && !PERF_NOTE_BASE_TYPES.includes(typeName)){
+    ov.perfNoteTypes.push(typeName);
+    saveAdminOverrides(ov);
+  }
+  return true;
+}
 
 // يجمع بيانات الحضور من كل الأشهر المتوفرة لموظف معيّن (من نفس بيانات
 // مؤشر "الحضور والانصراف" الموجودة أصلا داخل بطاقة الأداء الشهرية، بدون
@@ -5417,79 +5469,119 @@ function employeePerformanceSummary(jobNo){
   const worst = scores.reduce((a,b)=> b.final<a.final?b:a);
   return { count: scores.length, avg, best, worst, scores };
 }
-function employeeViolations(jobNo){
+function employeePerfNotes(jobNo){
   const ov = loadAdminOverrides();
-  return (ov.violations[jobNo] || []).slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+  // توافق مع أي بيانات محفوظة سابقا تحت الاسم القديم "violations" قبل إعادة التسمية.
+  const store = (ov.perfNotes && ov.perfNotes[jobNo]) ? ov.perfNotes
+              : (ov.violations || {});
+  return (store[jobNo] || []).slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
 }
-function addEmployeeViolation(jobNo, type, note, date){
+function addPerfNote(jobNo, type, note, date){
+  if(!canEditPerfNotes()) return;
   const ov = loadAdminOverrides();
-  ov.violations[jobNo] = ov.violations[jobNo] || [];
+  ov.perfNotes = ov.perfNotes || {};
+  ov.perfNotes[jobNo] = ov.perfNotes[jobNo] || (ov.violations && ov.violations[jobNo]) || [];
   const actor = (window.__currentEmployee && window.__currentEmployee.name) || 'غير معروف';
-  ov.violations[jobNo].push({
-    id: 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+  ov.perfNotes[jobNo].push({
+    id: 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
     date: date || new Date().toISOString().slice(0,10),
     type: type || 'أخرى', note: note||'',
     addedBy: actor, addedAt: new Date().toISOString()
   });
   saveAdminOverrides(ov);
 }
-function deleteEmployeeViolation(jobNo, violationId){
+function deletePerfNote(jobNo, noteId){
+  if(!canEditPerfNotes()) return;
   const ov = loadAdminOverrides();
-  ov.violations[jobNo] = (ov.violations[jobNo]||[]).filter(v=>v.id !== violationId);
+  if(ov.perfNotes && ov.perfNotes[jobNo]) ov.perfNotes[jobNo] = ov.perfNotes[jobNo].filter(v=>v.id !== noteId);
+  if(ov.violations && ov.violations[jobNo]) ov.violations[jobNo] = ov.violations[jobNo].filter(v=>v.id !== noteId);
   saveAdminOverrides(ov);
 }
+
 function buildEmployeeSummaryHTML(e){
   const jobNo = e.job_no;
   const perf = employeePerformanceSummary(jobNo);
   const att = employeeAttendanceSummary(jobNo);
-  const viols = employeeViolations(jobNo);
+  const notes = employeePerfNotes(jobNo);
+  const editable = canEditPerfNotes();
+
+  // ---- شريط إحصاءات علوي مختصر (نظرة سريعة قبل التفاصيل) ----
+  const statChip = (label, value, color)=>`
+    <div style="flex:1;min-width:110px;background:var(--panel-2,#fff);border:1px solid var(--hair);border-radius:10px;padding:10px 12px;text-align:center;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${label}</div>
+      <div style="font-size:16px;font-weight:800;color:${color||'inherit'};">${value}</div>
+    </div>`;
+  const statsHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      ${statChip('متوسط الأداء', perf.count ? kpiPctText(perf.avg) : '—', perf.count ? kpiBarColor(perf.avg) : null)}
+      ${statChip('نسبة الحضور', att.monthsCounted ? kpiPctText(att.rate) : '—', att.monthsCounted ? kpiBarColor(att.rate) : null)}
+      ${statChip('عدد التوجيهات', notes.length, notes.length ? 'var(--navy)' : null)}
+      ${statChip('آخر توجيه', notes.length ? notes[0].date : '—', null)}
+    </div>`;
+
   const perfHTML = `
-    <div class="col" style="border:1px solid var(--hair);border-radius:10px;padding:12px 14px;">
-      <h4 style="margin:0 0 8px;"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> تقييمات الأداء</h4>
+    <div class="col" style="border:1px solid var(--hair);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,var(--panel-2,#fff),transparent);">
+      <h4 style="margin:0 0 8px;display:flex;align-items:center;gap:6px;color:var(--navy);"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> تقييمات الأداء</h4>
       ${perf.count ? `
-        <div style="font-size:13px;line-height:1.9;">
+        <div style="font-size:13px;line-height:2;">
           متوسط النتيجة النهائية (${perf.count} شهر مسجل): <b style="color:${kpiBarColor(perf.avg)};">${kpiPctText(perf.avg)}</b><br>
-          أفضل شهر: <b>${PERF_MONTH_LABELS[perf.best.month]}</b> (${kpiPctText(perf.best.final)})<br>
-          أضعف شهر: <b>${PERF_MONTH_LABELS[perf.worst.month]}</b> (${kpiPctText(perf.worst.final)})
+          أفضل شهر: <b>${PERF_MONTH_LABELS[perf.best.month]}</b> <span style="color:var(--muted);">(${kpiPctText(perf.best.final)})</span><br>
+          أضعف شهر: <b>${PERF_MONTH_LABELS[perf.worst.month]}</b> <span style="color:var(--muted);">(${kpiPctText(perf.worst.final)})</span>
         </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات تقييم مسجلة لهذا الموظف.</div>`}
     </div>`;
+
   const attHTML = `
-    <div class="col" style="border:1px solid var(--hair);border-radius:10px;padding:12px 14px;">
-      <h4 style="margin:0 0 8px;"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> الحضور والانصراف</h4>
+    <div class="col" style="border:1px solid var(--hair);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,var(--panel-2,#fff),transparent);">
+      <h4 style="margin:0 0 8px;display:flex;align-items:center;gap:6px;color:var(--navy);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> الحضور والانصراف</h4>
       ${att.monthsCounted ? `
-        <div style="font-size:13px;line-height:1.9;">
+        <div style="font-size:13px;line-height:2;">
           أيام العمل المجدولة (${att.monthsCounted} شهر مسجل): <b>${att.rostered}</b><br>
           أيام الغياب: <b style="color:${att.absent>0?'var(--coral)':'inherit'};">${att.absent}</b><br>
           نسبة الحضور: <b style="color:${kpiBarColor(att.rate)};">${kpiPctText(att.rate)}</b>
         </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات حضور مسجلة لهذا الموظف.</div>`}
     </div>`;
-  const violRows = viols.length ? viols.map(v=>`
-    <div style="border:1px solid var(--hair);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-      <div style="font-size:12px;line-height:1.7;">
-        <b>${v.type}</b> — ${v.date}${v.note?`<br><span style="color:var(--muted);">${v.note}</span>`:''}
-        <br><span style="color:var(--muted-2);font-size:10.5px;">أضافها: ${v.addedBy||'—'}</span>
+
+  const noteRows = notes.length ? notes.map(v=>{
+    const meta = perfNoteTypeMeta(v.type);
+    return `
+    <div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+      <div style="font-size:12.5px;line-height:1.8;flex:1;">
+        <span style="display:inline-block;background:${meta.bg};color:${meta.color};border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;margin-bottom:4px;">${v.type}</span>
+        <span style="color:var(--muted);font-size:11px;"> · ${v.date}</span>
+        ${v.note?`<div style="margin-top:4px;">${v.note}</div>`:''}
+        <div style="color:var(--muted-2);font-size:10.5px;margin-top:4px;">أضافه: ${v.addedBy||'—'}</div>
       </div>
-      <button type="button" class="act-btn owner-only emp-viol-delete" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;background:#fff;color:#c0392b;border-color:#c0392b;flex-shrink:0;">حذف</button>
-    </div>`).join('') : `<div style="color:var(--muted);font-size:12.5px;">لا توجد مخالفات مسجلة لهذا الموظف.</div>`;
-  const violHTML = `
-    <div class="col" style="border:1px solid var(--hair);border-radius:10px;padding:12px 14px;">
-      <h4 style="margin:0 0 8px;"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.5 18a1.7 1.7 0 0 0 1.5 2.5h16a1.7 1.7 0 0 0 1.5-2.5L13.7 3.9a1.7 1.7 0 0 0-3.4 0Z"/></svg> سجل المخالفات</h4>
-      <div style="display:flex;flex-direction:column;gap:6px;">${violRows}</div>
-      <div class="owner-only" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--hair);display:flex;flex-direction:column;gap:6px;">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <select id="empViolType" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
-            ${VIOLATION_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}
-          </select>
-          <input type="date" id="empViolDate" value="${new Date().toISOString().slice(0,10)}" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
-        </div>
-        <textarea id="empViolNote" placeholder="ملاحظة أو تفاصيل إضافية (اختياري)" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;resize:vertical;min-height:44px;"></textarea>
-        <button type="button" id="empViolAddBtn" class="act-btn" style="background:var(--navy);color:#fff;align-self:flex-start;">
-          <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة مخالفة
-        </button>
-      </div>
+      ${editable?`<button type="button" class="act-btn emp-note-delete" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;background:#fff;color:var(--coral);border-color:var(--coral);flex-shrink:0;">حذف</button>`:''}
     </div>`;
-  return perfHTML + attHTML + violHTML;
+  }).join('') : `<div style="color:var(--muted);font-size:12.5px;">لا توجد توجيهات مسجلة لهذا الموظف حتى الآن.</div>`;
+
+  const allTypes = getAllPerfNoteTypes();
+  const formHTML = editable ? `
+      <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--hair);display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <select id="empNoteType" style="flex:1;min-width:150px;padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;">
+            ${allTypes.map(t=>`<option value="${t}">${t}</option>`).join('')}
+            <option value="__new__">+ إضافة نوع جديد…</option>
+          </select>
+          <input type="date" id="empNoteDate" value="${new Date().toISOString().slice(0,10)}" style="padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;">
+        </div>
+        <input type="text" id="empNoteNewType" placeholder="اكتب اسم النوع الجديد هنا…" style="display:none;padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;">
+        <textarea id="empNoteText" placeholder="تفاصيل التوجيه أو الملاحظة (اختياري)" style="padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;resize:vertical;min-height:48px;"></textarea>
+        <button type="button" id="empNoteAddBtn" class="act-btn" style="background:var(--navy);color:#fff;align-self:flex-start;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة توجيه
+        </button>
+      </div>` : '';
+
+  const notesHTML = `
+    <div class="col" style="border:1px solid var(--hair);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,var(--panel-2,#fff),transparent);">
+      <h4 style="margin:0 0 8px;display:flex;align-items:center;gap:6px;color:var(--navy);"><svg class="ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a1.98 1.98 0 0 1-3.4 0"/></svg> التوجيهات التحسينية وتطوير الأداء</h4>
+      <div style="display:flex;flex-direction:column;gap:7px;">${noteRows}</div>
+      ${formHTML}
+    </div>`;
+
+  return statsHTML + perfHTML + attHTML + notesHTML;
 }
+
 function openEmployeeSummary(e){
   const modal = document.getElementById('employeeSummaryModal');
   const title = document.getElementById('empSummaryTitle');
@@ -5498,22 +5590,34 @@ function openEmployeeSummary(e){
   title.innerHTML = `<svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> ملخص الموظف — ${e.name||''}`;
   function render(){
     body.innerHTML = buildEmployeeSummaryHTML(e);
-    const addBtn = document.getElementById('empViolAddBtn');
+    const typeSel = document.getElementById('empNoteType');
+    const newTypeInput = document.getElementById('empNoteNewType');
+    if(typeSel && newTypeInput){
+      typeSel.addEventListener('change', ()=>{
+        newTypeInput.style.display = (typeSel.value === '__new__') ? 'block' : 'none';
+      });
+    }
+    const addBtn = document.getElementById('empNoteAddBtn');
     if(addBtn) addBtn.addEventListener('click', ()=>{
-      const type = document.getElementById('empViolType').value;
-      const date = document.getElementById('empViolDate').value;
-      const note = document.getElementById('empViolNote').value.trim();
-      addEmployeeViolation(e.job_no, type, note, date);
+      let type = document.getElementById('empNoteType').value;
+      if(type === '__new__'){
+        const newType = document.getElementById('empNoteNewType').value.trim();
+        if(!newType){ alert('اكتب اسم النوع الجديد أولا.'); return; }
+        addCustomPerfNoteType(newType);
+        type = newType;
+      }
+      const date = document.getElementById('empNoteDate').value;
+      const note = document.getElementById('empNoteText').value.trim();
+      addPerfNote(e.job_no, type, note, date);
       render();
     });
-    body.querySelectorAll('.emp-viol-delete').forEach(btn=>{
+    body.querySelectorAll('.emp-note-delete').forEach(btn=>{
       btn.addEventListener('click', ()=>{
-        if(!confirm('حذف هذه المخالفة نهائيا؟')) return;
-        deleteEmployeeViolation(e.job_no, btn.getAttribute('data-vid'));
+        if(!confirm('حذف هذا التوجيه نهائيا؟')) return;
+        deletePerfNote(e.job_no, btn.getAttribute('data-vid'));
         render();
       });
     });
-    if(typeof refreshOwnerOnlyVisibility === 'function') refreshOwnerOnlyVisibility();
   }
   render();
   modal.classList.add('open');
@@ -6563,7 +6667,7 @@ function renderList(items){
           <button class="act-btn act-print" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M7 8.5V3.5h10v5"/><rect x="3.5" y="8.5" width="17" height="8" rx="1.5"/><path d="M7 15.5h10v5H7Z"/></svg> طباعة</button>
           ${e.is_supervisor?`<button class="act-btn act-export-team" type="button" style="background:var(--teal-dim,rgba(14,106,90,.12));border-color:var(--teal,#0e6a5a);color:var(--teal,#0e6a5a);"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تنزيل بيانات فريقي (Excel/PDF)</button>`:''}
           ${showPerf?`<button class="act-btn act-export-perf" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> تصدير بطاقة الأداء (PDF)</button>`:''}
-          ${showPerf?`<button class="act-btn act-emp-summary" type="button" style="background:var(--teal-dim,rgba(14,106,90,.12));border-color:var(--teal,#0e6a5a);color:var(--teal,#0e6a5a);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> ملخص الموظف (أداء · حضور · مخالفات)</button>`:''}
+          ${showPerf?`<button class="act-btn act-emp-summary" type="button" style="background:var(--teal-dim,rgba(14,106,90,.12));border-color:var(--teal,#0e6a5a);color:var(--teal,#0e6a5a);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> ملخص الموظف (أداء · حضور · توجيهات)</button>`:''}
           <button class="act-btn act-send-msg owner-only" type="button" style="display:none;"><svg class="ico" viewBox="0 0 24 24"><path d="M21.5 2.5 10.5 13.5"/><path d="M21.5 2.5 15 21.5l-4.5-8-8-4.5Z"/></svg> إرسال رسالة للموظف</button>
           <button class="act-btn act-toggle-block owner-only" type="button" data-jn="${e.job_no}" style="display:none;${e.access_disabled?'background:var(--navy);color:#fff;':'color:var(--coral);'}">${e.access_disabled?'<svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> فك الحظر عن هذا الموظف':'<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M5.5 5.5l13 13"/></svg> حظر دخول هذا الموظف'}</button>
           <button class="act-btn act-reset-2fa owner-only" type="button" data-jn="${e.job_no}" style="display:none;background:var(--coral);color:#fff;"><svg class="ico" viewBox="0 0 24 24"><path d="M12 2.5 20 6v6c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V6Z"/><circle cx="12" cy="10.3" r="1.9"/><path d="M12 12.2V16"/></svg> تصفير رمز الأمان لهذا الموظف</button>
