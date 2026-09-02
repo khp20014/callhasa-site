@@ -6483,6 +6483,54 @@ function resolveSupervisorForCert(e){
   return resolved;
 }
 
+// ==================== طباعة عبر إطار مخفي (بديل عن فتح نافذة جديدة) ====================
+// السبب الجذري للشاشة السوداء التي كانت تظهر عند الطباعة: كنا نفتح نافذة/تبويب
+// فارغ جديد تماما (window.open) ثم نطبعه تلقائيا بعد لحظات قصيرة من تحميله —
+// وأي نافذة جديدة تحتاج دورة رسم (paint) كاملة قبل أن تصبح جاهزة، وإذا استدعينا
+// window.print() قبل اكتمال هذه الدورة (خصوصا إن كان الجهاز بطيء أو كرت الشاشة
+// قديم) يظهر المتصفح النافذة سوداء فارغة بدل المحتوى.
+// الحل الجذري: لا نفتح نافذة جديدة إطلاقا. بدلا من ذلك ننشئ إطار (iframe) مخفي
+// داخل نفس الصفحة الحالية المعروضة أصلا وجاهزة تماما، نحمّل مستند الطباعة بداخله،
+// وبعد اكتمال تحميله وخطوطه نطبعه من خلاله. الصفحة التي يراها المستخدم لا تتغير
+// إطلاقا قبل ظهور نافذة الطباعة الفعلية، فلا توجد أي لحظة انتقالية سوداء ممكنة.
+function printHTMLViaFrame(html, opts){
+  opts = opts || {};
+  const old = document.getElementById('__printFrame');
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+
+  const iframe = document.createElement('iframe');
+  iframe.id = '__printFrame';
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(iframe);
+
+  let cleaned = false;
+  function cleanup(){
+    if(cleaned) return; cleaned = true;
+    window.removeEventListener('focus', onFocusBack);
+    setTimeout(function(){ if(iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1000);
+  }
+  function onFocusBack(){ cleanup(); }
+
+  iframe.onload = function(){
+    const iwin = iframe.contentWindow;
+    const idoc = iframe.contentDocument;
+    if(opts.title && idoc) idoc.title = opts.title;
+    const fontsReady = (idoc && idoc.fonts && idoc.fonts.ready) ? idoc.fonts.ready : Promise.resolve();
+    const maxWait = new Promise(function(res){ setTimeout(res, 1200); });
+    Promise.race([fontsReady, maxWait]).then(function(){
+      setTimeout(function(){
+        try{ iwin.focus(); iwin.print(); }catch(err){}
+        // بعد إغلاق نافذة الطباعة يستعيد المتصفح التركيز على الصفحة الأساسية —
+        // نستخدم هذا كإشارة لتنظيف الإطار المؤقت. مع خطة احتياطية بحال لم يصل الحدث.
+        window.addEventListener('focus', onFocusBack, {once:true});
+        setTimeout(cleanup, 60000);
+      }, 150);
+    });
+  };
+  iframe.srcdoc = html;
+}
+
 function employeeCertHTML(e, opts){
   opts = opts || {};
   const today = new Date();
@@ -6795,21 +6843,11 @@ function employeePerfCardHTML(e){
         <div class="sig"><div class="sig-role">مدير مركز الاتصال بالأحساء</div><div class="sig-name">${CENTER_MANAGER_NAME}</div><div class="sig-label">التوقيع</div></div>
       </div>
     </div>
-    <script>
-      document.title = ${JSON.stringify('بطاقة_اداء_' + (e.name||''))};
-      window.addEventListener('load', function(){
-        var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-        var maxWait = new Promise(function(res){ setTimeout(res, 1200); });
-        Promise.race([fontsReady, maxWait])
-          .then(function(){ setTimeout(function(){ window.print(); }, 150); });
-      });
-    <\/script>
     </body></html>`;
 }
 function exportEmployeePerfCard(e){
-  const w = window.open('', '_blank');
   const html = employeePerfCardHTML(e);
-  w.document.write(html); w.document.close(); w.focus();
+  printHTMLViaFrame(html, { title: 'بطاقة_اداء_' + (e.name||'') });
 }
 
 function exportEmployeePDF(e){
@@ -6818,7 +6856,6 @@ function exportEmployeePDF(e){
   // الحل الموثوق هو استخدام خاصية الطباعة الأصلية للمتصفح واختيار "حفظ كـ PDF" كوجهة،
   // لأن هذه الطريقة تعتمد على محرك عرض النصوص الحقيقي في المتصفح فتخرج نفس شكل
   // وترتيب وتلوين صفحة الطباعة تماما دون أي تشويه للنص العربي.
-  const w = window.open('', '_blank');
   const filename = 'بيانات_' + safeFileName(e.name);
   const html = employeeCertHTML(e, {
     bodyExtra: `
@@ -6834,18 +6871,9 @@ function exportEmployeePDF(e){
           font-size:12.5px; text-align:center; padding:9px 14px;
         }
         @media print{ .no-print{ display:none !important; } }
-      </style>
-      <script>
-        document.title = ${JSON.stringify(filename)};
-        window.addEventListener('load', function(){
-          var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-          var maxWait = new Promise(function(res){ setTimeout(res, 1200); });
-          Promise.race([fontsReady, maxWait])
-            .then(function(){ setTimeout(function(){ window.print(); }, 150); });
-        });
-      <\/script>`
+      </style>`
   });
-  w.document.write(html); w.document.close(); w.focus();
+  printHTMLViaFrame(html, { title: filename });
 }
 
 // ==================== تصدير جماعي لبيانات عدة موظفين (Excel / PDF) ====================
@@ -7317,9 +7345,8 @@ function bulkExportXLSX(list, sections, fields){
 // خاصية طباعة المتصفح ("حفظ كـ PDF") لنفس سبب exportEmployeePDF أعلاه: تفادي
 // تشويه النص العربي المتصل الذي يسببه html2canvas.
 function bulkExportPDF(list, sections, fields){
-  const w = window.open('', '_blank');
   const html = bulkCertsDocHTML(list, sections, fields);
-  w.document.write(html); w.document.close(); w.focus();
+  printHTMLViaFrame(html, { title: 'تصدير_بيانات_' + list.length + '_موظف' });
 }
 function bulkCertsDocHTML(list, sections, fields){
   fields = fields || {};
@@ -7471,15 +7498,6 @@ function bulkCertsDocHTML(list, sections, fields){
       <b>"حفظ كـ PDF" / "Save as PDF"</b> من قائمة الطابعة، ثم اضغط حفظ.
     </div>
     ${sheets}
-    <script>
-      document.title = ${JSON.stringify('تصدير_بيانات_' + list.length + '_موظف')};
-      window.addEventListener('load', function(){
-        var fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-        var maxWait = new Promise(function(res){ setTimeout(res, 1200); });
-        Promise.race([fontsReady, maxWait])
-          .then(function(){ setTimeout(function(){ window.print(); }, 150); });
-      });
-    <\/script>
     </body></html>`;
 }
 
@@ -8158,17 +8176,18 @@ function buildSupervisorPerfTable(){
 
 // ---------- Export / print / share helpers for the performance-card modals ----------
 function printTableModal(title, tableEl){
-  const w = window.open('', '_blank');
-  const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>${title}</title>
+  const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <title>${title}</title>
     <style>
+      html,body{background:#fff !important;color-scheme:light;}
       body{font-family:'Almarai',Tajawal,'Segoe UI',Tahoma,Arial,sans-serif;padding:20px;color:#111;font-size:11px;}
       h1{font-size:16px;border-bottom:2px solid #333;padding-bottom:8px;}
       table{width:100%;border-collapse:collapse;font-size:11px;}
       th,td{border:1px solid #ccc;padding:5px 8px;text-align:center;}
       th{background:#f2f2f2;} tr.total-row{background:#fdf1d6;font-weight:bold;}
     </style></head><body><h1>${title}</h1>${tableEl.outerHTML}</body></html>`;
-  w.document.write(html); w.document.close(); w.focus();
-  setTimeout(()=>w.print(), 300);
+  printHTMLViaFrame(html, { title });
 }
 function exportTableModalWord(title, tableEl, filename){
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
