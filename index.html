@@ -1312,6 +1312,11 @@
       <button class="modal-close" id="closeBackupsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg> النسخ الاحتياطية الأسبوعية</h3>
       <div class="modal-sub">نسخة تلقائية من كل التعديلات والصلاحيات والإضافات/الحذف تُؤخذ كل أسبوع عند دخولك. لو صار خطأ جماعي، تقدر تستعيد أي نسخة سابقة أو تنزّلها كملف احتياطي.</div>
+      <div style="margin-top:10px;">
+        <button type="button" id="createBackupNowBtn" class="act-btn" style="background:var(--teal,#0e6a5a);color:#fff;">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إنشاء نسخة احتياطية الآن
+        </button>
+      </div>
       <div id="backupsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:60vh;overflow:auto;"></div>
     </div>
   </div>
@@ -3790,6 +3795,46 @@ async function runWeeklyBackupIfDue(){
 }
 window.runWeeklyBackupIfDue = runWeeklyBackupIfDue;
 
+// إنشاء نسخة احتياطية يدويا فورا (بدل انتظار مرور أسبوع كامل) — يستخدمها
+// المالك من زر "إنشاء نسخة احتياطية الآن" داخل نافذة النسخ الاحتياطية.
+async function createBackupNow(){
+  if(!window.__isOwnerUser) return;
+  const client = getSupabaseClient();
+  if(!client){ alert('تعذر الاتصال — تحقق من الإنترنت وحاول مرة أخرى.'); return; }
+  const btn = document.getElementById('createBackupNowBtn');
+  if(btn){ btn.disabled = true; btn.style.opacity = '.6'; }
+  try{
+    const snapshots = await fetchBackupHistory();
+    snapshots.push({ created_at: new Date().toISOString(), overrides: loadAdminOverrides() });
+    while(snapshots.length > BACKUP_MAX_SNAPSHOTS) snapshots.shift();
+    await saveBackupHistory(snapshots);
+    await renderBackupsList();
+  }catch(err){
+    console.error('تعذر إنشاء النسخة الاحتياطية يدويا:', err);
+    alert('تعذر إنشاء النسخة الاحتياطية. حاول مرة أخرى.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+// حذف نسخة احتياطية معيّنة نهائيا من السجل (لا يمس بيانات النظام الحالية،
+// فقط يحذف هذه اللقطة المحفوظة من قائمة النسخ).
+async function deleteBackupSnapshot(idx){
+  const snapshots = await fetchBackupHistory();
+  const snap = snapshots[idx];
+  if(!snap) return;
+  const dt = new Date(snap.created_at).toLocaleString('ar-SA', {dateStyle:'medium', timeStyle:'short'});
+  if(!confirm('حذف نسخة ' + dt + ' نهائيا؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+  snapshots.splice(idx, 1);
+  try{
+    await saveBackupHistory(snapshots);
+    await renderBackupsList();
+  }catch(err){
+    console.error('تعذر حذف النسخة الاحتياطية:', err);
+    alert('تعذر حذف النسخة الاحتياطية. حاول مرة أخرى.');
+  }
+}
+
 function downloadBackupSnapshot(snapshot){
   const blob = new Blob([JSON.stringify(snapshot, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
@@ -3842,18 +3887,22 @@ async function renderBackupsList(){
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button type="button" class="act-btn backup-download-btn" data-idx="${snapshots.length-1-i}" style="padding:5px 10px;font-size:11px;">تنزيل</button>
         <button type="button" class="act-btn backup-restore-btn" data-idx="${snapshots.length-1-i}" style="padding:5px 10px;font-size:11px;background:var(--amber);color:#fff;">استعادة</button>
+        <button type="button" class="act-btn backup-delete-btn" data-idx="${snapshots.length-1-i}" style="padding:5px 10px;font-size:11px;background:#fff;color:#c0392b;border-color:#c0392b;">حذف</button>
       </div>
     </div>`;
   }).join('');
   list.querySelectorAll('.backup-download-btn').forEach(b=> b.addEventListener('click', ()=> downloadBackupSnapshot(snapshots[+b.getAttribute('data-idx')])));
   list.querySelectorAll('.backup-restore-btn').forEach(b=> b.addEventListener('click', ()=> restoreBackupSnapshot(snapshots[+b.getAttribute('data-idx')])));
+  list.querySelectorAll('.backup-delete-btn').forEach(b=> b.addEventListener('click', ()=> deleteBackupSnapshot(+b.getAttribute('data-idx'))));
 }
 (function backupsModalWiring(){
   const btn = document.getElementById('backupsBtn');
   const modal = document.getElementById('backupsModal');
   const closeBtn = document.getElementById('closeBackupsModal');
+  const createNowBtn = document.getElementById('createBackupNowBtn');
   if(!btn || !modal) return;
   btn.addEventListener('click', ()=>{ renderBackupsList(); modal.classList.add('open'); });
+  if(createNowBtn) createNowBtn.addEventListener('click', createBackupNow);
   function close(){ modal.classList.remove('open'); }
   if(closeBtn) closeBtn.addEventListener('click', close);
   modal.addEventListener('click', (e)=>{ if(e.target === modal) close(); });
