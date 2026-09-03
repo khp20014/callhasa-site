@@ -206,6 +206,24 @@
   .bday-track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:tickerScroll 40s linear infinite;}
   .bday-item{font-size:13.5px;color:var(--text);font-weight:600;}
 
+  /* ---------- Celebration ribbon (إشادات وتقدير احتفالية) ---------- */
+  .celeb-ribbon{
+    margin-bottom:10px;border-radius:14px;position:relative;overflow:hidden;
+    background:linear-gradient(90deg, rgba(21,147,136,.16), rgba(252,182,20,.14));
+    border:1px solid var(--teal);box-shadow:0 1px 3px rgba(15,23,42,.04);
+  }
+  .celeb-ribbon::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 45%, transparent 60%);
+    background-size:220% 100%; animation:celebShimmer 5.5s ease-in-out infinite;
+  }
+  @keyframes celebShimmer{ 0%{background-position:120% 0;} 100%{background-position:-40% 0;} }
+  .celeb-inner{display:flex;align-items:center;gap:10px;padding:0 14px;position:relative;}
+  .celeb-badge{flex-shrink:0;font-weight:800;font-size:12.5px;color:#fff;background:linear-gradient(135deg,var(--teal),#0c5850);border-radius:10px;padding:8px 12px;white-space:nowrap;box-shadow:0 3px 8px -2px rgba(14,106,90,.4);}
+  .celeb-track-wrap{overflow:hidden;flex:1;padding:9px 0;}
+  .celeb-track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:tickerScroll 40s linear infinite;}
+  .celeb-item{font-size:13.5px;color:var(--text);font-weight:600;}
+
   /* ---------- KPI strip ---------- */
   .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px;}
   .kpi{
@@ -599,7 +617,7 @@
     .badge-grid{grid-template-columns:1fr;}
   }
   @media print{
-    .ticker-section, .bday-ribbon, .adv-filters, .card-actions, .clockbox, .modal-toolbar { display:none !important; }
+    .ticker-section, .bday-ribbon, .celeb-ribbon, .adv-filters, .card-actions, .clockbox, .modal-toolbar { display:none !important; }
     .card-body{ max-height:none !important; }
     html[data-theme="dark"]{
       --ink:#eef1f7; --panel:#fff; --panel-2:#fff; --hair:#dbe1ee; --hair-soft:#e7ebf5;
@@ -1047,6 +1065,7 @@
         <button id="exportGrantsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات التصدير" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
         <button id="perfAlertsBtn" type="button" class="qa-btn qa-coral" title="تنبيهات تراجع الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.3 18a1.8 1.8 0 0 0 1.6 2.7h16.2a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg></span><span id="perfAlertsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="backupsBtn" type="button" class="qa-btn qa-teal" title="النسخ الاحتياطية الأسبوعية" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></span></button>
+        <button id="perfNotesPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات إضافة توجيهات تطوير الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
         <button id="auditLogBtn" type="button" class="qa-btn qa-teal" title="سجل التدقيق" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span></button>
       </div>
       <div class="clockbox-body">
@@ -1078,6 +1097,16 @@
     <div class="bday-inner">
       <span class="bday-badge">🎂 أعياد ميلاد اليوم</span>
       <div class="bday-track-wrap"><div class="bday-track" id="bdayTrack"></div></div>
+    </div>
+  </section>
+
+  <!-- شريط الإشادات الاحتفالية: يعرض توجيهات "إشادة وتقدير" المفعّلة للعرض
+       الاحتفالي وضمن مدتها المحددة فقط، ويُفلتر حسب نطاق الظهور ومن يشاهد
+       الصفحة حاليا (انظر renderCelebrationsRibbon). -->
+  <section class="celeb-ribbon" id="celebRibbon" style="display:none">
+    <div class="celeb-inner">
+      <span class="celeb-badge">🏆 إشادات وتقدير</span>
+      <div class="celeb-track-wrap"><div class="celeb-track" id="celebTrack"></div></div>
     </div>
   </section>
 
@@ -1326,6 +1355,27 @@
       <button class="modal-close" id="closeEmployeeSummaryModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title" id="empSummaryTitle"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> ملخص الموظف</h3>
       <div id="empSummaryBody" style="display:flex;flex-direction:column;gap:14px;margin-top:10px;max-height:70vh;overflow:auto;"></div>
+    </div>
+  </div>
+
+  <!-- PERF NOTES PERMISSIONS MODAL (owner-only): المالك يتحكم بمن يحق له إضافة/حذف
+       "توجيهات تطوير الأداء" لغيره من الموظفين، بمعزل عن صلاحية المالك الكاملة. -->
+  <div class="modal-overlay" id="perfNotesPermsModal">
+    <div class="modal-box" style="max-width:520px;">
+      <button class="modal-close" id="closePerfNotesPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg> صلاحيات إضافة توجيهات تطوير الأداء</h3>
+      <div class="modal-sub">أنت (مالك البرنامج) تتحكم بمن يحق له إضافة أو حذف توجيهات تطوير الأداء لأي موظف. اختر أي موظف من القائمة لتمنحه الصلاحية، أو اسحبها منه في أي وقت.</div>
+      <div style="margin-top:10px;">
+        <div style="display:flex;gap:6px;">
+          <input list="perfNotesEmpOptions" id="perfNotesAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <datalist id="perfNotesEmpOptions"></datalist>
+          <button type="button" id="perfNotesAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px;color:var(--muted);">
+          <input type="checkbox" id="perfNotesFullScopeChk"> اطلاع كامل على كل الموظفين (بدل الاقتصار على نطاق إشرافه فقط)
+        </label>
+      </div>
+      <div id="perfNotesPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:14px;max-height:50vh;overflow:auto;"></div>
     </div>
   </div>
 
@@ -1716,8 +1766,13 @@ function loadAdminOverrides(){
     ov.violations = ov.violations || {}; // اسم تخزين قديم — أُبقي عليه للتوافق
     ov.perfNotes = ov.perfNotes || {};
     ov.perfNoteTypes = ov.perfNoteTypes || [];
+    // من يحق له إضافة/حذف "توجيهات تطوير الأداء" بجانب المالك (الذي يملك الصلاحية
+    // دائما ولا يمكن إزالته). المالك وحده من يتحكم بهذه القائمة عبر زر
+    // "صلاحيات التوجيهات". القيمة الافتراضية عند أول تشغيل تتضمن إبراهيم العيد
+    // فقط لأنه كان يملكها مسبقا قبل تحويلها لقائمة قابلة للتعديل.
+    ov.perfNoteEditors = ov.perfNoteEditors || ['1470'];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -2085,6 +2140,7 @@ updateClock(); setInterval(updateClock,1000);
     if(typeof updateBulkExportButtonVisibility === 'function') updateBulkExportButtonVisibility(me);
     window.__currentEmployee = me;
     window.__currentUserName = me ? me.name : '';
+    if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
     loadMyMessages(me);
     triggerSectionRevealAnimation();
     if(showWelcome !== false) showWelcomeSplash(me);
@@ -2190,6 +2246,8 @@ updateClock(); setInterval(updateClock,1000);
     if(perfAlertsBtn){ perfAlertsBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof refreshPerfAlertsBadge === 'function') refreshPerfAlertsBadge(); }
     const backupsBtn = document.getElementById('backupsBtn');
     if(backupsBtn){ backupsBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof runWeeklyBackupIfDue === 'function') runWeeklyBackupIfDue(); }
+    const perfNotesPermsBtn = document.getElementById('perfNotesPermsBtn');
+    if(perfNotesPermsBtn) perfNotesPermsBtn.style.display = isOwner ? 'flex' : 'none';
     const auditLogBtn = document.getElementById('auditLogBtn');
     if(auditLogBtn) auditLogBtn.style.display = isOwner ? 'flex' : 'none';
     const statsBtn = document.getElementById('accessStatsBtn');
@@ -2747,6 +2805,9 @@ updateClock(); setInterval(updateClock,1000);
       if(verifyViewEl) verifyViewEl.style.display = 'none';
       if(resetViewEl) resetViewEl.style.display = 'none';
       if(loginViewEl) loginViewEl.style.display = 'block';
+      window.__currentEmployee = null;
+      const celebRibbonEl = document.getElementById('celebRibbon');
+      if(celebRibbonEl) celebRibbonEl.style.display = 'none';
       userInput.value = '';
       passInput.value = '';
       hideError();
@@ -2777,6 +2838,9 @@ updateClock(); setInterval(updateClock,1000);
     if(verifyViewEl) verifyViewEl.style.display = 'none';
     if(resetViewEl) resetViewEl.style.display = 'none';
     if(loginViewEl) loginViewEl.style.display = 'block';
+    window.__currentEmployee = null;
+    const celebRibbonEl = document.getElementById('celebRibbon');
+    if(celebRibbonEl) celebRibbonEl.style.display = 'none';
     const err = document.getElementById('loginError');
     if(err){ err.textContent = '🔒 تم تسجيل خروجك تلقائيا بعد 20 دقيقة من عدم الاستخدام، لحماية حسابك.'; err.style.display = 'block'; }
   }
@@ -3012,6 +3076,7 @@ function applyCloudOverrides(cloudOv){
     if(typeof renderHonorBoard === 'function') renderHonorBoard();
     if(typeof refreshOwnerOnlyVisibility === 'function') refreshOwnerOnlyVisibility();
     if(typeof refreshBlockedAccountsBadge === 'function') refreshBlockedAccountsBadge();
+    if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
   } finally {
     __applyingCloudOverrides = false;
   }
@@ -3882,6 +3947,7 @@ async function restoreBackupSnapshot(snapshot){
   applyFilters();
   if(typeof renderHonorBoard === 'function') renderHonorBoard();
   if(typeof refreshPerfAlertsBadge === 'function') refreshPerfAlertsBadge();
+  if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
   document.getElementById('backupsModal').classList.remove('open');
   alert('تمت الاستعادة بنجاح.');
 }
@@ -5385,21 +5451,59 @@ function buildKpiCatDetail(c){
       return `نسبة التحقيق: <b>${kpiAchPctText(c.ach_pct)}</b>`;
   }
 }
-// يرجع أحدث شهر (index) متوفر له تفصيل مؤشرات مستورد من الإكسل لهذا الموظف، أو null إن لم يوجد أي شهر
-// ---------- ملخص الموظف: تقييمات + حضور + توجيهات تطوير الأداء بمكان واحد ----------
+// ---------- ملخص الموظف: تقييمات + حضور شهري/سنوي + توجيهات تطوير الأداء ----------
 
-// صلاحية إدارة "توجيهات تطوير الأداء" مخصّصة لهذه الميزة فقط (منفصلة عن صلاحية
-// المالك الكاملة على باقي النظام): أحمد الجاسم (مالك البرنامج) وإبراهيم العيد
-// (مدير المركز). أي شخص آخر يشاهد القسم للقراءة فقط.
-const PERF_NOTES_EDITOR_JOBNOS = ['123169', '1470'];
-function canEditPerfNotes(){
+// صلاحية إدارة "توجيهات تطوير الأداء" — المالك يملكها دائما وعلى كل الموظفين
+// بلا قيود. أي موظف آخر يمنحه المالك الصلاحية عبر زر "صلاحيات التوجيهات"
+// (ov.perfNoteEditors)، ويحدد له المالك إما اطلاعا كاملا (كل الموظفين) أو
+// اطلاعا مقيدا بنطاق إشرافه فقط (ov.perfNoteEditorsFullScope). منفصلة تماما
+// عن صلاحية المالك الكاملة على باقي النظام.
+function isTrueOwner(){
   const me = window.__currentEmployee;
-  return !!(me && PERF_NOTES_EDITOR_JOBNOS.includes(String(me.job_no)));
+  return !!(me && typeof OWNER_JOBNO !== 'undefined' && me.job_no === OWNER_JOBNO);
+}
+// canEditPerfNotes(targetJobNo): بدون معامل = "هل يملك أي صلاحية إضافة إطلاقا"
+// (يُستخدم لإظهار/إخفاء نموذج الإضافة عموما). بمعامل = "هل يملكها لهذا
+// الموظف بالذات" (يُستخدم فعليا وقت الإضافة/الحذف/التعديل لمنع تجاوز النطاق).
+function canEditPerfNotes(targetJobNo){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  const ov = loadAdminOverrides();
+  const editors = ov.perfNoteEditors || [];
+  if(!editors.includes(String(me.job_no))) return false;
+  if(targetJobNo === undefined) return true; // فحص عام: يملك صلاحية على الأقل لبعض الموظفين
+  const fullScope = ov.perfNoteEditorsFullScope || [];
+  if(fullScope.includes(String(me.job_no))) return true;
+  // اطلاع مقيد: فقط ضمن نطاق إشرافه المحدد من المالك (نفس آلية نطاق المشرف
+  // المقيد المستخدمة في دليل البحث).
+  const scoped = computeScopedEmployeesFor(me.job_no);
+  return scoped.some(emp=>emp.job_no === targetJobNo);
+}
+// يتحكم بها المالك فقط، تُستخدم من نافذة إدارة الصلاحية لإضافة/إزالة موظف من
+// قائمة المخوَّلين، وتحديد هل اطلاعه كامل أو مقيد بنطاق إشرافه.
+function grantPerfNoteAccess(jobNo, fullScope){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.perfNoteEditors = ov.perfNoteEditors || [];
+  if(!ov.perfNoteEditors.includes(jobNo)) ov.perfNoteEditors.push(jobNo);
+  ov.perfNoteEditorsFullScope = ov.perfNoteEditorsFullScope || [];
+  ov.perfNoteEditorsFullScope = ov.perfNoteEditorsFullScope.filter(j=>j!==jobNo);
+  if(fullScope) ov.perfNoteEditorsFullScope.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokePerfNoteAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.perfNoteEditors = (ov.perfNoteEditors || []).filter(j=>j!==jobNo);
+  ov.perfNoteEditorsFullScope = (ov.perfNoteEditorsFullScope || []).filter(j=>j!==jobNo);
+  saveAdminOverrides(ov);
 }
 
-// الأنواع الأساسية الجاهزة — بصياغة إيجابية ومهنية (تنبيه/توجيه وليس "مخالفة").
+// الأنواع الأساسية الجاهزة — بصياغة إيجابية ومهنية (توجيه/تنبيه وليس "مخالفة").
 // يمكن لمن يملك صلاحية التعديل إضافة أنواع أخرى حسب الحاجة، وتُحفظ وتُشارك
-// لكل من يفتح النظام بعدها.
+// لكل من يفتح النظام بعدها. "إشادة وتقدير" هو النوع الوحيد المرتبط بالعرض
+// الاحتفالي بالصفحة الرئيسية.
 const PERF_NOTE_BASE_TYPES = [
   'إشادة وتقدير',
   'ملاحظة تحسين أداء',
@@ -5408,6 +5512,7 @@ const PERF_NOTE_BASE_TYPES = [
   'توجيه إجرائي',
   'أخرى'
 ];
+const CELEBRATION_TYPE = 'إشادة وتقدير';
 // مظهر كل نوع (لون + أيقونة) لإعطاء القسم شكلا احترافيا يميّز بين توجيه إيجابي
 // (إشادة) وتوجيه تحسيني/تنبيهي بنظرة سريعة.
 const PERF_NOTE_TYPE_META = {
@@ -5438,22 +5543,22 @@ function addCustomPerfNoteType(typeName){
   return true;
 }
 
-// يجمع بيانات الحضور من كل الأشهر المتوفرة لموظف معيّن (من نفس بيانات
-// مؤشر "الحضور والانصراف" الموجودة أصلا داخل بطاقة الأداء الشهرية، بدون
-// الحاجة لمصدر بيانات جديد).
-function employeeAttendanceSummary(jobNo){
-  let rostered = 0, absent = 0, monthsCounted = 0;
+// ---- الحضور: تفصيل شهري + إجمالي سنوي (من نفس بيانات بطاقة الأداء الشهرية) ----
+function employeeAttendanceDetail(jobNo){
+  const months = [];
   for(let i=0;i<PERF_MONTH_LABELS.length;i++){
     const mb = MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo];
     if(!mb) continue;
     const att = (mb.cats||[]).find(c=>c.key==='attendance');
     if(!att) continue;
-    rostered += (att.rostered||0);
-    absent += (att.absent||0);
-    monthsCounted++;
+    const rostered = att.rostered||0, absent = att.absent||0;
+    const rate = rostered>0 ? (1-absent/rostered) : null;
+    months.push({ idx:i, label: PERF_MONTH_LABELS[i], rostered, absent, rate });
   }
-  const rate = rostered>0 ? (1 - absent/rostered) : null;
-  return { rostered, absent, monthsCounted, rate };
+  const totalRostered = months.reduce((s,m)=>s+m.rostered,0);
+  const totalAbsent = months.reduce((s,m)=>s+m.absent,0);
+  const annualRate = totalRostered>0 ? (1-totalAbsent/totalRostered) : null;
+  return { months, annual:{ rostered:totalRostered, absent:totalAbsent, rate:annualRate, monthsCounted: months.length } };
 }
 // يجمع النتيجة النهائية الشهرية (final) من كل الأشهر المتوفرة، ويحسب المتوسط
 // وأفضل/أضعف شهر.
@@ -5474,36 +5579,114 @@ function employeePerfNotes(jobNo){
   // توافق مع أي بيانات محفوظة سابقا تحت الاسم القديم "violations" قبل إعادة التسمية.
   const store = (ov.perfNotes && ov.perfNotes[jobNo]) ? ov.perfNotes
               : (ov.violations || {});
-  return (store[jobNo] || []).slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+  return (store[jobNo] || []).slice().sort((a,b)=>{
+    if(!!b.pinned !== !!a.pinned) return (b.pinned?1:0) - (a.pinned?1:0);
+    return new Date(b.date) - new Date(a.date);
+  });
 }
-function addPerfNote(jobNo, type, note, date){
-  if(!canEditPerfNotes()) return;
+function addPerfNote(jobNo, opts){
+  if(!canEditPerfNotes(jobNo)) return;
   const ov = loadAdminOverrides();
   ov.perfNotes = ov.perfNotes || {};
   ov.perfNotes[jobNo] = ov.perfNotes[jobNo] || (ov.violations && ov.violations[jobNo]) || [];
   const actor = (window.__currentEmployee && window.__currentEmployee.name) || 'غير معروف';
   ov.perfNotes[jobNo].push({
     id: 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-    date: date || new Date().toISOString().slice(0,10),
-    type: type || 'أخرى', note: note||'',
-    addedBy: actor, addedAt: new Date().toISOString()
+    date: opts.date || new Date().toISOString().slice(0,10),
+    type: opts.type || 'أخرى', note: opts.note||'',
+    addedBy: actor, addedAt: new Date().toISOString(),
+    pinned: !!opts.pinned,
+    celebrate: !!opts.celebrate,
+    celebrationDays: opts.celebrate ? (Number(opts.celebrationDays)||7) : 0,
+    audience: opts.audience || 'all',
+    audienceGroup: Array.isArray(opts.audienceGroup) ? opts.audienceGroup : [],
+    stopped: false
   });
   saveAdminOverrides(ov);
 }
 function deletePerfNote(jobNo, noteId){
-  if(!canEditPerfNotes()) return;
+  if(!canEditPerfNotes(jobNo)) return;
   const ov = loadAdminOverrides();
   if(ov.perfNotes && ov.perfNotes[jobNo]) ov.perfNotes[jobNo] = ov.perfNotes[jobNo].filter(v=>v.id !== noteId);
   if(ov.violations && ov.violations[jobNo]) ov.violations[jobNo] = ov.violations[jobNo].filter(v=>v.id !== noteId);
   saveAdminOverrides(ov);
 }
+// تعديل حقول توجيه موجود (النص/نوع العرض الاحتفالي ومدته ونطاقه/التثبيت)
+// دون حذف السجل — يبقى السجل الدائم كما هو في ملف الموظف.
+function updatePerfNote(jobNo, noteId, patch){
+  if(!canEditPerfNotes(jobNo)) return;
+  const ov = loadAdminOverrides();
+  const arr = ov.perfNotes && ov.perfNotes[jobNo];
+  if(!arr) return;
+  const idx = arr.findIndex(v=>v.id===noteId);
+  if(idx<0) return;
+  arr[idx] = Object.assign({}, arr[idx], patch);
+  saveAdminOverrides(ov);
+}
+// إيقاف العرض الاحتفالي فورا (يختفي من الصفحة الرئيسية) بدون حذف التوثيق
+// الدائم من ملف الموظف — أحد ضوابط طلب المالك الصريحة.
+function stopCelebration(jobNo, noteId){
+  updatePerfNote(jobNo, noteId, { stopped:true });
+}
 
-function buildEmployeeSummaryHTML(e){
+// ---- منطق العرض الاحتفالي بالصفحة الرئيسية ----
+function isCelebrationActive(v){
+  if(!v || v.type !== CELEBRATION_TYPE || !v.celebrate || v.stopped) return false;
+  const days = Number(v.celebrationDays)||0;
+  if(days<=0) return false;
+  const start = new Date(v.addedAt || v.date);
+  if(isNaN(start.getTime())) return false;
+  const diffDays = (Date.now() - start.getTime()) / 86400000;
+  return diffDays >= 0 && diffDays <= days;
+}
+// يحدد هل يحق للمستخدم الحالي مشاهدة هذه الإشادة الاحتفالية بالصفحة الرئيسية
+// حسب نوع النشر الذي اختاره من أضافها: عام لكل المركز / خاص بالموظف فقط /
+// الموظف مع مشرفه ومدير المركز / مجموعة محددة بالاسم.
+function canViewCelebration(v, targetJobNo){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  if(me.job_no === targetJobNo) return true; // صاحب الإشادة يشاهدها دائما
+  const audience = v.audience || 'all';
+  if(audience === 'all') return true;
+  if(audience === 'employee_only') return false;
+  if(audience === 'employee_supervisor_manager'){
+    if(me.job_no === DIRECTOR_JOBNO) return true;
+    const targetEmp = EMPLOYEES.find(e=>e.job_no===targetJobNo);
+    const supJn = targetEmp && typeof SUPERVISOR_JOBNO_MAP !== 'undefined' ? SUPERVISOR_JOBNO_MAP[targetEmp.supervisor] : null;
+    return !!(supJn && me.job_no === supJn);
+  }
+  if(audience === 'group') return (v.audienceGroup||[]).includes(me.job_no);
+  return false;
+}
+function renderCelebrationsRibbon(){
+  const ribbon = document.getElementById('celebRibbon');
+  const track = document.getElementById('celebTrack');
+  if(!ribbon || !track) return;
+  const ov = loadAdminOverrides();
+  const items = [];
+  Object.keys(ov.perfNotes||{}).forEach(jn=>{
+    (ov.perfNotes[jn]||[]).forEach(v=>{
+      if(isCelebrationActive(v) && canViewCelebration(v, jn)){
+        const emp = EMPLOYEES.find(e=>e.job_no===jn);
+        items.push({ jn, name: emp?(emp.name||'').trim():jn });
+      }
+    });
+  });
+  if(!items.length){ ribbon.style.display='none'; track.innerHTML=''; return; }
+  const deco = ['🏆','🌹','🎉','✨'];
+  const itemsHtml = items.map((it,i)=>`<span class="celeb-item">${deco[i%deco.length]} <b>${it.name}</b> — إشادة وتقدير على التميز في الأداء ${deco[(i+1)%deco.length]}</span>`).join('');
+  track.innerHTML = itemsHtml + itemsHtml;
+  ribbon.style.display = '';
+}
+
+function buildEmployeeSummaryHTML(e, editingId){
   const jobNo = e.job_no;
   const perf = employeePerformanceSummary(jobNo);
-  const att = employeeAttendanceSummary(jobNo);
+  const attDetail = employeeAttendanceDetail(jobNo);
   const notes = employeePerfNotes(jobNo);
-  const editable = canEditPerfNotes();
+  const editableHere = canEditPerfNotes(jobNo);
+  const hasAnyEditAccess = canEditPerfNotes();
 
   // ---- شريط إحصاءات علوي مختصر (نظرة سريعة قبل التفاصيل) ----
   const statChip = (label, value, color)=>`
@@ -5514,7 +5697,7 @@ function buildEmployeeSummaryHTML(e){
   const statsHTML = `
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       ${statChip('متوسط الأداء', perf.count ? kpiPctText(perf.avg) : '—', perf.count ? kpiBarColor(perf.avg) : null)}
-      ${statChip('نسبة الحضور', att.monthsCounted ? kpiPctText(att.rate) : '—', att.monthsCounted ? kpiBarColor(att.rate) : null)}
+      ${statChip('نسبة الحضور السنوية', attDetail.annual.monthsCounted ? kpiPctText(attDetail.annual.rate) : '—', attDetail.annual.monthsCounted ? kpiBarColor(attDetail.annual.rate) : null)}
       ${statChip('عدد التوجيهات', notes.length, notes.length ? 'var(--navy)' : null)}
       ${statChip('آخر توجيه', notes.length ? notes[0].date : '—', null)}
     </div>`;
@@ -5530,33 +5713,102 @@ function buildEmployeeSummaryHTML(e){
         </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات تقييم مسجلة لهذا الموظف.</div>`}
     </div>`;
 
+  // ---- الحضور: جدول شهري (تلوين أحمر لأيام الغياب) + إجمالي سنوي ----
+  const monthRows = attDetail.months.map(m=>`
+    <tr>
+      <td style="padding:5px 8px;">${m.label}</td>
+      <td style="padding:5px 8px;text-align:center;">${m.rostered}</td>
+      <td style="padding:5px 8px;text-align:center;${m.absent>0?'color:#fff;font-weight:800;background:var(--coral);border-radius:5px;':''}">${m.absent}</td>
+      <td style="padding:5px 8px;text-align:center;color:${kpiBarColor(m.rate)};font-weight:700;">${kpiPctText(m.rate)}</td>
+    </tr>`).join('');
   const attHTML = `
     <div class="col" style="border:1px solid var(--hair);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,var(--panel-2,#fff),transparent);">
-      <h4 style="margin:0 0 8px;display:flex;align-items:center;gap:6px;color:var(--navy);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> الحضور والانصراف</h4>
-      ${att.monthsCounted ? `
-        <div style="font-size:13px;line-height:2;">
-          أيام العمل المجدولة (${att.monthsCounted} شهر مسجل): <b>${att.rostered}</b><br>
-          أيام الغياب: <b style="color:${att.absent>0?'var(--coral)':'inherit'};">${att.absent}</b><br>
-          نسبة الحضور: <b style="color:${kpiBarColor(att.rate)};">${kpiPctText(att.rate)}</b>
+      <h4 style="margin:0 0 8px;display:flex;align-items:center;gap:6px;color:var(--navy);"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> الحضور والانصراف — الشهري والسنوي</h4>
+      ${attDetail.months.length ? `
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;">تفصيل شهري مسحوب من بطاقة الأداء الشهرية حسب النسب المعتمدة، وإجمالي سنوي يجمع كل الأشهر — مرجع دائم قابل للرجوع إليه لاحقا.</div>
+        <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:var(--hair-soft);">
+            <th style="padding:6px 8px;text-align:right;">الشهر</th>
+            <th style="padding:6px 8px;">أيام العمل</th>
+            <th style="padding:6px 8px;">أيام الغياب</th>
+            <th style="padding:6px 8px;">نسبة الحضور</th>
+          </tr></thead>
+          <tbody>${monthRows}</tbody>
+          <tfoot><tr style="background:var(--navy-dim);font-weight:800;">
+            <td style="padding:7px 8px;">الإجمالي السنوي (${attDetail.annual.monthsCounted} شهر)</td>
+            <td style="padding:7px 8px;text-align:center;">${attDetail.annual.rostered}</td>
+            <td style="padding:7px 8px;text-align:center;color:${attDetail.annual.absent>0?'var(--coral)':'inherit'};">${attDetail.annual.absent}</td>
+            <td style="padding:7px 8px;text-align:center;color:${kpiBarColor(attDetail.annual.rate)};">${kpiPctText(attDetail.annual.rate)}</td>
+          </tr></tfoot>
+        </table>
         </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات حضور مسجلة لهذا الموظف.</div>`}
     </div>`;
 
+  // ---- التوجيهات: عرض + تعديل مضمّن + عناصر تحكم بالعرض الاحتفالي ----
+  const audienceLabel = (aud)=> aud==='all' ? 'نشر عام (كل موظفي المركز)'
+    : aud==='employee_only' ? 'نشر خاص (الموظف فقط)'
+    : aud==='employee_supervisor_manager' ? 'الموظف مع مشرفه ومدير المركز'
+    : 'مجموعة محددة';
+
   const noteRows = notes.length ? notes.map(v=>{
     const meta = perfNoteTypeMeta(v.type);
+    const isCeleb = v.type === CELEBRATION_TYPE;
+    const active = isCelebrationActive(v);
+
+    if(editingId === v.id){
+      const allTypesE = getAllPerfNoteTypes();
+      return `
+      <div style="border:2px solid var(--navy);border-radius:10px;padding:10px 12px;background:var(--navy-dim);">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+          <select id="editNoteType" style="flex:1;min-width:140px;padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+            ${allTypesE.map(t=>`<option value="${t}" ${t===v.type?'selected':''}>${t}</option>`).join('')}
+          </select>
+          <input type="date" id="editNoteDate" value="${v.date}" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+        </div>
+        <textarea id="editNoteText" style="width:100%;padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;resize:vertical;min-height:48px;">${v.note||''}</textarea>
+        <div id="editCelebFields" style="${v.type===CELEBRATION_TYPE?'':'display:none;'}margin-top:8px;padding-top:8px;border-top:1px dashed var(--hair);display:flex;flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" id="editCelebChk" ${v.celebrate?'checked':''}> عرض احتفالي بالصفحة الرئيسية</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <label style="font-size:11.5px;color:var(--muted);">مدة العرض (أيام):</label>
+            <input type="number" id="editCelebDays" min="1" value="${v.celebrationDays||7}" style="width:70px;padding:5px 6px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;"><input type="checkbox" id="editPinnedChk" ${v.pinned?'checked':''}> تثبيت</label>
+          </div>
+          <select id="editAudience" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+            <option value="all" ${v.audience==='all'?'selected':''}>نشر عام — كل موظفي المركز</option>
+            <option value="employee_only" ${v.audience==='employee_only'?'selected':''}>نشر خاص — الموظف فقط</option>
+            <option value="employee_supervisor_manager" ${v.audience==='employee_supervisor_manager'?'selected':''}>الموظف مع مشرفه ومدير المركز</option>
+            <option value="group" ${v.audience==='group'?'selected':''}>مجموعة محددة</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button type="button" class="act-btn emp-note-save" data-vid="${v.id}" style="background:var(--navy);color:#fff;">حفظ</button>
+          <button type="button" class="act-btn emp-note-cancel" style="background:#fff;">إلغاء</button>
+        </div>
+      </div>`;
+    }
+
     return `
-    <div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+    <div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;${v.pinned?'background:var(--amber-dim);border-color:var(--amber);':''}">
       <div style="font-size:12.5px;line-height:1.8;flex:1;">
+        ${v.pinned?'<span style="font-size:10.5px;color:var(--amber);font-weight:800;">📌 مثبّت</span> ':''}
         <span style="display:inline-block;background:${meta.bg};color:${meta.color};border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;margin-bottom:4px;">${v.type}</span>
         <span style="color:var(--muted);font-size:11px;"> · ${v.date}</span>
+        ${isCeleb ? `<span style="color:${active?'var(--teal)':'var(--muted-2)'};font-size:10.5px;font-weight:700;"> · ${active?('عرض احتفالي فعّال — '+audienceLabel(v.audience)):(v.celebrate?'انتهى/أُوقف عرضه الاحتفالي':'بدون عرض احتفالي')}</span>` : ''}
         ${v.note?`<div style="margin-top:4px;">${v.note}</div>`:''}
         <div style="color:var(--muted-2);font-size:10.5px;margin-top:4px;">أضافه: ${v.addedBy||'—'}</div>
       </div>
-      ${editable?`<button type="button" class="act-btn emp-note-delete" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;background:#fff;color:var(--coral);border-color:var(--coral);flex-shrink:0;">حذف</button>`:''}
+      ${editableHere?`
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+        <button type="button" class="act-btn emp-note-edit" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;">تعديل</button>
+        ${isCeleb && active ? `<button type="button" class="act-btn emp-note-stop" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;background:#fff;color:var(--amber);border-color:var(--amber);">إيقاف العرض</button>` : ''}
+        <button type="button" class="act-btn emp-note-delete" data-vid="${v.id}" style="padding:4px 8px;font-size:10.5px;background:#fff;color:var(--coral);border-color:var(--coral);">حذف</button>
+      </div>`:''}
     </div>`;
   }).join('') : `<div style="color:var(--muted);font-size:12.5px;">لا توجد توجيهات مسجلة لهذا الموظف حتى الآن.</div>`;
 
   const allTypes = getAllPerfNoteTypes();
-  const formHTML = editable ? `
+  const formHTML = editableHere ? `
       <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--hair);display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <select id="empNoteType" style="flex:1;min-width:150px;padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;">
@@ -5567,10 +5819,25 @@ function buildEmployeeSummaryHTML(e){
         </div>
         <input type="text" id="empNoteNewType" placeholder="اكتب اسم النوع الجديد هنا…" style="display:none;padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;">
         <textarea id="empNoteText" placeholder="تفاصيل التوجيه أو الملاحظة (اختياري)" style="padding:7px 8px;border:1px solid var(--hair);border-radius:7px;font-size:12px;resize:vertical;min-height:48px;"></textarea>
+        <div id="addCelebFields" style="display:none;padding-top:8px;border-top:1px dashed var(--hair);flex-direction:column;gap:6px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;"><input type="checkbox" id="addCelebChk"> عرض احتفالي بالصفحة الرئيسية (زينة واحتفال + تظهر تحت أعياد الميلاد)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+            <label style="font-size:11.5px;color:var(--muted);">مدة العرض (أيام):</label>
+            <input type="number" id="addCelebDays" min="1" value="7" style="width:70px;padding:5px 6px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+            <label style="display:flex;align-items:center;gap:4px;font-size:11.5px;"><input type="checkbox" id="addPinnedChk"> تثبيت الرسالة</label>
+          </div>
+          <select id="addAudience" style="padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+            <option value="all">نشر عام — يشاهدها كل موظفي المركز</option>
+            <option value="employee_only">نشر خاص — الموظف فقط</option>
+            <option value="employee_supervisor_manager">الموظف مع مشرفه ومدير المركز</option>
+            <option value="group">مجموعة محددة (اكتب أرقامهم الوظيفية)</option>
+          </select>
+          <input type="text" id="addAudienceGroup" placeholder="أرقام وظيفية مفصولة بفاصلة، مثال: 1470,17357" style="display:none;padding:6px 8px;border:1px solid var(--hair);border-radius:6px;font-size:12px;">
+        </div>
         <button type="button" id="empNoteAddBtn" class="act-btn" style="background:var(--navy);color:#fff;align-self:flex-start;">
           <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة توجيه
         </button>
-      </div>` : '';
+      </div>` : (hasAnyEditAccess ? `<div style="margin-top:10px;color:var(--muted);font-size:11.5px;">صلاحيتك مقيدة بنطاق إشرافك — هذا الموظف خارج النطاق المصرح لك به.</div>` : '');
 
   const notesHTML = `
     <div class="col" style="border:1px solid var(--hair);border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,var(--panel-2,#fff),transparent);">
@@ -5588,15 +5855,30 @@ function openEmployeeSummary(e){
   const body = document.getElementById('empSummaryBody');
   if(!modal || !body) return;
   title.innerHTML = `<svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> ملخص الموظف — ${e.name||''}`;
+  let editingId = null;
   function render(){
-    body.innerHTML = buildEmployeeSummaryHTML(e);
+    body.innerHTML = buildEmployeeSummaryHTML(e, editingId);
+
     const typeSel = document.getElementById('empNoteType');
     const newTypeInput = document.getElementById('empNoteNewType');
-    if(typeSel && newTypeInput){
-      typeSel.addEventListener('change', ()=>{
-        newTypeInput.style.display = (typeSel.value === '__new__') ? 'block' : 'none';
-      });
+    const celebFields = document.getElementById('addCelebFields');
+    function syncCelebVisibility(){
+      if(!typeSel || !celebFields) return;
+      celebFields.style.display = (typeSel.value === CELEBRATION_TYPE) ? 'flex' : 'none';
     }
+    if(typeSel){
+      typeSel.addEventListener('change', ()=>{
+        if(newTypeInput) newTypeInput.style.display = (typeSel.value === '__new__') ? 'block' : 'none';
+        syncCelebVisibility();
+      });
+      syncCelebVisibility();
+    }
+    const addAudienceSel = document.getElementById('addAudience');
+    const addAudienceGroup = document.getElementById('addAudienceGroup');
+    if(addAudienceSel && addAudienceGroup){
+      addAudienceSel.addEventListener('change', ()=>{ addAudienceGroup.style.display = (addAudienceSel.value === 'group') ? 'block' : 'none'; });
+    }
+
     const addBtn = document.getElementById('empNoteAddBtn');
     if(addBtn) addBtn.addEventListener('click', ()=>{
       let type = document.getElementById('empNoteType').value;
@@ -5608,13 +5890,61 @@ function openEmployeeSummary(e){
       }
       const date = document.getElementById('empNoteDate').value;
       const note = document.getElementById('empNoteText').value.trim();
-      addPerfNote(e.job_no, type, note, date);
+      const opts = { type, note, date };
+      if(type === CELEBRATION_TYPE){
+        const celebChk = document.getElementById('addCelebChk');
+        opts.celebrate = !!(celebChk && celebChk.checked);
+        opts.celebrationDays = document.getElementById('addCelebDays').value;
+        opts.pinned = !!document.getElementById('addPinnedChk').checked;
+        opts.audience = document.getElementById('addAudience').value;
+        if(opts.audience === 'group'){
+          opts.audienceGroup = (document.getElementById('addAudienceGroup').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+        }
+      }
+      addPerfNote(e.job_no, opts);
+      if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
       render();
     });
+
     body.querySelectorAll('.emp-note-delete').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         if(!confirm('حذف هذا التوجيه نهائيا؟')) return;
         deletePerfNote(e.job_no, btn.getAttribute('data-vid'));
+        if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+        render();
+      });
+    });
+    body.querySelectorAll('.emp-note-stop').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        stopCelebration(e.job_no, btn.getAttribute('data-vid'));
+        if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+        render();
+      });
+    });
+    body.querySelectorAll('.emp-note-edit').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingId = btn.getAttribute('data-vid'); render(); });
+    });
+    body.querySelectorAll('.emp-note-cancel').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ editingId = null; render(); });
+    });
+    body.querySelectorAll('.emp-note-save').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const vid = btn.getAttribute('data-vid');
+        const type = document.getElementById('editNoteType').value;
+        const patch = {
+          type,
+          date: document.getElementById('editNoteDate').value,
+          note: document.getElementById('editNoteText').value.trim()
+        };
+        if(type === CELEBRATION_TYPE){
+          patch.celebrate = !!document.getElementById('editCelebChk').checked;
+          patch.celebrationDays = document.getElementById('editCelebDays').value;
+          patch.pinned = !!document.getElementById('editPinnedChk').checked;
+          patch.audience = document.getElementById('editAudience').value;
+        }
+        updatePerfNote(e.job_no, vid, patch);
+        if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+        editingId = null;
         render();
       });
     });
@@ -5629,6 +5959,107 @@ function openEmployeeSummary(e){
   function close(){ modal.classList.remove('open'); }
   if(closeBtn) closeBtn.addEventListener('click', close);
   modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+})();
+
+function renderPerfNotesPermsList(){
+  const list = document.getElementById('perfNotesPermsList');
+  if(!list) return;
+  const ov = loadAdminOverrides();
+  const editors = ov.perfNoteEditors || [];
+  const fullScope = ov.perfNoteEditorsFullScope || [];
+  const owner = EMPLOYEES.find(e=> typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO);
+  const rows = [];
+  rows.push(`
+    <div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;background:var(--teal-dim);">
+      <div style="font-size:13px;"><b>${owner?owner.name:'المالك'}</b> <span style="color:var(--muted);font-size:11px;">— مالك البرنامج (اطلاع كامل دائم)</span></div>
+    </div>`);
+  if(!editors.length){
+    rows.push(`<div style="color:var(--muted);font-size:12.5px;padding:6px 2px;">لم تمنح أي موظف آخر هذه الصلاحية بعد.</div>`);
+  } else {
+    editors.forEach(jn=>{
+      const emp = EMPLOYEES.find(e=>e.job_no===jn);
+      const isFull = fullScope.includes(jn);
+      rows.push(`
+        <div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:13px;">
+            <b>${emp?emp.name:('رقم وظيفي: '+jn)}</b>${emp?`<span style="color:var(--muted);font-size:11px;"> — ${jn}</span>`:''}
+            <div style="font-size:10.5px;color:${isFull?'var(--navy)':'var(--amber)'};font-weight:700;margin-top:2px;">${isFull?'اطلاع كامل — على كل الموظفين':'مقيد — على نطاق إشرافه فقط'}</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button type="button" class="act-btn perf-notes-scope-toggle" data-jn="${jn}" data-full="${isFull?'1':'0'}" style="padding:4px 10px;font-size:11px;">${isFull?'تقييد بالنطاق':'منح اطلاع كامل'}</button>
+            <button type="button" class="act-btn perf-notes-revoke-btn" data-jn="${jn}" style="padding:4px 10px;font-size:11px;background:#fff;color:var(--coral);border-color:var(--coral);">سحب الصلاحية</button>
+          </div>
+        </div>`);
+    });
+  }
+  list.innerHTML = rows.join('');
+  list.querySelectorAll('.perf-notes-revoke-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const jn = btn.getAttribute('data-jn');
+      const emp = EMPLOYEES.find(e=>e.job_no===jn);
+      if(!confirm('سحب صلاحية إضافة التوجيهات من ' + (emp?emp.name:jn) + '؟')) return;
+      revokePerfNoteAccess(jn);
+      renderPerfNotesPermsList();
+    });
+  });
+  list.querySelectorAll('.perf-notes-scope-toggle').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const jn = btn.getAttribute('data-jn');
+      const wasFull = btn.getAttribute('data-full') === '1';
+      grantPerfNoteAccess(jn, !wasFull); // grantPerfNoteAccess يعيد الضبط بأمان حتى لو كان ممنوحا مسبقا
+      renderPerfNotesPermsList();
+    });
+  });
+}
+(function perfNotesPermsModalWiring(){
+  const btn = document.getElementById('perfNotesPermsBtn');
+  const modal = document.getElementById('perfNotesPermsModal');
+  const closeBtn = document.getElementById('closePerfNotesPermsModal');
+  const addBtn = document.getElementById('perfNotesAddBtn');
+  const searchInput = document.getElementById('perfNotesAddSearch');
+  const optionsList = document.getElementById('perfNotesEmpOptions');
+  const fullScopeChk = document.getElementById('perfNotesFullScopeChk');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', ()=>{
+    // تعبئة قائمة الاقتراحات باسم كل موظف ورقمه الوظيفي (باستثناء المالك نفسه).
+    if(optionsList){
+      optionsList.innerHTML = EMPLOYEES
+        .filter(e=> !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO))
+        .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
+    }
+    if(searchInput) searchInput.value = '';
+    if(fullScopeChk) fullScopeChk.checked = false;
+    renderPerfNotesPermsList();
+    modal.classList.add('open');
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const raw = (searchInput.value||'').trim();
+    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
+    // يقبل الإدخال إما "الاسم — الرقم الوظيفي" (من قائمة الاقتراحات) أو رقم وظيفي مباشرة.
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else {
+      const byNo = EMPLOYEES.find(e=> e.job_no === raw);
+      const byName = EMPLOYEES.find(e=> (e.name||'').trim() === raw);
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(e=>e.job_no===jobNo)){
+      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){
+      alert('المالك يملك الصلاحية دائما.');
+      return;
+    }
+    grantPerfNoteAccess(jobNo, !!(fullScopeChk && fullScopeChk.checked));
+    searchInput.value = '';
+    if(fullScopeChk) fullScopeChk.checked = false;
+    renderPerfNotesPermsList();
+  });
 })();
 function latestKpiMonthFor(jobNo){
   for(let i=PERF_MONTH_LABELS.length-1;i>=0;i--){
