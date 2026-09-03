@@ -522,6 +522,22 @@
   /* ---- Performance comparison (vs team / center) ---- */
   .perf-compare{margin-top:9px;padding:9px 11px;border-radius:8px;background:var(--field);border:1px solid var(--hair);display:flex;flex-direction:column;gap:6px;}
   .perf-compare-title{font-size:10.5px;color:var(--muted);margin-bottom:1px;}
+  .personal-goal{margin-top:9px;padding:10px 11px;border-radius:9px;background:linear-gradient(135deg,var(--gold-dim,rgba(196,155,58,.13)),var(--field));border:1px solid var(--gold,#c49b3a);display:flex;flex-direction:column;gap:8px;}
+  .personal-goal-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .personal-goal-lbl{font-size:11.5px;font-weight:800;color:var(--navy-2);}
+  .personal-goal-input-wrap{display:flex;align-items:center;gap:5px;}
+  .personal-goal-input{width:56px;padding:5px 6px;border-radius:7px;border:1px solid var(--hair);background:var(--panel);font-size:12px;font-weight:700;text-align:center;color:var(--navy-2);}
+  .personal-goal-pct-sign{font-size:11px;color:var(--muted);}
+  .personal-goal-save{all:unset;box-sizing:border-box;cursor:pointer;padding:5px 10px;border-radius:7px;font-size:11px;font-weight:800;background:var(--gold,#c49b3a);color:#fff;}
+  .personal-goal-save:hover{filter:brightness(1.06);}
+  .personal-goal-clear{all:unset;box-sizing:border-box;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:11px;font-weight:800;color:var(--coral,#c0392b);background:var(--coral-dim,rgba(192,57,43,.1));}
+  .goal-progress-wrap{display:flex;flex-direction:column;gap:5px;}
+  .goal-progress-bar{width:100%;height:9px;border-radius:99px;background:var(--hair);overflow:hidden;}
+  .goal-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold,#c49b3a),var(--teal,#0e6a5a));transition:width .4s ease;}
+  .goal-progress-fill.reached{background:linear-gradient(90deg,var(--teal,#0e6a5a),#1a9c5e);}
+  .goal-progress-txt{font-size:10.5px;color:var(--muted-2);font-weight:600;}
+  .goal-progress-txt.reached{color:var(--teal,#0e6a5a);font-weight:800;}
+  .goal-progress-nums{color:var(--muted);font-weight:500;}
   .compare-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;}
   .compare-row .lbl{color:var(--muted);}
   .compare-row .val{font-weight:800;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:4px;}
@@ -1794,8 +1810,11 @@ function loadAdminOverrides(){
     // "صلاحيات التوجيهات". القيمة الافتراضية عند أول تشغيل تتضمن إبراهيم العيد
     // فقط لأنه كان يملكها مسبقا قبل تحويلها لقائمة قابلة للتعديل.
     ov.perfNoteEditors = ov.perfNoteEditors || ['1470'];
+    // "هدفي الشهري" — هدف نسبة أداء يحدده كل موظف لنفسه بنفسه (خاص به فقط،
+    // لا يظهر أو يُعدَّل من أي موظف أو مشرف آخر). خريطة {رقم_وظيفي: {pct, updated_at}}.
+    ov.personalGoals = ov.personalGoals || {};
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{} }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -6930,6 +6949,55 @@ function buildPerfCompareHTML(e){
   return `<div class="perf-compare"><div class="perf-compare-title">مقارنة الأداء</div>${rows.join('')}</div>`;
 }
 
+// ---------- هدف شخصي شهري يحدده الموظف بنفسه + مؤشر تقدم بصري نحوه ----------
+function getPersonalGoalPct(jobNo){
+  const ov = loadAdminOverrides();
+  const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
+  return (g && typeof g.pct === 'number') ? g.pct : null;
+}
+function setPersonalGoalPct(jobNo, pct){
+  const ov = loadAdminOverrides();
+  ov.personalGoals = ov.personalGoals || {};
+  ov.personalGoals[String(jobNo)] = { pct: pct, updated_at: new Date().toISOString() };
+  saveAdminOverrides(ov);
+}
+function clearPersonalGoalPct(jobNo){
+  const ov = loadAdminOverrides();
+  ov.personalGoals = ov.personalGoals || {};
+  delete ov.personalGoals[String(jobNo)];
+  saveAdminOverrides(ov);
+}
+// تُبنى فقط داخل بطاقة الموظف نفسه (وليس عند اطلاع مالك/مشرف على بطاقة غيره) —
+// لأن هذا هدف شخصي بحت لا يشوفه ولا يتحكم فيه أحد سوى صاحبه.
+function buildGoalHTML(e){
+  const isSelf = !!(window.__currentEmployee && String(window.__currentEmployee.job_no) === String(e.job_no));
+  if(!isSelf) return '';
+  const selfPct = ceilPct(e.perf_final);
+  const pct = selfPct===null ? 0 : selfPct;
+  const goal = getPersonalGoalPct(e.job_no);
+  let barHTML = '';
+  if(goal!==null){
+    const ratio = Math.max(0, Math.min(100, Math.round((pct/goal)*100)));
+    const reached = pct >= goal;
+    barHTML = `<div class="goal-progress-wrap">
+        <div class="goal-progress-bar"><div class="goal-progress-fill${reached?' reached':''}" style="width:${ratio}%;"></div></div>
+        <div class="goal-progress-txt${reached?' reached':''}">${reached ? '🎉 وصلت لهدفك الشهري!' : ('باقي ' + (Math.round((goal-pct)*10)/10) + '% نقطة للوصول لهدفك')} <span class="goal-progress-nums">(${selfPct===null?'—':selfPct+'%'} من ${goal}%)</span></div>
+      </div>`;
+  }
+  return `<div class="personal-goal" data-jobno="${e.job_no}">
+      <div class="personal-goal-head">
+        <span class="personal-goal-lbl">🎯 هدفي الشهري</span>
+        <div class="personal-goal-input-wrap">
+          <input type="number" min="1" max="100" step="1" class="personal-goal-input" id="goalInput-${e.job_no}" value="${goal===null?'':goal}" placeholder="مثلا 95">
+          <span class="personal-goal-pct-sign">%</span>
+          <button type="button" class="personal-goal-save" data-jobno="${e.job_no}">حفظ</button>
+          ${goal!==null?`<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}" title="إلغاء الهدف">✕</button>`:''}
+        </div>
+      </div>
+      ${barHTML}
+    </div>`;
+}
+
 const activeCount = EMPLOYEES.filter(isActiveDevice).length;
 const watchCount = EMPLOYEES.filter(isWatchDevice).length;
 EMPLOYEES.forEach(e=>{ e.device_age_risk = estimateDeviceAgeRisk(e.device_gen); });
@@ -7179,6 +7247,40 @@ function refreshComputedAgeAndService(e){
   if(liveService !== null) e.service_years = String(liveService);
 }
 
+// يربط أزرار/حقل "هدفي الشهري" داخل بطاقة موظف معيّن — يُستدعى عند بناء
+// البطاقة أول مرة، ويُعاد استدعاؤه بعد كل حفظ/إلغاء حتى تبقى الأزرار شغالة
+// دون الحاجة لإعادة بناء كامل القائمة (فيغلق البطاقة المفتوحة على المستخدم).
+function wireGoalControls(card, e){
+  const goalSaveBtn = card.querySelector('.personal-goal-save');
+  if(goalSaveBtn) goalSaveBtn.addEventListener('click', ev=>{
+    ev.stopPropagation();
+    const input = card.querySelector('#goalInput-' + e.job_no);
+    const val = parseFloat(input && input.value);
+    if(!input || isNaN(val) || val < 1 || val > 100){
+      alert('أدخل نسبة هدف صحيحة بين 1 و100.');
+      return;
+    }
+    setPersonalGoalPct(e.job_no, Math.round(val));
+    const holder = card.querySelector('.personal-goal');
+    if(holder){ holder.outerHTML = buildGoalHTML(e); wireGoalControls(card, e); }
+  });
+  const goalClearBtn = card.querySelector('.personal-goal-clear');
+  if(goalClearBtn) goalClearBtn.addEventListener('click', ev=>{
+    ev.stopPropagation();
+    if(!confirm('إلغاء هدفك الشهري الحالي؟')) return;
+    clearPersonalGoalPct(e.job_no);
+    const holder = card.querySelector('.personal-goal');
+    if(holder){ holder.outerHTML = buildGoalHTML(e); wireGoalControls(card, e); }
+  });
+  const goalInputEl = card.querySelector('.personal-goal-input');
+  if(goalInputEl){
+    goalInputEl.addEventListener('click', ev=> ev.stopPropagation());
+    goalInputEl.addEventListener('keydown', ev=>{
+      if(ev.key==='Enter'){ ev.preventDefault(); ev.stopPropagation(); const btn = card.querySelector('.personal-goal-save'); if(btn) btn.click(); }
+    });
+  }
+}
+
 function renderList(items){
   const dirList = document.getElementById('dirList');
   const resultCount = document.getElementById('resultCount');
@@ -7234,6 +7336,7 @@ function renderList(items){
               <span class="perf-final-val">${e.perf_final_text}</span>
               ${note?`<span class="perf-final-note">${note}</span>`:''}
             </div>
+            ${buildGoalHTML(e)}
             <button type="button" class="perf-details-toggle" data-jobno="${e.job_no}"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> عرض تفاصيل الأداء الكاملة (الرسم البياني والمقارنة والمؤشرات) <span class="chev">▾</span></button>
             <div class="perf-details" id="perf-details-${e.job_no}">
               ${e.perf_filled_count>0?`<div class="perf-trend"><div class="perf-trend-lbl">اتجاه الأداء الشهري · اضغط على أي نقطة لعرض نسبتها</div>${e.perf_trend_svg}<div class="spark-readout">اضغط على نقطة لعرض تفاصيلها</div></div>`:''}
@@ -7301,6 +7404,7 @@ function renderList(items){
       if(!confirm(msg)) return;
       if(typeof toggleHiddenPublic === 'function') toggleHiddenPublic(e.job_no);
     });
+    wireGoalControls(card, e);
     const reset2FABtn = card.querySelector('.act-reset-2fa');
     if(reset2FABtn) reset2FABtn.addEventListener('click', async ev=>{
       ev.stopPropagation();
