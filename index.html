@@ -523,8 +523,11 @@
   .perf-compare{margin-top:9px;padding:9px 11px;border-radius:8px;background:var(--field);border:1px solid var(--hair);display:flex;flex-direction:column;gap:6px;}
   .perf-compare-title{font-size:10.5px;color:var(--muted);margin-bottom:1px;}
   .personal-goal{margin-top:9px;padding:10px 11px;border-radius:9px;background:linear-gradient(135deg,var(--gold-dim,rgba(196,155,58,.13)),var(--field));border:1px solid var(--gold,#c49b3a);display:flex;flex-direction:column;gap:8px;}
+  .personal-goal.view-only{border-style:dashed;}
   .personal-goal-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
   .personal-goal-lbl{font-size:11.5px;font-weight:800;color:var(--navy-2);}
+  .goal-view-only-tag{font-size:10px;font-weight:700;color:var(--muted);background:var(--field);border:1px solid var(--hair);border-radius:20px;padding:3px 9px;}
+  .goal-months-note{font-size:10px;color:var(--muted);}
   .personal-goal-input-wrap{display:flex;align-items:center;gap:5px;}
   .personal-goal-input{width:56px;padding:5px 6px;border-radius:7px;border:1px solid var(--hair);background:var(--panel);font-size:12px;font-weight:700;text-align:center;color:var(--navy-2);}
   .personal-goal-pct-sign{font-size:11px;color:var(--muted);}
@@ -538,6 +541,10 @@
   .goal-progress-txt{font-size:10.5px;color:var(--muted-2);font-weight:600;}
   .goal-progress-txt.reached{color:var(--teal,#0e6a5a);font-weight:800;}
   .goal-progress-nums{color:var(--muted);font-weight:500;}
+  .goal-achieve-status{font-size:10.5px;font-weight:700;padding:6px 9px;border-radius:7px;background:var(--field);border:1px solid var(--hair);}
+  .goal-achieve-status.achieved{color:var(--teal,#0e6a5a);background:rgba(14,106,90,.1);border-color:var(--teal,#0e6a5a);}
+  .goal-achieve-status.pending{color:#a5680a;background:var(--gold-dim);border-color:var(--gold,#c49b3a);}
+  .goal-achieve-status.off{color:var(--coral,#c0392b);background:var(--coral-dim,rgba(211,62,77,.12));border-color:var(--coral,#c0392b);}
   .compare-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;}
   .compare-row .lbl{color:var(--muted);}
   .compare-row .val{font-weight:800;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;gap:4px;}
@@ -1088,6 +1095,9 @@
         <button id="announcementLogBtn" type="button" class="qa-btn qa-teal" title="سجل الإعلانات"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="1.8"/><path d="M9 4.5V3.4A1.4 1.4 0 0 1 10.4 2h3.2A1.4 1.4 0 0 1 15 3.4V4.5"/><path d="M9 11h6"/><path d="M9 15h6"/></svg></span><span id="announcementLogBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="adminPanelBtn" type="button" class="qa-btn qa-gold" title="لوحة تحكم المالك" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2.06 2.06 0 1 1-2.9 2.9l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V19.6a2.06 2.06 0 1 1-4.12 0v-.09A1.7 1.7 0 0 0 8.79 18a1.7 1.7 0 0 0-1.87.34l-.06.06a2.06 2.06 0 1 1-2.9-2.9l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H2.6a2.06 2.06 0 1 1 0-4.12h.09A1.7 1.7 0 0 0 4.3 7.4a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2.06 2.06 0 1 1 2.9-2.9l.06.06a1.7 1.7 0 0 0 1.87.34h.08A1.7 1.7 0 0 0 9.85 1.4V1.2a2.06 2.06 0 1 1 4.12 0v.09a1.7 1.7 0 0 0 1.03 1.56h.08a1.7 1.7 0 0 0 1.87-.34l.06-.06a2.06 2.06 0 1 1 2.9 2.9l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08a1.7 1.7 0 0 0 1.56 1.03h.2a2.06 2.06 0 1 1 0 4.12h-.09a1.7 1.7 0 0 0-1.56 1.03Z"/></svg></span></button>
         <button id="myMessagesBtn" type="button" class="qa-btn qa-teal" title="رسائلي" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M18 16v-5a6 6 0 0 0-12 0v5l-2 3h16Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span><span id="myMessagesBadge" class="qa-badge" style="display:none;"></span></button>
+        <button id="kudosBtn" type="button" class="qa-btn qa-teal" title="شكر وتقدير بين الزملاء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-7-4.35-9.5-8.8C.9 8.8 2.4 5 6 5c2 0 3.3 1.1 4 2.2C10.7 6.1 12 5 14 5c3.6 0 5.1 3.8 3.5 7.2C19 16.65 12 21 12 21Z"/></svg></span><span id="kudosBadge" class="qa-badge" style="display:none;"></span></button>
+        <button id="suggestBtn" type="button" class="qa-btn qa-teal" title="صندوق الاقتراحات" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg></span></button>
+        <button id="myCertBtn" type="button" class="qa-btn qa-gold" title="تحميل شهادة أدائي (PDF)" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.7 6 21l6-3 6 3-2.2-8.3"/></svg></span></button>
         <button id="myRequestsBtn" type="button" class="qa-btn qa-gold" title="طلباتي" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg></span></button>
         <button id="blockedAccountsBtn" type="button" class="qa-btn qa-coral" title="الحسابات المحظورة" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5"/></svg></span><span id="blockedAccountsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="accessStatsBtn" type="button" class="qa-btn qa-gold" title="إحصائيات الدخول والزيارات" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg></span><span id="accessStatsBadge" class="qa-badge" style="display:none;"></span></button>
@@ -1096,8 +1106,10 @@
         <button id="perfAlertsBtn" type="button" class="qa-btn qa-coral" title="تنبيهات تراجع الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.3 18a1.8 1.8 0 0 0 1.6 2.7h16.2a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg></span><span id="perfAlertsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="backupsBtn" type="button" class="qa-btn qa-teal" title="النسخ الاحتياطية الأسبوعية" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></span></button>
         <button id="perfNotesPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات إضافة توجيهات تطوير الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
+        <button id="goalPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات الاطلاع على الأهداف الشخصية ومدة تحقيقها" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg></span></button>
         <button id="centerStatsBtn" type="button" class="qa-btn qa-teal" title="لوحة إحصائيات المركز" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg></span></button>
         <button id="auditLogBtn" type="button" class="qa-btn qa-teal" title="سجل التدقيق" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span></button>
+        <button id="suggestInboxBtn" type="button" class="qa-btn qa-gold" title="صندوق الاقتراحات (وارد)" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg></span><span id="suggestInboxBadge" class="qa-badge" style="display:none;"></span></button>
       </div>
       <div class="clockbox-body">
         <div class="val" id="liveClock">-</div>
@@ -1299,6 +1311,49 @@
     </div>
   </div>
 
+  <!-- KUDOS MODAL: تقدير بسيط بين الزملاء — يرسل الموظف شكرا لزميل فيصله كإشعار،
+       يعزز روح الفريق. تخزينها ضمن ov.kudos (نفس آلية مزامنة السحاب اللحظية
+       المستخدمة للإعدادات الإدارية)، والقراءة/عدم القراءة تُحسب محليا لكل مستخدم. -->
+  <div class="modal-overlay" id="kudosModal">
+    <div class="modal-box" style="max-width:520px;">
+      <button class="modal-close" id="closeKudosModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-7-4.35-9.5-8.8C.9 8.8 2.4 5 6 5c2 0 3.3 1.1 4 2.2C10.7 6.1 12 5 14 5c3.6 0 5.1 3.8 3.5 7.2C19 16.65 12 21 12 21Z"/></svg> شكر وتقدير</h3>
+      <div class="modal-sub">أرسل شكرا لزميل قدّم لك مساعدة أو أثّر إيجابا في يومك — وصلته كإشعار فوري.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:10px 12px;border:1px solid var(--hair);border-radius:10px;background:var(--field);">
+        <input list="kudosEmpOptions" id="kudosToSearch" placeholder="اكتب اسم الزميل…" style="padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+        <datalist id="kudosEmpOptions"></datalist>
+        <textarea id="kudosMsgInput" maxlength="200" placeholder="اكتب كلمة شكر قصيرة (اختياري)…" style="min-height:50px;max-height:90px;border:1px solid var(--hair);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+        <button id="kudosSendBtn" type="button" class="act-btn" style="background:var(--gold,#c49b3a);color:#fff;align-self:flex-end;">🙌 إرسال شكر</button>
+      </div>
+      <div style="font-size:11.5px;font-weight:800;color:var(--muted);margin-top:14px;">وصلني من الزملاء</div>
+      <div id="kudosFeed" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:40vh;overflow:auto;"></div>
+    </div>
+  </div>
+
+  <!-- SUGGESTION BOX MODAL (للموظف): قناة منفصلة عن "رسائلي" مخصصة للملاحظات
+       والاقتراحات — تصل للمالك مرفقة باسم صاحبها (راجع submitSuggestion). -->
+  <div class="modal-overlay" id="suggestModal">
+    <div class="modal-box" style="max-width:480px;">
+      <button class="modal-close" id="closeSuggestModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg> صندوق الاقتراحات</h3>
+      <div class="modal-sub">اكتب أي ملاحظة أو اقتراح تحسين تراه مناسبا — يصل للإدارة باسمك.</div>
+      <div style="margin-top:10px;">
+        <textarea id="suggestInput" maxlength="500" placeholder="اكتب اقتراحك أو ملاحظتك هنا…" style="width:100%;min-height:110px;max-height:220px;border:1px solid var(--hair);border-radius:10px;padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+        <button id="suggestSendBtn" type="button" class="act-btn" style="background:var(--navy);color:#fff;margin-top:10px;width:100%;">إرسال الاقتراح</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUGGESTION INBOX MODAL (owner-only): عرض الاقتراحات كما وصلت مع اسم كل مرسل. -->
+  <div class="modal-overlay" id="suggestInboxModal">
+    <div class="modal-box" style="max-width:560px;">
+      <button class="modal-close" id="closeSuggestInboxModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg> صندوق الاقتراحات — الوارد</h3>
+      <div class="modal-sub">كل ما وصل من ملاحظات واقتراحات الموظفين، مع اسم صاحب كل اقتراح.</div>
+      <div id="suggestInboxList" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;max-height:65vh;overflow:auto;"></div>
+    </div>
+  </div>
+
   <!-- MY REQUESTS MODAL: طلب تحديث بيانات (رقم جوال/إيميل) بدل ما يحتاج
        الموظف يطلب من المالك تعديلها يدويا — يُرسل كرسالة منسّقة بنفس نظام
        "رسائلي" الموجود أصلا، فتصل للمالك كإشعار فوري بـ"الرسائل الواردة"
@@ -1404,6 +1459,30 @@
         </label>
       </div>
       <div id="perfNotesPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:14px;max-height:50vh;overflow:auto;"></div>
+    </div>
+  </div>
+
+  <!-- GOAL PERMISSIONS MODAL (owner-only): المالك يفوّض من يطّلع على أهداف
+       الموظفين الشخصية (غير صاحب الهدف ومشرفه المباشر اللذين يطّلعان تلقائيا)،
+       ويحدد لكل موظف مدة تحقيق الهدف المطلوبة (شهرين/ثلاثة/أربعة). -->
+  <div class="modal-overlay" id="goalPermsModal">
+    <div class="modal-box" style="max-width:560px;">
+      <button class="modal-close" id="closeGoalPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> صلاحيات الأهداف الشخصية</h3>
+      <div class="modal-sub">كل موظف يحدد هدفه الشخصي بنفسه ولا يطّلع عليه إلا هو ومشرفه المباشر تلقائيا. من هنا تفوّض أشخاصا إضافيين (كالمدير) للاطلاع على أهداف كل الموظفين، وتحدد لكل موظف عدد الأشهر المتتالية المطلوبة لاعتبار هدفه "محقَّقا".</div>
+      <div style="margin-top:10px;">
+        <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">تفويض اطلاع عام (بخلاف مشرف الموظف المباشر)</div>
+        <div style="display:flex;gap:6px;">
+          <input list="goalPermsEmpOptions" id="goalPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <datalist id="goalPermsEmpOptions"></datalist>
+          <button type="button" id="goalPermsAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="goalPermsViewersList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">مدة تحقيق الهدف لكل موظف حدد هدفا حاليا</div>
+        <div id="goalPermsMonthsList" style="display:flex;flex-direction:column;gap:8px;max-height:38vh;overflow:auto;"></div>
+      </div>
     </div>
   </div>
 
@@ -1813,8 +1892,22 @@ function loadAdminOverrides(){
     // "هدفي الشهري" — هدف نسبة أداء يحدده كل موظف لنفسه بنفسه (خاص به فقط،
     // لا يظهر أو يُعدَّل من أي موظف أو مشرف آخر). خريطة {رقم_وظيفي: {pct, updated_at}}.
     ov.personalGoals = ov.personalGoals || {};
+    // من يحق له الاطلاع على أهداف الموظفين الشخصية (غير صاحب الهدف نفسه والمالك
+    // اللذين يملكان الاطلاع دائما): قائمة أرقام وظيفية يفوّضها المالك يدويا
+    // (مثلا مدير المركز). مشرف الموظف المباشر يطّلع تلقائيا دون الحاجة لتفويض
+    // (يُحسب وقت العرض من e.team_sup_name، لا يُخزَّن هنا).
+    ov.goalViewers = ov.goalViewers || [];
+    // مدة تحقيق الهدف المطلوبة لكل موظف (شهرين/ثلاثة/أربعة) — يحددها المالك بنفسه
+    // حسب رأي الإدارة، مستقلة عن نسبة الهدف التي يحددها الموظف. خريطة
+    // {رقم_وظيفي: عدد_الأشهر}. الافتراضي 3 أشهر لمن لم يُحدَّد له شيء.
+    ov.goalMonths = ov.goalMonths || {};
+    // شكر وتقدير بين الزملاء — مصفوفة رسائل قصيرة بين الموظفين (راجع sendKudos).
+    ov.kudos = ov.kudos || [];
+    // صندوق الاقتراحات — كل عنصر {id, text, from_job_no, from_name, created_at}،
+    // مرفق باسم صاحب الاقتراح ورقمه الوظيفي (يظهران للمالك عند مراجعة الوارد).
+    ov.suggestions = ov.suggestions || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{} }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalMonths:{}, kudos:[], suggestions:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -2184,6 +2277,7 @@ updateClock(); setInterval(updateClock,1000);
     window.__currentUserName = me ? me.name : '';
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
     loadMyMessages(me);
+    refreshKudosBadge();
     triggerSectionRevealAnimation();
     if(showWelcome !== false) showWelcomeSplash(me);
   }
@@ -2290,10 +2384,14 @@ updateClock(); setInterval(updateClock,1000);
     if(backupsBtn){ backupsBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof runWeeklyBackupIfDue === 'function') runWeeklyBackupIfDue(); }
     const perfNotesPermsBtn = document.getElementById('perfNotesPermsBtn');
     if(perfNotesPermsBtn) perfNotesPermsBtn.style.display = isOwner ? 'flex' : 'none';
+    const goalPermsBtn = document.getElementById('goalPermsBtn');
+    if(goalPermsBtn) goalPermsBtn.style.display = isOwner ? 'flex' : 'none';
     const centerStatsBtn = document.getElementById('centerStatsBtn');
     if(centerStatsBtn) centerStatsBtn.style.display = isOwner ? 'flex' : 'none';
     const auditLogBtn = document.getElementById('auditLogBtn');
     if(auditLogBtn) auditLogBtn.style.display = isOwner ? 'flex' : 'none';
+    const suggestInboxBtn = document.getElementById('suggestInboxBtn');
+    if(suggestInboxBtn){ suggestInboxBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof refreshSuggestInboxBadge === 'function') refreshSuggestInboxBadge(); }
     const statsBtn = document.getElementById('accessStatsBtn');
     if(statsBtn){ statsBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof refreshAccessStatsBadge === 'function') refreshAccessStatsBadge(); }
     if(isOwner && typeof refreshIncomingMsgBadge === 'function') refreshIncomingMsgBadge();
@@ -3121,6 +3219,12 @@ function applyCloudOverrides(cloudOv){
     if(typeof refreshOwnerOnlyVisibility === 'function') refreshOwnerOnlyVisibility();
     if(typeof refreshBlockedAccountsBadge === 'function') refreshBlockedAccountsBadge();
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+    if(typeof refreshKudosBadge === 'function') refreshKudosBadge();
+    const kudosModalEl = document.getElementById('kudosModal');
+    if(kudosModalEl && kudosModalEl.classList.contains('open') && typeof renderKudosFeed === 'function') renderKudosFeed();
+    if(typeof refreshSuggestInboxBadge === 'function') refreshSuggestInboxBadge();
+    const suggestInboxModalEl = document.getElementById('suggestInboxModal');
+    if(suggestInboxModalEl && suggestInboxModalEl.classList.contains('open') && typeof renderSuggestInboxList === 'function') renderSuggestInboxList();
   } finally {
     __applyingCloudOverrides = false;
   }
@@ -3679,7 +3783,11 @@ async function loadMyMessages(me){
   const btn = document.getElementById('myMessagesBtn');
   const badge = document.getElementById('myMessagesBadge');
   const reqBtn = document.getElementById('myRequestsBtn');
+  const suggestBtn = document.getElementById('suggestBtn');
+  const myCertBtn = document.getElementById('myCertBtn');
   const isOwner = !!(me && typeof OWNER_JOBNO !== 'undefined' && me.job_no === OWNER_JOBNO);
+  if(suggestBtn) suggestBtn.style.display = (me && !isOwner) ? 'flex' : 'none';
+  if(myCertBtn) myCertBtn.style.display = (me && !isOwner && !me.is_supervisor && me.perf_final!==null && me.perf_final!==undefined) ? 'flex' : 'none';
   if(isOwner){ if(btn) btn.style.display = 'none'; if(reqBtn) reqBtn.style.display = 'none'; return; }
   if(!me || !me.job_no){ if(btn) btn.style.display = 'none'; if(reqBtn) reqBtn.style.display = 'none'; return; }
   const client = getSupabaseClient();
@@ -6240,6 +6348,93 @@ function renderPerfNotesPermsList(){
     renderPerfNotesPermsList();
   });
 })();
+// ---------- نافذة صلاحيات الأهداف الشخصية: تفويض اطلاع عام + مدة التحقيق ----------
+function renderGoalPermsViewersList(){
+  const holder = document.getElementById('goalPermsViewersList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const viewers = ov.goalViewers || [];
+  if(!viewers.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون إضافيون حاليا.</div>'; return; }
+  holder.innerHTML = viewers.map(jobNo=>{
+    const emp = EMPLOYEES.find(x=>x.job_no===jobNo);
+    const nm = emp ? emp.name : jobNo;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">
+        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— ${jobNo}</span></span>
+        <button type="button" class="act-btn goal-viewer-revoke" data-jobno="${jobNo}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.goal-viewer-revoke').forEach(b=> b.addEventListener('click', ()=>{
+    revokeGoalViewAccess(b.getAttribute('data-jobno'));
+    renderGoalPermsViewersList();
+  }));
+}
+function renderGoalPermsMonthsList(){
+  const holder = document.getElementById('goalPermsMonthsList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const goalOwners = Object.keys(ov.personalGoals || {});
+  if(!goalOwners.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد أي موظف حدد هدفا شخصيا حتى الآن.</div>'; return; }
+  holder.innerHTML = goalOwners.map(jobNo=>{
+    const emp = EMPLOYEES.find(x=>x.job_no===jobNo);
+    const nm = emp ? emp.name : jobNo;
+    const goalPct = ov.personalGoals[jobNo].pct;
+    const months = getGoalMonths(jobNo);
+    const opts = [2,3,4].map(m=>`<option value="${m}" ${m===months?'selected':''}>${m} أشهر</option>`).join('');
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">
+        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— هدفه ${goalPct}%</span></span>
+        <select class="goal-months-select" data-jobno="${jobNo}" style="padding:5px 7px;border-radius:7px;border:1px solid var(--hair);font-size:11.5px;">${opts}</select>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.goal-months-select').forEach(sel=> sel.addEventListener('change', ()=>{
+    setGoalMonths(sel.getAttribute('data-jobno'), parseInt(sel.value,10));
+  }));
+}
+(function goalPermsModalWiring(){
+  const btn = document.getElementById('goalPermsBtn');
+  const modal = document.getElementById('goalPermsModal');
+  const closeBtn = document.getElementById('closeGoalPermsModal');
+  const addBtn = document.getElementById('goalPermsAddBtn');
+  const searchInput = document.getElementById('goalPermsAddSearch');
+  const optionsList = document.getElementById('goalPermsEmpOptions');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', ()=>{
+    if(optionsList){
+      optionsList.innerHTML = EMPLOYEES
+        .filter(e=> !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO))
+        .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
+    }
+    if(searchInput) searchInput.value = '';
+    renderGoalPermsViewersList();
+    renderGoalPermsMonthsList();
+    modal.classList.add('open');
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const raw = (searchInput.value||'').trim();
+    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else {
+      const byNo = EMPLOYEES.find(e=> e.job_no === raw);
+      const byName = EMPLOYEES.find(e=> (e.name||'').trim() === raw);
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(e=>e.job_no===jobNo)){
+      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){
+      alert('المالك يطّلع دائما على كل شيء، لا حاجة لتفويضه.');
+      return;
+    }
+    grantGoalViewAccess(jobNo);
+    searchInput.value = '';
+    renderGoalPermsViewersList();
+  });
+})();
 function latestKpiMonthFor(jobNo){
   for(let i=PERF_MONTH_LABELS.length-1;i>=0;i--){
     if(MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo]) return i;
@@ -6950,6 +7145,19 @@ function buildPerfCompareHTML(e){
 }
 
 // ---------- هدف شخصي شهري يحدده الموظف بنفسه + مؤشر تقدم بصري نحوه ----------
+// الاطلاع على هدف موظف معيّن (غير صاحبه): المالك دائما، مشرفه المباشر تلقائيا،
+// أو أي موظف يفوّضه المالك يدويا عبر "صلاحيات الاطلاع على الأهداف".
+function canViewGoalFor(e){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(String(me.job_no) === String(e.job_no)) return true;
+  if(isTrueOwner()) return true;
+  const ov = loadAdminOverrides();
+  const viewers = (ov.goalViewers||[]).map(String);
+  if(viewers.includes(String(me.job_no))) return true;
+  if(e.team_sup_name && normalizeArName(me.name) === normalizeArName(e.team_sup_name)) return true;
+  return false;
+}
 function getPersonalGoalPct(jobNo){
   const ov = loadAdminOverrides();
   const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
@@ -6967,34 +7175,91 @@ function clearPersonalGoalPct(jobNo){
   delete ov.personalGoals[String(jobNo)];
   saveAdminOverrides(ov);
 }
-// تُبنى فقط داخل بطاقة الموظف نفسه (وليس عند اطلاع مالك/مشرف على بطاقة غيره) —
-// لأن هذا هدف شخصي بحت لا يشوفه ولا يتحكم فيه أحد سوى صاحبه.
+// مدة تحقيق الهدف (بالأشهر) — يحددها المالك فقط لكل موظف (2/3/4)، مستقلة عن
+// نسبة الهدف التي يحددها الموظف نفسه. الافتراضي 3 أشهر.
+function getGoalMonths(jobNo){
+  const ov = loadAdminOverrides();
+  const m = ov.goalMonths && ov.goalMonths[String(jobNo)];
+  return (m===2||m===3||m===4) ? m : 3;
+}
+function setGoalMonths(jobNo, months){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.goalMonths = ov.goalMonths || {};
+  ov.goalMonths[String(jobNo)] = months;
+  saveAdminOverrides(ov);
+}
+function grantGoalViewAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.goalViewers = ov.goalViewers || [];
+  if(!ov.goalViewers.includes(jobNo)) ov.goalViewers.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeGoalViewAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.goalViewers = (ov.goalViewers||[]).filter(j=>j!==jobNo);
+  saveAdminOverrides(ov);
+}
+// يحسب هل تحقق الهدف فعليا: يجب أن يبلغ أداء الموظف نسبة هدفه في كل شهر من
+// آخر "N" أشهر مسجلة (N = مدة التحقيق التي يحددها المالك)، وليس مرة واحدة
+// عابرة فقط — تحقيقا لطلب أن يكون الهدف مستمرا لا لحظيا.
+function computeGoalAchievement(e, goalPct, months){
+  const arr = Array.isArray(e.perf_months) ? e.perf_months : [];
+  const filledPct = arr.filter(v=>typeof v==='number').map(v=>ceilPct(v));
+  const lastN = filledPct.slice(-months);
+  const monthsHave = lastN.length;
+  const avg = monthsHave ? Math.round(lastN.reduce((a,b)=>a+b,0)/monthsHave) : null;
+  const allMeet = monthsHave>0 && lastN.every(v=>v>=goalPct);
+  const achieved = monthsHave>=months && allMeet;
+  return { avg, monthsHave, monthsNeed:months, achieved, sustainedSoFar: allMeet };
+}
+// تُبنى داخل بطاقة الموظف نفسه (تحكم كامل)، أو بشكل اطلاع فقط لمن يملك صلاحية
+// الاطلاع (مالك/مشرف مباشر/مفوَّض يدويا) — وإلا لا تظهر إطلاقا لأنه هدف شخصي.
 function buildGoalHTML(e){
-  const isSelf = !!(window.__currentEmployee && String(window.__currentEmployee.job_no) === String(e.job_no));
-  if(!isSelf) return '';
+  const me = window.__currentEmployee;
+  const isSelf = !!(me && String(me.job_no) === String(e.job_no));
+  const canView = canViewGoalFor(e);
+  if(!canView) return '';
   const selfPct = ceilPct(e.perf_final);
   const pct = selfPct===null ? 0 : selfPct;
   const goal = getPersonalGoalPct(e.job_no);
+  const months = getGoalMonths(e.job_no);
+  let statusHTML = '';
   let barHTML = '';
   if(goal!==null){
     const ratio = Math.max(0, Math.min(100, Math.round((pct/goal)*100)));
     const reached = pct >= goal;
     barHTML = `<div class="goal-progress-wrap">
         <div class="goal-progress-bar"><div class="goal-progress-fill${reached?' reached':''}" style="width:${ratio}%;"></div></div>
-        <div class="goal-progress-txt${reached?' reached':''}">${reached ? '🎉 وصلت لهدفك الشهري!' : ('باقي ' + (Math.round((goal-pct)*10)/10) + '% نقطة للوصول لهدفك')} <span class="goal-progress-nums">(${selfPct===null?'—':selfPct+'%'} من ${goal}%)</span></div>
+        <div class="goal-progress-txt${reached?' reached':''}">${reached ? '🎉 وصل للهدف هذا الشهر' : ('باقي ' + (Math.round((goal-pct)*10)/10) + '% نقطة للوصول للهدف')} <span class="goal-progress-nums">(${selfPct===null?'—':selfPct+'%'} من ${goal}%)</span></div>
       </div>`;
+    const ach = computeGoalAchievement(e, goal, months);
+    const achClass = ach.achieved ? 'achieved' : (ach.sustainedSoFar ? 'pending' : 'off');
+    const achText = ach.achieved
+      ? `✅ تحقق الهدف فعليا (${ach.monthsNeed} أشهر متتالية بنسبة ${goal}% فأكثر)`
+      : (ach.sustainedSoFar
+        ? `⏳ مستمر على الهدف حتى الآن (${ach.monthsHave} من ${ach.monthsNeed} أشهر مطلوبة)`
+        : `↩️ لم يكتمل بعد — يلزم ${ach.monthsNeed} أشهر متتالية بنسبة ${goal}% فأكثر لاعتباره "محقَّقا"`);
+    statusHTML = `<div class="goal-achieve-status ${achClass}">${achText}</div>`;
   }
-  return `<div class="personal-goal" data-jobno="${e.job_no}">
-      <div class="personal-goal-head">
-        <span class="personal-goal-lbl">🎯 هدفي الشهري</span>
+  const headLbl = isSelf ? '🎯 هدفي الشهري' : `🎯 الهدف الشخصي — ${e.name||''}`;
+  const editControls = isSelf ? `
         <div class="personal-goal-input-wrap">
           <input type="number" min="1" max="100" step="1" class="personal-goal-input" id="goalInput-${e.job_no}" value="${goal===null?'':goal}" placeholder="مثلا 95">
           <span class="personal-goal-pct-sign">%</span>
           <button type="button" class="personal-goal-save" data-jobno="${e.job_no}">حفظ</button>
           ${goal!==null?`<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}" title="إلغاء الهدف">✕</button>`:''}
-        </div>
+        </div>` : `<span class="goal-view-only-tag">اطلاع فقط</span>`;
+  return `<div class="personal-goal${isSelf?'':' view-only'}" data-jobno="${e.job_no}">
+      <div class="personal-goal-head">
+        <span class="personal-goal-lbl">${headLbl}</span>
+        ${editControls}
       </div>
+      <div class="goal-months-note">مدة تحقيق الهدف المعتمدة: <b>${months} أشهر متتالية</b> (يحددها المالك حسب رأي الإدارة)</div>
       ${barHTML}
+      ${statusHTML}
     </div>`;
 }
 
@@ -7280,6 +7545,322 @@ function wireGoalControls(card, e){
     });
   }
 }
+
+// ---------- شكر وتقدير بين الزملاء (Kudos) ----------
+// تُخزَّن كل رسائل الشكر داخل نفس وثيقة الإعدادات المُدارة (ov.kudos)، فتستفيد
+// تلقائيا من نفس آلية المزامنة اللحظية عبر السحاب المستخدمة لبقية الإعدادات —
+// أي شكر يصل للطرفين خلال ثوانٍ بدون تحديث يدوي للصفحة. آخر وقت اطّلع فيه كل
+// مستخدم على "وصلني" يُحفظ محليا في متصفحه (kudosSeenAt_<رقمه الوظيفي>).
+// يمنع أي نص حر يكتبه موظف (شكر/اقتراح) من كسر الصفحة أو تنفيذ كود لدى بقية
+// المستخدمين عند عرضه — الرسائل هنا تنتشر تلقائيا لجميع من يفتح النظام عبر
+// المزامنة اللحظية، فلازم تُعامل كنص خام غير موثوق دائما قبل إدراجها بالصفحة.
+function escapeHtml(str){
+  return String(str==null?'':str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function getAllKudos(){
+  const ov = loadAdminOverrides();
+  return Array.isArray(ov.kudos) ? ov.kudos : [];
+}
+function getKudosSeenAt(jobNo){
+  try{ return localStorage.getItem('kudosSeenAt_'+jobNo) || ''; }catch(err){ return ''; }
+}
+function setKudosSeenAt(jobNo, iso){
+  try{ localStorage.setItem('kudosSeenAt_'+jobNo, iso); }catch(err){}
+}
+function sendKudos(toJobNo, message){
+  const me = window.__currentEmployee;
+  if(!me) return;
+  if(String(toJobNo) === String(me.job_no)){ alert('ما تقدر ترسل شكرا لنفسك 🙂'); return; }
+  const ov = loadAdminOverrides();
+  ov.kudos = ov.kudos || [];
+  ov.kudos.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    from_job_no: me.job_no,
+    from_name: me.name,
+    to_job_no: String(toJobNo),
+    message: (message||'').trim().slice(0,200),
+    created_at: new Date().toISOString()
+  });
+  while(ov.kudos.length > 500) ov.kudos.shift(); // سقف بسيط يمنع تضخم الملف مع مرور الوقت
+  saveAdminOverrides(ov);
+}
+function refreshKudosBadge(){
+  const me = window.__currentEmployee;
+  const btn = document.getElementById('kudosBtn');
+  const badge = document.getElementById('kudosBadge');
+  if(!me){ if(btn) btn.style.display='none'; return; }
+  if(btn) btn.style.display = 'flex';
+  const seenAt = getKudosSeenAt(me.job_no);
+  const mine = getAllKudos().filter(k=> String(k.to_job_no)===String(me.job_no));
+  const unread = seenAt ? mine.filter(k=> k.created_at > seenAt).length : mine.length;
+  if(badge){
+    if(unread>0){ badge.style.display='inline-block'; badge.textContent = unread; }
+    else{ badge.style.display='none'; }
+  }
+}
+function renderKudosFeed(){
+  const feed = document.getElementById('kudosFeed');
+  const me = window.__currentEmployee;
+  if(!feed || !me) return;
+  const mine = getAllKudos().filter(k=> String(k.to_job_no)===String(me.job_no))
+    .sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+  if(!mine.length){
+    feed.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px 0;font-size:12.5px;">لسا ما وصلك شكر — كن أول من يبعث لزميله 🙌</div>';
+    return;
+  }
+  feed.innerHTML = mine.map(k=>{
+    const dt = k.created_at ? new Date(k.created_at).toLocaleString('ar-SA', {dateStyle:'medium', timeStyle:'short'}) : '';
+    return `<div style="border:1px solid var(--hair);border-radius:10px;padding:9px 11px;background:linear-gradient(135deg,var(--gold-dim,rgba(196,155,58,.13)),var(--field));">
+        <div style="font-size:11.5px;font-weight:800;color:var(--navy-2);display:flex;justify-content:space-between;gap:8px;">
+          <span>🙌 ${escapeHtml(k.from_name||'زميل')}</span><span style="font-weight:500;color:var(--muted);font-size:10.5px;">${dt}</span>
+        </div>
+        ${k.message?`<div style="font-size:12.5px;color:var(--text);margin-top:4px;white-space:pre-wrap;">${escapeHtml(k.message)}</div>`:''}
+      </div>`;
+  }).join('');
+}
+(function kudosModalWiring(){
+  const btn = document.getElementById('kudosBtn');
+  const modal = document.getElementById('kudosModal');
+  const closeBtn = document.getElementById('closeKudosModal');
+  const sendBtn = document.getElementById('kudosSendBtn');
+  const toSearch = document.getElementById('kudosToSearch');
+  const msgInput = document.getElementById('kudosMsgInput');
+  const optionsList = document.getElementById('kudosEmpOptions');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', ()=>{
+    const me = window.__currentEmployee;
+    if(!me) return;
+    if(optionsList){
+      optionsList.innerHTML = EMPLOYEES
+        .filter(e=> String(e.job_no)!==String(me.job_no))
+        .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
+    }
+    if(toSearch) toSearch.value = '';
+    if(msgInput) msgInput.value = '';
+    renderKudosFeed();
+    modal.classList.add('open');
+    setKudosSeenAt(me.job_no, new Date().toISOString());
+    refreshKudosBadge();
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (ev)=>{ if(ev.target===modal) close(); });
+  if(sendBtn) sendBtn.addEventListener('click', ()=>{
+    const raw = (toSearch.value||'').trim();
+    if(!raw){ alert('اكتب اسم الزميل أولا.'); return; }
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else{
+      const byNo = EMPLOYEES.find(e=> e.job_no===raw);
+      const byName = EMPLOYEES.find(e=> (e.name||'').trim()===raw);
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(e=>e.job_no===jobNo)){
+      alert('لم يتم التعرف على الزميل. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    sendKudos(jobNo, msgInput.value);
+    toSearch.value = '';
+    msgInput.value = '';
+    alert('تم إرسال الشكر 🙌');
+  });
+})();
+
+// ---------- صندوق الاقتراحات ----------
+function getAllSuggestions(){
+  const ov = loadAdminOverrides();
+  return Array.isArray(ov.suggestions) ? ov.suggestions : [];
+}
+function submitSuggestion(text){
+  const me = window.__currentEmployee;
+  const clean = (text||'').trim().slice(0,500);
+  if(!clean || !me) return false;
+  const ov = loadAdminOverrides();
+  ov.suggestions = ov.suggestions || [];
+  ov.suggestions.push({ id: Date.now()+'_'+Math.random().toString(36).slice(2,8), text: clean, from_job_no: me.job_no, from_name: me.name, created_at: new Date().toISOString() });
+  while(ov.suggestions.length > 300) ov.suggestions.shift();
+  saveAdminOverrides(ov);
+  return true;
+}
+function deleteSuggestion(id){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.suggestions = (ov.suggestions||[]).filter(s=>s.id!==id);
+  saveAdminOverrides(ov); // حذف عادي (فعل إداري من المالك)
+}
+function getSuggestSeenAt(){
+  try{ return localStorage.getItem('suggestInboxSeenAt') || ''; }catch(err){ return ''; }
+}
+function setSuggestSeenAt(iso){
+  try{ localStorage.setItem('suggestInboxSeenAt', iso); }catch(err){}
+}
+function refreshSuggestInboxBadge(){
+  if(!isTrueOwner()) return;
+  const badge = document.getElementById('suggestInboxBadge');
+  if(!badge) return;
+  const seenAt = getSuggestSeenAt();
+  const all = getAllSuggestions();
+  const unread = seenAt ? all.filter(s=> s.created_at > seenAt).length : all.length;
+  if(unread>0){ badge.style.display='inline-block'; badge.textContent = unread; }
+  else{ badge.style.display='none'; }
+}
+function renderSuggestInboxList(){
+  const holder = document.getElementById('suggestInboxList');
+  if(!holder) return;
+  const all = getAllSuggestions().slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  if(!all.length){ holder.innerHTML = '<div style="text-align:center;color:var(--muted);padding:18px 0;font-size:12.5px;">لا توجد اقتراحات بعد.</div>'; return; }
+  holder.innerHTML = all.map(s=>{
+    const dt = s.created_at ? new Date(s.created_at).toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}) : '';
+    return `<div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;background:var(--field);">
+        <div style="font-size:10.5px;color:var(--navy-2);font-weight:800;margin-bottom:5px;display:flex;justify-content:space-between;gap:8px;">
+          <span>${escapeHtml(s.from_name||'موظف')} <span style="color:var(--muted);font-weight:500;">— ${escapeHtml(s.from_job_no||'')}</span></span>
+          <span style="color:var(--muted);font-weight:500;">${dt}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:8px;">${escapeHtml(s.text||'')}</div>
+        <button type="button" class="suggest-del-btn" data-id="${s.id}" style="border:none;background:transparent;color:var(--coral);cursor:pointer;font-size:11px;font-weight:700;padding:0;">حذف بعد المعالجة</button>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.suggest-del-btn').forEach(b=> b.addEventListener('click', ()=>{
+    deleteSuggestion(b.getAttribute('data-id'));
+    renderSuggestInboxList();
+    refreshSuggestInboxBadge();
+  }));
+}
+(function suggestModalWiring(){
+  const btn = document.getElementById('suggestBtn');
+  const modal = document.getElementById('suggestModal');
+  const closeBtn = document.getElementById('closeSuggestModal');
+  const sendBtn = document.getElementById('suggestSendBtn');
+  const input = document.getElementById('suggestInput');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', ()=>{
+    if(input) input.value = '';
+    modal.classList.add('open');
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', ev=>{ if(ev.target===modal) close(); });
+  if(sendBtn) sendBtn.addEventListener('click', ()=>{
+    const text = (input.value||'').trim();
+    if(!text){ alert('اكتب اقتراحك أولا.'); return; }
+    submitSuggestion(text);
+    input.value='';
+    close();
+    alert('تم إرسال اقتراحك للإدارة. شكرا لمشاركتك 🙏');
+  });
+})();
+(function suggestInboxModalWiring(){
+  const btn = document.getElementById('suggestInboxBtn');
+  const modal = document.getElementById('suggestInboxModal');
+  const closeBtn = document.getElementById('closeSuggestInboxModal');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', ()=>{
+    renderSuggestInboxList();
+    modal.classList.add('open');
+    setSuggestSeenAt(new Date().toISOString());
+    refreshSuggestInboxBadge();
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', ev=>{ if(ev.target===modal) close(); });
+})();
+
+// ---------- شهادة الأداء الشخصية (PDF) — نسخة رسمية جاهزة لملف الموظف الوظيفي ----------
+function employeeCertificateHTML(e){
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('ar-SA-u-ca-gregory',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const perfRows = PERF_MONTH_LABELS.map((lbl,i)=>[lbl.replace(' 2026',''), e['perf_m'+i]]);
+  const finalVal = e.perf_final_text||'—';
+  const filledCount = e.perf_filled_count||perfRows.filter(r=>r[1]!==null && r[1]!==undefined).length;
+  const goal = getPersonalGoalPct(e.job_no);
+  const goalLine = goal!==null ? `حدد الموظف لنفسه هدفا شهريا بنسبة <b>${goal}%</b>.` : '';
+  const trendSVG = (e.perf_filled_count>0) ? e.perf_trend_svg : '';
+  return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <meta name="color-scheme" content="light only">
+    <title>شهادة أداء - ${e.name}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;700&display=swap" rel="stylesheet"></noscript>
+    <style>
+      @page{ size:A4; margin:14mm 14mm; }
+      *{box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
+      html,body{margin:0;padding:0;background:#fff !important;color-scheme:light;}
+      body{font-family:'Almarai',Tajawal,'Segoe UI',Tahoma,Arial,sans-serif;color:#0a0e19;font-size:11.5px;line-height:1.6;}
+      .frame{border:3px double #0a0e19;padding:20px 26px;min-height:255mm;position:relative;}
+      .doc-header{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:2px solid #0a0e19;padding-bottom:10px;margin-bottom:16px;}
+      .doc-header .brand{display:flex;align-items:center;gap:10px;}
+      .doc-header img{height:56px;width:auto;}
+      .doc-header .titles h1{margin:0;font-size:15px;font-weight:800;}
+      .doc-header .meta{text-align:left;font-size:10px;font-weight:700;}
+      .cert-title{text-align:center;font-size:22px;font-weight:800;margin:18px 0 6px;letter-spacing:1px;}
+      .cert-sub{text-align:center;font-size:11.5px;color:#4b5670;margin-bottom:26px;}
+      .cert-body{font-size:13.5px;line-height:2.1;text-align:center;padding:0 10px;margin-bottom:22px;}
+      .cert-body b{color:#0a0e19;}
+      .final-badge{text-align:center;margin:0 0 20px;}
+      .final-badge .num{font-size:40px;font-weight:800;color:#15803d;font-family:'IBM Plex Mono',monospace;}
+      .final-badge .lbl{font-size:11px;font-weight:700;}
+      table.perf-table{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:16px;}
+      table.perf-table th,table.perf-table td{border:1.2px solid #0a0e19;padding:6px 4px;text-align:center;}
+      table.perf-table th{background:#e7ebf5;font-weight:800;}
+      table.perf-table td.final{font-weight:800;background:#fff7ea;}
+      .trend-box{border:1.4px solid #0a0e19;border-radius:6px;padding:10px 12px;margin-bottom:18px;}
+      .trend-box .lbl{font-size:10.5px;font-weight:700;margin-bottom:6px;}
+      .trend-box svg{width:100%;height:56px;display:block;}
+      .doc-footer{margin-top:30px;display:flex;justify-content:space-between;gap:16px;}
+      .sig{flex:1;text-align:center;font-size:10.5px;}
+      .sig .sig-role{font-weight:700;margin-bottom:5px;}
+      .sig .sig-name{font-weight:800;font-size:11.5px;margin-bottom:26px;}
+      .sig .sig-label{font-weight:700;}
+      .pdf-help.no-print{position:fixed;top:0;inset-inline:0;z-index:9999;background:#fff7ea;border-bottom:2px solid #b8790a;color:#16233f;font-size:12.5px;text-align:center;padding:9px 14px;}
+      @media print{ .no-print{ display:none !important; } }
+    </style></head><body>
+    <div class="pdf-help no-print"><svg class="ico" viewBox="0 0 24 24"><path d="M7 2.5h7l4 4v14.2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M14 2.5v4h4"/><path d="M9 13h6"/><path d="M9 16.5h6"/></svg> لحفظ الشهادة بصيغة PDF: من نافذة الطباعة، اختر <b>"حفظ كـ PDF" / "Save as PDF"</b> ثم اضغط حفظ.</div>
+    <div class="frame">
+      <div class="doc-header">
+        <div class="brand">
+          ${CENTER_LOGO_SRC?`<img src="${CENTER_LOGO_SRC}" alt="شعار الوزارة">`:''}
+          <div class="titles"><h1>مركز الاتصال بالأحساء</h1></div>
+        </div>
+        <div class="meta"><div>تاريخ الإصدار: ${todayStr}</div><div>الرقم الوظيفي: ${e.job_no||'—'}</div></div>
+      </div>
+      <div class="cert-title">شهادة أداء وظيفي</div>
+      <div class="cert-sub">صادرة من إدارة مركز الاتصال بالأحساء</div>
+      <div class="cert-body">
+        تشهد إدارة مركز الاتصال بالأحساء بأن الموظف/ة <b>${e.name||'—'}</b>${e.job_title_center?(' — '+e.job_title_center):''}<br>
+        قد حقق نسبة أداء إجمالية قدرها <b>${finalVal}</b> خلال عام 2026 (بناء على ${filledCount} شهرا مسجلا).<br>
+        ${goalLine}
+      </div>
+      <div class="final-badge"><div class="num">${finalVal}</div><div class="lbl">النتيجة النهائية للأداء</div></div>
+      <table class="perf-table">
+        <tr>${perfRows.map(([lbl])=>`<th>${lbl}</th>`).join('')}</tr>
+        <tr>${perfRows.map(([,val])=>`<td class="final">${(val===undefined||val===null)?'—':val}</td>`).join('')}</tr>
+      </table>
+      ${trendSVG?`<div class="trend-box"><div class="lbl">اتجاه الأداء الشهري</div>${trendSVG}</div>`:''}
+      <div class="doc-footer">
+        <div class="sig"><div class="sig-role">اسم الموظف</div><div class="sig-name">${e.name||'—'}</div><div class="sig-label">التوقيع</div></div>
+        <div class="sig"><div class="sig-role">مدير مركز الاتصال بالأحساء</div><div class="sig-name">${CENTER_MANAGER_NAME}</div><div class="sig-label">التوقيع</div></div>
+      </div>
+    </div>
+    </body></html>`;
+}
+function exportMyCertificate(){
+  const me = window.__currentEmployee;
+  if(!me){ alert('سجل الدخول أولا.'); return; }
+  if(me.is_supervisor || me.perf_final===null || me.perf_final===undefined){
+    alert('لا تتوفر بيانات أداء كافية لإصدار شهادة حاليا.');
+    return;
+  }
+  printHTMLViaFrame(employeeCertificateHTML(me), { title: 'شهادة_اداء_' + (me.name||'') });
+}
+(function myCertBtnWiring(){
+  const btn = document.getElementById('myCertBtn');
+  if(!btn) return;
+  btn.addEventListener('click', exportMyCertificate);
+})();
 
 function renderList(items){
   const dirList = document.getElementById('dirList');
