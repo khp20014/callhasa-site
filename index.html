@@ -206,23 +206,30 @@
   .bday-track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:tickerScroll 40s linear infinite;}
   .bday-item{font-size:13.5px;color:var(--text);font-weight:600;}
 
-  /* ---------- Celebration ribbon (إشادات وتقدير احتفالية) ---------- */
+  /* ---------- Celebration ribbon (إشادات وتقدير احتفالية) ----------
+     بطاقة كاملة تعرض نص الإشادة كاملا (وليس شريط تمرير أفقي يقصّ النص)،
+     مع دوران تلقائي هادئ بين عدة إشادات نشطة إن وُجدت أكثر من واحدة. */
   .celeb-ribbon{
-    margin-bottom:10px;border-radius:14px;position:relative;overflow:hidden;
-    background:linear-gradient(90deg, rgba(21,147,136,.16), rgba(252,182,20,.14));
-    border:1px solid var(--teal);box-shadow:0 1px 3px rgba(15,23,42,.04);
+    margin-bottom:10px;border-radius:16px;position:relative;overflow:hidden;
+    background:linear-gradient(160deg, rgba(21,147,136,.09), rgba(252,182,20,.08) 55%, rgba(21,147,136,.05));
+    border:1px solid var(--teal);box-shadow:0 4px 16px -8px rgba(14,106,90,.35);
   }
   .celeb-ribbon::before{
     content:'';position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(120deg, transparent 0%, rgba(255,255,255,.35) 45%, transparent 60%);
-    background-size:220% 100%; animation:celebShimmer 5.5s ease-in-out infinite;
+    background:linear-gradient(120deg, transparent 0%, rgba(255,255,255,.4) 45%, transparent 60%);
+    background-size:220% 100%; animation:celebShimmer 6.5s ease-in-out infinite;
   }
   @keyframes celebShimmer{ 0%{background-position:120% 0;} 100%{background-position:-40% 0;} }
-  .celeb-inner{display:flex;align-items:center;gap:10px;padding:0 14px;position:relative;}
-  .celeb-badge{flex-shrink:0;font-weight:800;font-size:12.5px;color:#fff;background:linear-gradient(135deg,var(--teal),#0c5850);border-radius:10px;padding:8px 12px;white-space:nowrap;box-shadow:0 3px 8px -2px rgba(14,106,90,.4);}
-  .celeb-track-wrap{overflow:hidden;flex:1;padding:9px 0;}
-  .celeb-track{display:flex;gap:44px;white-space:nowrap;width:max-content;animation:tickerScroll 40s linear infinite;}
-  .celeb-item{font-size:13.5px;color:var(--text);font-weight:600;}
+  .celeb-card{position:relative;padding:14px 18px;display:flex;flex-direction:column;gap:6px;animation:celebFadeIn .5s ease;}
+  @keyframes celebFadeIn{ from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+  .celeb-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .celeb-badge{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:12px;color:#fff;background:linear-gradient(135deg,var(--teal),#0c5850);border-radius:10px;padding:6px 12px;white-space:nowrap;box-shadow:0 3px 8px -2px rgba(14,106,90,.4);}
+  .celeb-name{font-weight:800;font-size:14.5px;color:var(--text);}
+  .celeb-dots{display:flex;gap:5px;flex-shrink:0;}
+  .celeb-dot{width:6px;height:6px;border-radius:50%;background:var(--hair);transition:background .25s;}
+  .celeb-dot.active{background:var(--teal);}
+  .celeb-msg{font-size:13px;line-height:1.9;color:var(--text);background:rgba(255,255,255,.55);border-radius:10px;padding:10px 12px;position:relative;}
+  .celeb-meta{font-size:10.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;}
 
   /* ---------- KPI strip ---------- */
   .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px;}
@@ -1104,10 +1111,7 @@
        الاحتفالي وضمن مدتها المحددة فقط، ويُفلتر حسب نطاق الظهور ومن يشاهد
        الصفحة حاليا (انظر renderCelebrationsRibbon). -->
   <section class="celeb-ribbon" id="celebRibbon" style="display:none">
-    <div class="celeb-inner">
-      <span class="celeb-badge">🏆 إشادات وتقدير</span>
-      <div class="celeb-track-wrap"><div class="celeb-track" id="celebTrack"></div></div>
-    </div>
+    <div class="celeb-card" id="celebCard"></div>
   </section>
 
   <!-- DIRECTORY / SEARCH -->
@@ -5661,23 +5665,43 @@ function canViewCelebration(v, targetJobNo){
 }
 function renderCelebrationsRibbon(){
   const ribbon = document.getElementById('celebRibbon');
-  const track = document.getElementById('celebTrack');
-  if(!ribbon || !track) return;
+  const card = document.getElementById('celebCard');
+  if(!ribbon || !card) return;
+  if(window.__celebRotateInterval){ clearInterval(window.__celebRotateInterval); window.__celebRotateInterval = null; }
   const ov = loadAdminOverrides();
   const items = [];
   Object.keys(ov.perfNotes||{}).forEach(jn=>{
     (ov.perfNotes[jn]||[]).forEach(v=>{
       if(isCelebrationActive(v) && canViewCelebration(v, jn)){
         const emp = EMPLOYEES.find(e=>e.job_no===jn);
-        items.push({ jn, name: emp?(emp.name||'').trim():jn });
+        items.push({ jn, name: emp?(emp.name||'').trim():jn, note: v.note||'', addedBy: v.addedBy||'', date: v.date||'' });
       }
     });
   });
-  if(!items.length){ ribbon.style.display='none'; track.innerHTML=''; return; }
-  const deco = ['🏆','🌹','🎉','✨'];
-  const itemsHtml = items.map((it,i)=>`<span class="celeb-item">${deco[i%deco.length]} <b>${it.name}</b> — إشادة وتقدير على التميز في الأداء ${deco[(i+1)%deco.length]}</span>`).join('');
-  track.innerHTML = itemsHtml + itemsHtml;
+  if(!items.length){ ribbon.style.display='none'; card.innerHTML=''; return; }
+
+  const deco = ['🏆','🌹','🎉','✨','🌟'];
+  function renderCard(idx){
+    const it = items[idx];
+    const dotsHtml = items.length>1 ? `<div class="celeb-dots">${items.map((_,i)=>`<span class="celeb-dot${i===idx?' active':''}"></span>`).join('')}</div>` : '';
+    card.innerHTML = `
+      <div class="celeb-head">
+        <span class="celeb-badge">${deco[idx%deco.length]} إشادة وتقدير</span>
+        ${dotsHtml}
+      </div>
+      <div class="celeb-name">${it.name}</div>
+      <div class="celeb-msg">${it.note ? it.note.replace(/\n/g,'<br>') : 'إشادة وتقدير على التميز في الأداء.'}</div>
+      <div class="celeb-meta">${it.addedBy ? `<span>من: ${it.addedBy}</span>`:''}${it.date ? `<span>${it.date}</span>`:''}</div>`;
+  }
+  let idx = 0;
+  renderCard(idx);
   ribbon.style.display = '';
+  if(items.length > 1){
+    window.__celebRotateInterval = setInterval(()=>{
+      idx = (idx+1) % items.length;
+      renderCard(idx);
+    }, 7000);
+  }
 }
 
 function buildEmployeeSummaryHTML(e, editingId){
