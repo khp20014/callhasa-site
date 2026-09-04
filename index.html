@@ -2615,7 +2615,13 @@ updateClock(); setInterval(updateClock,1000);
   let verifyUid = null;
 
   function finishVerification(uid){
-    try{ sessionStorage.setItem('ahsaCallCenterAuth', uid); }catch(err){}
+    // نستخدم localStorage بدل sessionStorage — كانت sessionStorage السبب في
+    // خروج الموظف تلقائيا وطلب تسجيل الدخول من جديد عند استخدام أزرار
+    // التنقل (رجوع/تقدم) بمتصفح الجوال، لأنها تتصرف بشكل غير مستقر مع هذي
+    // الحركات. localStorage تبقى الجلسة سليمة عبر التنقل وإغلاق التبويب،
+    // وتنتهي فقط بتسجيل الخروج اليدوي أو الخمول 7 دقائق (يبقى فعّالا، راجع
+    // AUTH_KEY أدناه).
+    try{ localStorage.setItem('ahsaCallCenterAuth', uid); localStorage.setItem('ahsaCallCenterLastActivity', String(Date.now())); }catch(err){}
     if(typeof logAccessVisit === 'function') logAccessVisit(uid, 'login');
     if(typeof window.__armIdleLogoutTimer === 'function') window.__armIdleLogoutTimer();
     verifyView.style.display = 'none';
@@ -2923,15 +2929,23 @@ updateClock(); setInterval(updateClock,1000);
   resetSubmitBtn.addEventListener('click', attemptReset);
 
 
-  // Keep the session logged in across refreshes within the same browser tab/session.
+  // Keep the session logged in across refreshes/back-forward navigation — نستخدم
+  // localStorage بدل sessionStorage (راجع شرح السبب أعلى finishVerification)،
+  // مع فحص وقت آخر نشاط حتى تبقى سياسة الخروج التلقائي بعد 7 دقائق خمول
+  // فعّالة حتى لو أغلق الموظف التبويب وفتحه بعد فترة طويلة.
   try{
-    const savedUid = sessionStorage.getItem('ahsaCallCenterAuth');
-    if(savedUid && validIds.has(savedUid)){
+    const savedUid = localStorage.getItem('ahsaCallCenterAuth');
+    const lastActivity = parseInt(localStorage.getItem('ahsaCallCenterLastActivity')||'0', 10);
+    const idleExpired = !lastActivity || (Date.now() - lastActivity) > (7*60*1000);
+    if(savedUid && validIds.has(savedUid) && !idleExpired){
       // نؤجل التنفيذ خطوة واحدة (0ms) لأن هذا الكود يعمل مبكرا جدا في تحميل السكربت،
       // قبل أن تكتمل معالجة/إثراء بيانات EMPLOYEES (perf_final، is_supervisor، إلخ)
       // الموجودة لاحقا بالملف — استدعاء renderList قبل اكتمالها يسبب أخطاء.
       setTimeout(()=>revealApp(savedUid, false), 0);
     } else {
+      if(savedUid && idleExpired){
+        try{ localStorage.removeItem('ahsaCallCenterAuth'); localStorage.removeItem('ahsaCallCenterLastActivity'); }catch(err){}
+      }
       userInput.focus();
     }
   }catch(err){ userInput.focus(); }
@@ -2940,7 +2954,7 @@ updateClock(); setInterval(updateClock,1000);
   const logoutBtn = document.getElementById('logoutBtn');
   if(logoutBtn){
     logoutBtn.addEventListener('click', ()=>{
-      try{ sessionStorage.removeItem('ahsaCallCenterAuth'); }catch(err){}
+      try{ localStorage.removeItem('ahsaCallCenterAuth'); localStorage.removeItem('ahsaCallCenterLastActivity'); }catch(err){}
       app.style.display = 'none';
       gate.style.display = 'flex';
       // نعيد الشاشة لواجهة تسجيل الدخول الأساسية صراحة — لو كان آخر مسار مر
@@ -2964,18 +2978,19 @@ updateClock(); setInterval(updateClock,1000);
   }
 })();
 
-// ---------- تسجيل خروج تلقائي بعد فترة خمول (20 دقيقة) ----------
+// ---------- تسجيل خروج تلقائي بعد فترة خمول (7 دقائق) ----------
 // مهم خصوصا لأجهزة مركز الاتصال المشتركة — لو موظف نسي يسجل خروج وقام من
 // مكانه، الجلسة ما تظل مفتوحة للأبد لأي حد يجلس بعده. يعيد ضبط العدّاد مع أي
 // تفاعل فعلي (تحريك ماوس، لمس، ضغط مفتاح، سكرول)، ولا يشتغل إطلاقا قبل تسجيل
 // الدخول أصلا.
 (function autoLogoutOnIdle(){
-  const IDLE_LIMIT_MS = 20*60*1000;
+  const IDLE_LIMIT_MS = 7*60*1000;
   const AUTH_KEY = 'ahsaCallCenterAuth';
+  const LAST_ACTIVITY_KEY = 'ahsaCallCenterLastActivity';
   let idleTimer = null;
   function doAutoLogout(){
-    if(!sessionStorage.getItem(AUTH_KEY)) return;
-    try{ sessionStorage.removeItem(AUTH_KEY); }catch(err){}
+    if(!localStorage.getItem(AUTH_KEY)) return;
+    try{ localStorage.removeItem(AUTH_KEY); localStorage.removeItem(LAST_ACTIVITY_KEY); }catch(err){}
     const app = document.getElementById('dashboardApp');
     const gate = document.getElementById('loginGate');
     if(app) app.style.display = 'none';
@@ -2990,10 +3005,11 @@ updateClock(); setInterval(updateClock,1000);
     const celebRibbonEl = document.getElementById('celebRibbon');
     if(celebRibbonEl) celebRibbonEl.style.display = 'none';
     const err = document.getElementById('loginError');
-    if(err){ err.textContent = '🔒 تم تسجيل خروجك تلقائيا بعد 20 دقيقة من عدم الاستخدام، لحماية حسابك.'; err.style.display = 'block'; }
+    if(err){ err.textContent = '🔒 تم تسجيل خروجك تلقائيا بعد 7 دقائق من عدم الاستخدام، لحماية حسابك.'; err.style.display = 'block'; }
   }
   function resetIdleTimer(){
-    if(!sessionStorage.getItem(AUTH_KEY)) return;
+    if(!localStorage.getItem(AUTH_KEY)) return;
+    try{ localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); }catch(err){}
     clearTimeout(idleTimer);
     idleTimer = setTimeout(doAutoLogout, IDLE_LIMIT_MS);
   }
