@@ -6146,12 +6146,16 @@ function buildCenterStatsHTML(){
     // المشرف يُقيَّم بمقياس مختلف تماما (متوسط أداء فريقه، وليس أداءه الفردي)،
     // فإدخاله هنا كان يشوّه متوسط المركز وترتيب "الأعلى أداء/يحتاجون متابعة" —
     // لذلك يُستبعد من حساب الأداء الفردي، ويبقى مشمولا بإحصاءات الحضور فقط.
-    if(!e.is_supervisor){
-      const perf = employeePerformanceSummary(e.job_no);
-      if(perf.count){
-        perfList.push({ jobNo: e.job_no, name: (e.name||'').trim(), avg: perf.avg });
-        perf.scores.forEach(s=>{ monthlySums[s.month].sum += s.final; monthlySums[s.month].count++; });
-      }
+    // إصلاح جوهري إضافي: كانت هذي اللوحة تحسب الأداء من جدول خام منفصل
+    // (MONTHLY_KPI_BREAKDOWN عبر employeePerformanceSummary) يختلف عن المصدر
+    // المعتمد فعليا بباقي أنحاء البرنامج (e.perf_final / e.perf_months) —
+    // نفس المصدر اللي يُبنى منه "متوسط المركز العام" الظاهر ببطاقة كل موظف
+    // ومقارناته. هذا التضارب بين مصدرين كان السبب الحقيقي وراء الأرقام
+    // الخاطئة. الحين تُقرأ من نفس المصدر الموحّد حتى تتطابق الأرقام دائما.
+    if(!e.is_supervisor && e.perf_final!==null && e.perf_final!==undefined){
+      perfList.push({ jobNo: e.job_no, name: (e.name||'').trim(), avg: e.perf_final });
+      const months = Array.isArray(e.perf_months) ? e.perf_months : [];
+      months.forEach((v,i)=>{ if(typeof v === 'number'){ monthlySums[i].sum += v; monthlySums[i].count++; } });
     }
     const att = employeeAttendanceDetail(e.job_no);
     if(att.annual.monthsCounted){
