@@ -5736,14 +5736,17 @@ function employeeAttendanceDetail(jobNo){
 }
 // يجمع النتيجة النهائية الشهرية (final) من كل الأشهر المتوفرة، ويحسب المتوسط
 // وأفضل/أضعف شهر.
+// إصلاح جوهري: كانت هذي الدالة تقرأ من جدول خام منفصل (MONTHLY_KPI_BREAKDOWN)
+// يختلف عن المصدر المعتمد فعليا بكل مكان ثاني بالبرنامج (e.perf_final /
+// e.perf_months) — وهذا سبب ظهور أرقام مختلفة/خاطئة بلوحة إحصائيات المركز
+// وبملخص الموظف. الحين تقرأ من نفس المصدر الموحّد حتى تتطابق الأرقام دائما.
 function employeePerformanceSummary(jobNo){
+  const e = EMPLOYEES.find(x=>x.job_no===jobNo);
+  const months = (e && Array.isArray(e.perf_months)) ? e.perf_months : [];
   const scores = [];
-  for(let i=0;i<PERF_MONTH_LABELS.length;i++){
-    const mb = MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo];
-    if(mb && typeof mb.final === 'number') scores.push({month:i, final:mb.final});
-  }
+  months.forEach((v,i)=>{ if(typeof v === 'number') scores.push({month:i, final:v}); });
   if(!scores.length) return { count:0, avg:null, best:null, worst:null, scores:[] };
-  const avg = scores.reduce((s,x)=>s+x.final,0)/scores.length;
+  const avg = (e && typeof e.perf_final === 'number') ? e.perf_final : scores.reduce((s,x)=>s+x.final,0)/scores.length;
   const best = scores.reduce((a,b)=> b.final>a.final?b:a);
   const worst = scores.reduce((a,b)=> b.final<a.final?b:a);
   return { count: scores.length, avg, best, worst, scores };
@@ -7788,11 +7791,13 @@ function renderKudosSentFeed(){
     const toEmp = EMPLOYEES.find(x=>String(x.job_no)===String(k.to_job_no));
     const toSearch = document.getElementById('kudosToSearch');
     const msgInput = document.getElementById('kudosMsgInput');
+    const sendBtn = document.getElementById('kudosSendBtn');
     if(toSearch) toSearch.value = toEmp ? `${(toEmp.name||'').trim()} — ${toEmp.job_no}` : '';
     if(msgInput) msgInput.value = k.message||'';
-    deleteKudos(id); // يُحذف الأصل فورا — إعادة الإرسال أدناه تنشئ نسخة معدّلة بدله
-    renderKudosSentFeed();
-    refreshKudosBadge();
+    // لا نحذف الأصل الآن — لو المستخدم أغلق النافذة بدون ما يضغط "إرسال" بعد
+    // التعديل كانت رسالته تنمحي نهائيا بلا رجعة. نحفظ فقط أنه بوضع "تعديل"،
+    // والحذف الفعلي للأصل يصير عند نجاح إعادة الإرسال (راجع sendBtn أدناه).
+    if(sendBtn){ sendBtn.dataset.editingId = id; sendBtn.textContent = '🙌 حفظ التعديل'; }
     if(toSearch) toSearch.focus();
   }));
 }
@@ -7815,6 +7820,7 @@ function renderKudosSentFeed(){
     }
     if(toSearch) toSearch.value = '';
     if(msgInput) msgInput.value = '';
+    if(sendBtn){ delete sendBtn.dataset.editingId; sendBtn.textContent = '🙌 إرسال شكر'; }
     renderKudosFeed();
     renderKudosSentFeed();
     modal.classList.add('open');
@@ -7839,11 +7845,15 @@ function renderKudosSentFeed(){
       alert('لم يتم التعرف على الزميل. اختر اسمه من قائمة الاقتراحات.');
       return;
     }
+    const editingId = sendBtn.dataset.editingId;
+    if(editingId) deleteKudos(editingId); // نحذف الأصل الآن فقط، بعد التأكد من نجاح الإرسال الجديد
     sendKudos(jobNo, msgInput.value);
     toSearch.value = '';
     msgInput.value = '';
+    delete sendBtn.dataset.editingId;
+    sendBtn.textContent = '🙌 إرسال شكر';
     renderKudosSentFeed();
-    alert('تم إرسال الشكر 🙌');
+    alert(editingId ? 'تم حفظ التعديل 🙌' : 'تم إرسال الشكر 🙌');
   });
 })();
 
