@@ -1326,7 +1326,9 @@
         <button id="kudosSendBtn" type="button" class="act-btn" style="background:var(--gold,#c49b3a);color:#fff;align-self:flex-end;">🙌 إرسال شكر</button>
       </div>
       <div style="font-size:11.5px;font-weight:800;color:var(--muted);margin-top:14px;">وصلني من الزملاء</div>
-      <div id="kudosFeed" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:40vh;overflow:auto;"></div>
+      <div id="kudosFeed" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:32vh;overflow:auto;"></div>
+      <div style="font-size:11.5px;font-weight:800;color:var(--muted);margin-top:14px;">الشكر اللي أرسلته</div>
+      <div id="kudosSentFeed" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:32vh;overflow:auto;"></div>
     </div>
   </div>
 
@@ -3221,7 +3223,7 @@ function applyCloudOverrides(cloudOv){
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
     if(typeof refreshKudosBadge === 'function') refreshKudosBadge();
     const kudosModalEl = document.getElementById('kudosModal');
-    if(kudosModalEl && kudosModalEl.classList.contains('open') && typeof renderKudosFeed === 'function') renderKudosFeed();
+    if(kudosModalEl && kudosModalEl.classList.contains('open') && typeof renderKudosFeed === 'function'){ renderKudosFeed(); if(typeof renderKudosSentFeed==='function') renderKudosSentFeed(); }
     if(typeof refreshSuggestInboxBadge === 'function') refreshSuggestInboxBadge();
     const suggestInboxModalEl = document.getElementById('suggestInboxModal');
     if(suggestInboxModalEl && suggestInboxModalEl.classList.contains('open') && typeof renderSuggestInboxList === 'function') renderSuggestInboxList();
@@ -7586,6 +7588,19 @@ function sendKudos(toJobNo, message){
   while(ov.kudos.length > 500) ov.kudos.shift(); // سقف بسيط يمنع تضخم الملف مع مرور الوقت
   saveAdminOverrides(ov);
 }
+// حذف شكر أرسله الموظف بنفسه (بالغلط أو ود يعدله)، أو حذف أي شكر من المالك
+// كإجراء إشرافي عام — غير هذين لا أحد يقدر يحذفه.
+function deleteKudos(id){
+  const me = window.__currentEmployee;
+  if(!me) return;
+  const ov = loadAdminOverrides();
+  const item = (ov.kudos||[]).find(k=>k.id===id);
+  if(!item) return;
+  const canDelete = String(item.from_job_no)===String(me.job_no) || isTrueOwner();
+  if(!canDelete) return;
+  ov.kudos = (ov.kudos||[]).filter(k=>k.id!==id);
+  saveAdminOverrides(ov);
+}
 function refreshKudosBadge(){
   const me = window.__currentEmployee;
   const btn = document.getElementById('kudosBtn');
@@ -7620,6 +7635,54 @@ function renderKudosFeed(){
       </div>`;
   }).join('');
 }
+// "الشكر اللي أرسلته" — يظهر فيها زر تعديل (يعبّي مربع الإرسال بنفس البيانات
+// ويحذف الأصل، فيرسلها الموظف من جديد بعد التعديل) وزر حذف نهائي.
+function renderKudosSentFeed(){
+  const feed = document.getElementById('kudosSentFeed');
+  const me = window.__currentEmployee;
+  if(!feed || !me) return;
+  const mine = getAllKudos().filter(k=> String(k.from_job_no)===String(me.job_no))
+    .sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+  if(!mine.length){
+    feed.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px 0;font-size:12.5px;">لسا ما أرسلت أي شكر.</div>';
+    return;
+  }
+  feed.innerHTML = mine.map(k=>{
+    const dt = k.created_at ? new Date(k.created_at).toLocaleString('ar-SA', {dateStyle:'medium', timeStyle:'short'}) : '';
+    const toEmp = EMPLOYEES.find(x=>String(x.job_no)===String(k.to_job_no));
+    const toName = toEmp ? toEmp.name : (k.to_job_no||'زميل');
+    return `<div style="border:1px solid var(--hair);border-radius:10px;padding:9px 11px;background:var(--field);">
+        <div style="font-size:11.5px;font-weight:800;color:var(--navy-2);display:flex;justify-content:space-between;gap:8px;">
+          <span>🙌 إلى ${escapeHtml(toName)}</span><span style="font-weight:500;color:var(--muted);font-size:10.5px;">${dt}</span>
+        </div>
+        ${k.message?`<div style="font-size:12.5px;color:var(--text);margin-top:4px;white-space:pre-wrap;">${escapeHtml(k.message)}</div>`:''}
+        <div style="display:flex;gap:12px;margin-top:6px;">
+          <button type="button" class="kudos-edit-btn" data-id="${k.id}" style="border:none;background:transparent;color:var(--navy-2);cursor:pointer;font-size:11px;font-weight:700;padding:0;">تعديل</button>
+          <button type="button" class="kudos-del-btn" data-id="${k.id}" style="border:none;background:transparent;color:var(--coral);cursor:pointer;font-size:11px;font-weight:700;padding:0;">حذف</button>
+        </div>
+      </div>`;
+  }).join('');
+  feed.querySelectorAll('.kudos-del-btn').forEach(b=> b.addEventListener('click', ()=>{
+    if(!confirm('حذف رسالة الشكر هذي نهائيا؟')) return;
+    deleteKudos(b.getAttribute('data-id'));
+    renderKudosSentFeed();
+    refreshKudosBadge();
+  }));
+  feed.querySelectorAll('.kudos-edit-btn').forEach(b=> b.addEventListener('click', ()=>{
+    const id = b.getAttribute('data-id');
+    const k = getAllKudos().find(x=>x.id===id);
+    if(!k) return;
+    const toEmp = EMPLOYEES.find(x=>String(x.job_no)===String(k.to_job_no));
+    const toSearch = document.getElementById('kudosToSearch');
+    const msgInput = document.getElementById('kudosMsgInput');
+    if(toSearch) toSearch.value = toEmp ? `${(toEmp.name||'').trim()} — ${toEmp.job_no}` : '';
+    if(msgInput) msgInput.value = k.message||'';
+    deleteKudos(id); // يُحذف الأصل فورا — إعادة الإرسال أدناه تنشئ نسخة معدّلة بدله
+    renderKudosSentFeed();
+    refreshKudosBadge();
+    if(toSearch) toSearch.focus();
+  }));
+}
 (function kudosModalWiring(){
   const btn = document.getElementById('kudosBtn');
   const modal = document.getElementById('kudosModal');
@@ -7640,6 +7703,7 @@ function renderKudosFeed(){
     if(toSearch) toSearch.value = '';
     if(msgInput) msgInput.value = '';
     renderKudosFeed();
+    renderKudosSentFeed();
     modal.classList.add('open');
     setKudosSeenAt(me.job_no, new Date().toISOString());
     refreshKudosBadge();
@@ -7665,6 +7729,7 @@ function renderKudosFeed(){
     sendKudos(jobNo, msgInput.value);
     toSearch.value = '';
     msgInput.value = '';
+    renderKudosSentFeed();
     alert('تم إرسال الشكر 🙌');
   });
 })();
