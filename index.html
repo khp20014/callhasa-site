@@ -528,12 +528,15 @@
   .personal-goal-lbl{font-size:11.5px;font-weight:800;color:var(--navy-2);}
   .goal-view-only-tag{font-size:10px;font-weight:700;color:var(--muted);background:var(--field);border:1px solid var(--hair);border-radius:20px;padding:3px 9px;}
   .goal-months-note{font-size:10px;color:var(--muted);}
+  .goal-pending-note{font-size:11px;color:#a5680a;background:var(--gold-dim);border:1px solid var(--gold,#c49b3a);border-radius:7px;padding:7px 9px;font-weight:600;}
+  .goal-rejected-tag{font-size:10px;font-weight:700;color:var(--coral,#c0392b);background:var(--coral-dim,rgba(192,57,43,.1));border:1px solid var(--coral,#c0392b);border-radius:20px;padding:3px 9px;}
+  .goal-rejected-note{font-size:11px;color:var(--coral,#c0392b);background:var(--coral-dim,rgba(192,57,43,.1));border:1px solid var(--coral,#c0392b);border-radius:7px;padding:7px 9px;font-weight:600;line-height:1.6;}
   .personal-goal-input-wrap{display:flex;align-items:center;gap:5px;}
   .personal-goal-input{width:56px;padding:5px 6px;border-radius:7px;border:1px solid var(--hair);background:var(--panel);font-size:12px;font-weight:700;text-align:center;color:var(--navy-2);}
   .personal-goal-pct-sign{font-size:11px;color:var(--muted);}
   .personal-goal-save{all:unset;box-sizing:border-box;cursor:pointer;padding:5px 10px;border-radius:7px;font-size:11px;font-weight:800;background:var(--gold,#c49b3a);color:#fff;}
   .personal-goal-save:hover{filter:brightness(1.06);}
-  .personal-goal-clear{all:unset;box-sizing:border-box;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:11px;font-weight:800;color:var(--coral,#c0392b);background:var(--coral-dim,rgba(192,57,43,.1));}
+  .personal-goal-clear{all:unset;box-sizing:border-box;cursor:pointer;padding:5px 10px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;font-size:11px;font-weight:800;color:var(--coral,#c0392b);background:var(--coral-dim,rgba(192,57,43,.1));white-space:nowrap;}
   .goal-progress-wrap{display:flex;flex-direction:column;gap:5px;}
   .goal-progress-bar{width:100%;height:9px;border-radius:99px;background:var(--hair);overflow:hidden;}
   .goal-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--gold,#c49b3a),var(--teal,#0e6a5a));transition:width .4s ease;}
@@ -1106,7 +1109,7 @@
         <button id="perfAlertsBtn" type="button" class="qa-btn qa-coral" title="تنبيهات تراجع الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.3 18a1.8 1.8 0 0 0 1.6 2.7h16.2a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg></span><span id="perfAlertsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="backupsBtn" type="button" class="qa-btn qa-teal" title="النسخ الاحتياطية الأسبوعية" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></span></button>
         <button id="perfNotesPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات إضافة توجيهات تطوير الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
-        <button id="goalPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات الاطلاع على الأهداف الشخصية ومدة تحقيقها" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg></span></button>
+        <button id="goalPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات الاطلاع على الأهداف الشخصية ومدة تحقيقها" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg></span><span id="goalPermsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="centerStatsBtn" type="button" class="qa-btn qa-teal" title="لوحة إحصائيات المركز" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg></span></button>
         <button id="auditLogBtn" type="button" class="qa-btn qa-teal" title="سجل التدقيق" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span></button>
         <button id="suggestInboxBtn" type="button" class="qa-btn qa-gold" title="صندوق الاقتراحات (وارد)" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg></span><span id="suggestInboxBadge" class="qa-badge" style="display:none;"></span></button>
@@ -1471,7 +1474,11 @@
     <div class="modal-box" style="max-width:560px;">
       <button class="modal-close" id="closeGoalPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> صلاحيات الأهداف الشخصية</h3>
-      <div class="modal-sub">كل موظف يحدد هدفه الشخصي بنفسه ولا يطّلع عليه إلا هو ومشرفه المباشر تلقائيا. من هنا تفوّض أشخاصا إضافيين (كالمدير) للاطلاع على أهداف كل الموظفين، وتحدد لكل موظف عدد الأشهر المتتالية المطلوبة لاعتبار هدفه "محقَّقا".</div>
+      <div class="modal-sub">كل موظف يقترح هدفه الشخصي ويُرسل لك للموافقة أولا — لا يبدأ احتسابه إلا من تاريخ موافقتك. ولا يطّلع عليه أحد غيره وغير مشرفه المباشر تلقائيا. من هنا توافق/ترفض الطلبات، وتفوّض أشخاصا إضافيين (كالمدير) للاطلاع على أهداف كل الموظفين، وتحدد لكل موظف عدد الأشهر المتتالية المطلوبة لاعتبار هدفه "محقَّقا".</div>
+      <div style="margin-top:12px;">
+        <div style="font-size:12px;font-weight:800;color:var(--coral,#c0392b);margin-bottom:6px;">طلبات أهداف بانتظار قرارك</div>
+        <div id="goalPermsRequestsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
       <div style="margin-top:10px;">
         <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">تفويض اطلاع عام (بخلاف مشرف الموظف المباشر)</div>
         <div style="display:flex;gap:6px;">
@@ -1895,8 +1902,11 @@ function loadAdminOverrides(){
     // "صلاحيات التوجيهات". القيمة الافتراضية عند أول تشغيل تتضمن إبراهيم العيد
     // فقط لأنه كان يملكها مسبقا قبل تحويلها لقائمة قابلة للتعديل.
     ov.perfNoteEditors = ov.perfNoteEditors || ['1470'];
-    // "هدفي الشهري" — هدف نسبة أداء يحدده كل موظف لنفسه بنفسه (خاص به فقط،
-    // لا يظهر أو يُعدَّل من أي موظف أو مشرف آخر). خريطة {رقم_وظيفي: {pct, updated_at}}.
+    // "هدفي الشهري" — هدف نسبة أداء يقترحه كل موظف لنفسه، ولا يصير نشطا إلا
+    // بعد موافقة المالك عليه (وإلا يرفضه بسبب يوضحه). خريطة {رقم_وظيفي:
+    // {pct, status: pending|approved|rejected, requested_at, approved_at,
+    // rejected_reason, decided_at, celebrated}}. لا يظهر لغير صاحبه ومشرفه
+    // المباشر والمالك.
     ov.personalGoals = ov.personalGoals || {};
     // من يحق له الاطلاع على أهداف الموظفين الشخصية (غير صاحب الهدف نفسه والمالك
     // اللذين يملكان الاطلاع دائما): قائمة أرقام وظيفية يفوّضها المالك يدويا
@@ -2391,7 +2401,7 @@ updateClock(); setInterval(updateClock,1000);
     const perfNotesPermsBtn = document.getElementById('perfNotesPermsBtn');
     if(perfNotesPermsBtn) perfNotesPermsBtn.style.display = isOwner ? 'flex' : 'none';
     const goalPermsBtn = document.getElementById('goalPermsBtn');
-    if(goalPermsBtn) goalPermsBtn.style.display = isOwner ? 'flex' : 'none';
+    if(goalPermsBtn){ goalPermsBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof refreshGoalPermsBadge === 'function') refreshGoalPermsBadge(); }
     const centerStatsBtn = document.getElementById('centerStatsBtn');
     if(centerStatsBtn) centerStatsBtn.style.display = isOwner ? 'flex' : 'none';
     const auditLogBtn = document.getElementById('auditLogBtn');
@@ -3247,6 +3257,12 @@ function applyCloudOverrides(cloudOv){
     if(typeof refreshSuggestInboxBadge === 'function') refreshSuggestInboxBadge();
     const suggestInboxModalEl = document.getElementById('suggestInboxModal');
     if(suggestInboxModalEl && suggestInboxModalEl.classList.contains('open') && typeof renderSuggestInboxList === 'function') renderSuggestInboxList();
+    if(typeof refreshGoalPermsBadge === 'function') refreshGoalPermsBadge();
+    const goalPermsModalEl = document.getElementById('goalPermsModal');
+    if(goalPermsModalEl && goalPermsModalEl.classList.contains('open')){
+      if(typeof renderGoalPermsRequestsList === 'function') renderGoalPermsRequestsList();
+      if(typeof renderGoalPermsMonthsList === 'function') renderGoalPermsMonthsList();
+    }
   } finally {
     __applyingCloudOverrides = false;
   }
@@ -6490,7 +6506,7 @@ function renderGoalPermsMonthsList(){
   const holder = document.getElementById('goalPermsMonthsList');
   if(!holder) return;
   const ov = loadAdminOverrides();
-  const goalOwners = Object.keys(ov.personalGoals || {});
+  const goalOwners = Object.keys(ov.personalGoals || {}).filter(jobNo=> ov.personalGoals[jobNo].status !== 'rejected');
   if(!goalOwners.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد أي موظف حدد هدفا شخصيا حتى الآن.</div>'; return; }
   holder.innerHTML = goalOwners.map(jobNo=>{
     const emp = EMPLOYEES.find(x=>x.job_no===jobNo);
@@ -6505,6 +6521,57 @@ function renderGoalPermsMonthsList(){
   }).join('');
   holder.querySelectorAll('.goal-months-select').forEach(sel=> sel.addEventListener('change', ()=>{
     setGoalMonths(sel.getAttribute('data-jobno'), parseInt(sel.value,10));
+  }));
+}
+// طلبات الأهداف بانتظار قرار المالك (موافقة/رفض مع سبب).
+function refreshGoalPermsBadge(){
+  const badge = document.getElementById('goalPermsBadge');
+  if(!badge) return;
+  const n = getPendingGoalRequests().length;
+  if(n>0){ badge.style.display='inline-block'; badge.textContent = n; }
+  else{ badge.style.display='none'; }
+}
+function renderGoalPermsRequestsList(){
+  const holder = document.getElementById('goalPermsRequestsList');
+  if(!holder) return;
+  const pending = getPendingGoalRequests();
+  if(!pending.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا توجد طلبات معلقة حاليا.</div>'; return; }
+  holder.innerHTML = pending.map(g=>{
+    const emp = EMPLOYEES.find(x=>x.job_no===g.jobNo);
+    const nm = emp ? emp.name : g.jobNo;
+    const dt = g.requested_at ? new Date(g.requested_at).toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}) : '';
+    return `<div style="border:1px solid var(--hair);border-radius:9px;padding:9px 11px;background:var(--gold-dim,rgba(196,155,58,.13));">
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:800;color:var(--navy-2);">
+          <span>${escapeHtml(nm)} <span style="color:var(--muted);font-weight:500;">— هدفه المقترح ${g.pct}%</span></span>
+          <span style="color:var(--muted);font-weight:500;font-size:10.5px;">${dt}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button type="button" class="act-btn goal-req-approve" data-jobno="${g.jobNo}" style="background:var(--teal,#0e6a5a);color:#fff;">✓ موافقة</button>
+          <button type="button" class="act-btn goal-req-reject" data-jobno="${g.jobNo}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">✕ رفض</button>
+        </div>
+        <div class="goal-req-reject-box" data-jobno="${g.jobNo}" style="display:none;margin-top:8px;gap:6px;flex-direction:column;">
+          <textarea class="goal-req-reject-reason" placeholder="اكتب سبب الرفض حتى يوضح للموظف…" style="min-height:44px;border:1px solid var(--hair);border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px;resize:vertical;"></textarea>
+          <button type="button" class="act-btn goal-req-reject-confirm" data-jobno="${g.jobNo}" style="background:var(--coral,#c0392b);color:#fff;align-self:flex-end;">تأكيد الرفض</button>
+        </div>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.goal-req-approve').forEach(b=> b.addEventListener('click', ()=>{
+    approvePersonalGoal(b.getAttribute('data-jobno'));
+    renderGoalPermsRequestsList();
+    renderGoalPermsMonthsList();
+    refreshGoalPermsBadge();
+  }));
+  holder.querySelectorAll('.goal-req-reject').forEach(b=> b.addEventListener('click', ()=>{
+    const box = holder.querySelector(`.goal-req-reject-box[data-jobno="${b.getAttribute('data-jobno')}"]`);
+    if(box) box.style.display = 'flex';
+  }));
+  holder.querySelectorAll('.goal-req-reject-confirm').forEach(b=> b.addEventListener('click', ()=>{
+    const jobNo = b.getAttribute('data-jobno');
+    const box = holder.querySelector(`.goal-req-reject-box[data-jobno="${jobNo}"]`);
+    const reason = box ? box.querySelector('.goal-req-reject-reason').value : '';
+    rejectPersonalGoal(jobNo, reason);
+    renderGoalPermsRequestsList();
+    refreshGoalPermsBadge();
   }));
 }
 (function goalPermsModalWiring(){
@@ -6522,6 +6589,7 @@ function renderGoalPermsMonthsList(){
         .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
     }
     if(searchInput) searchInput.value = '';
+    renderGoalPermsRequestsList();
     renderGoalPermsViewersList();
     renderGoalPermsMonthsList();
     modal.classList.add('open');
@@ -7276,22 +7344,68 @@ function canViewGoalFor(e){
   if(e.team_sup_name && normalizeArName(me.name) === normalizeArName(e.team_sup_name)) return true;
   return false;
 }
-function getPersonalGoalPct(jobNo){
+function getPersonalGoal(jobNo){ // كامل طلب الهدف أيا كانت حالته (pending/approved/rejected)
   const ov = loadAdminOverrides();
-  const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
-  return (g && typeof g.pct === 'number') ? g.pct : null;
+  return (ov.personalGoals && ov.personalGoals[String(jobNo)]) || null;
 }
-function setPersonalGoalPct(jobNo, pct){
+// النسبة المعتمدة فعليا فقط (بعد موافقة المالك) — تُستخدم بالشهادة ولوحة
+// الأشهر، حتى لا يظهر بها هدف لسا قيد المراجعة أو مرفوض.
+function getPersonalGoalPct(jobNo){
+  const g = getPersonalGoal(jobNo);
+  return (g && g.status==='approved' && typeof g.pct==='number') ? g.pct : null;
+}
+// الموظف يقترح هدفه — يدخل "قيد المراجعة" ولا يصير نشطا إلا بعد موافقة المالك.
+function requestPersonalGoal(jobNo, pct){
   const ov = loadAdminOverrides();
   ov.personalGoals = ov.personalGoals || {};
-  ov.personalGoals[String(jobNo)] = { pct: pct, updated_at: new Date().toISOString() };
+  ov.personalGoals[String(jobNo)] = {
+    pct: pct, status: 'pending',
+    requested_at: new Date().toISOString(),
+    approved_at: null, rejected_reason: null, decided_at: null, celebrated: false
+  };
   saveAdminOverrides(ov);
 }
+// سحب/إلغاء الهدف كليا — يستخدمها الموظف (لسحب طلبه) أو المالك (كإجراء إشرافي).
 function clearPersonalGoalPct(jobNo){
   const ov = loadAdminOverrides();
   ov.personalGoals = ov.personalGoals || {};
   delete ov.personalGoals[String(jobNo)];
   saveAdminOverrides(ov);
+}
+function approvePersonalGoal(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
+  if(!g || g.status!=='pending') return;
+  g.status = 'approved';
+  g.approved_at = new Date().toISOString();
+  g.decided_at = g.approved_at;
+  g.rejected_reason = null;
+  saveAdminOverrides(ov);
+}
+function rejectPersonalGoal(jobNo, reason){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
+  if(!g || g.status!=='pending') return;
+  g.status = 'rejected';
+  g.rejected_reason = (reason||'').trim().slice(0,300);
+  g.decided_at = new Date().toISOString();
+  saveAdminOverrides(ov);
+}
+function markGoalCelebrated(jobNo){
+  const ov = loadAdminOverrides();
+  const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
+  if(!g || g.celebrated) return;
+  g.celebrated = true;
+  saveAdminOverrides(ov);
+}
+function getPendingGoalRequests(){
+  const ov = loadAdminOverrides();
+  return Object.keys(ov.personalGoals||{})
+    .map(jobNo=> Object.assign({ jobNo }, ov.personalGoals[jobNo]))
+    .filter(g=> g.status==='pending')
+    .sort((a,b)=> (a.requested_at||'').localeCompare(b.requested_at||''));
 }
 // مدة تحقيق الهدف (بالأشهر) — يحددها المالك فقط لكل موظف (2/3/4)، مستقلة عن
 // نسبة الهدف التي يحددها الموظف نفسه. الافتراضي 3 أشهر.
@@ -7320,13 +7434,26 @@ function revokeGoalViewAccess(jobNo){
   ov.goalViewers = (ov.goalViewers||[]).filter(j=>j!==jobNo);
   saveAdminOverrides(ov);
 }
+// يحوّل تاريخا إلى رقم شهره ضمن سنة 2026 (0=يناير..11=ديسمبر) بما يطابق ترتيب
+// PERF_MONTH_LABELS — يُستخدم لمعرفة من أي شهر يبدأ احتساب تحقيق الهدف.
+function monthIndexForDate(d){
+  if(!(d instanceof Date) || isNaN(d.getTime())) return null;
+  if(d.getFullYear() !== 2026) return d.getFullYear() < 2026 ? -1 : 12;
+  return d.getMonth();
+}
 // يحسب هل تحقق الهدف فعليا: يجب أن يبلغ أداء الموظف نسبة هدفه في كل شهر من
-// آخر "N" أشهر مسجلة (N = مدة التحقيق التي يحددها المالك)، وليس مرة واحدة
-// عابرة فقط — تحقيقا لطلب أن يكون الهدف مستمرا لا لحظيا.
-function computeGoalAchievement(e, goalPct, months){
+// آخر "N" أشهر مسجلة بعد تاريخ الموافقة (N = مدة التحقيق التي يحددها المالك)،
+// وليس مرة واحدة عابرة فقط، ولا تُحتسب له أشهر قبل موافقة المالك على هدفه.
+function computeGoalAchievement(e, goalPct, months, approvedAt){
   const arr = Array.isArray(e.perf_months) ? e.perf_months : [];
-  const filledPct = arr.filter(v=>typeof v==='number').map(v=>ceilPct(v));
-  const lastN = filledPct.slice(-months);
+  const approvedMonthIdx = approvedAt ? monthIndexForDate(new Date(approvedAt)) : null;
+  const eligible = [];
+  arr.forEach((v,i)=>{
+    if(typeof v !== 'number') return;
+    if(approvedMonthIdx!==null && i < approvedMonthIdx) return;
+    eligible.push(ceilPct(v));
+  });
+  const lastN = eligible.slice(-months);
   const monthsHave = lastN.length;
   const avg = monthsHave ? Math.round(lastN.reduce((a,b)=>a+b,0)/monthsHave) : null;
   const allMeet = monthsHave>0 && lastN.every(v=>v>=goalPct);
@@ -7335,47 +7462,85 @@ function computeGoalAchievement(e, goalPct, months){
 }
 // تُبنى داخل بطاقة الموظف نفسه (تحكم كامل)، أو بشكل اطلاع فقط لمن يملك صلاحية
 // الاطلاع (مالك/مشرف مباشر/مفوَّض يدويا) — وإلا لا تظهر إطلاقا لأنه هدف شخصي.
+// تمر بأربع حالات: لا يوجد هدف / قيد المراجعة / مرفوض / معتمد ونشط.
 function buildGoalHTML(e){
   const me = window.__currentEmployee;
   const isSelf = !!(me && String(me.job_no) === String(e.job_no));
   const canView = canViewGoalFor(e);
   if(!canView) return '';
+  const g = getPersonalGoal(e.job_no);
+  const months = getGoalMonths(e.job_no);
+  const headLbl = isSelf ? '🎯 هدفي الشهري' : `🎯 الهدف الشخصي — ${escapeHtml(e.name||'')}`;
+
+  if(!g){
+    if(!isSelf) return '';
+    return `<div class="personal-goal" data-jobno="${e.job_no}">
+        <div class="personal-goal-head">
+          <span class="personal-goal-lbl">${headLbl}</span>
+          <div class="personal-goal-input-wrap">
+            <input type="number" min="1" max="100" step="1" class="personal-goal-input" id="goalInput-${e.job_no}" placeholder="مثلا 95">
+            <span class="personal-goal-pct-sign">%</span>
+            <button type="button" class="personal-goal-save" data-jobno="${e.job_no}">تقديم للموافقة</button>
+          </div>
+        </div>
+        <div class="goal-months-note">هدفك يُرسل للمالك للموافقة أولا، ويبدأ احتسابه من تاريخ الموافقة، لمدة <b>${months} أشهر متتالية</b> (يحددها المالك حسب رأي الإدارة).</div>
+      </div>`;
+  }
+
+  if(g.status === 'pending'){
+    const editControls = isSelf ? `<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}">سحب الطلب</button>` : `<span class="goal-view-only-tag">قيد المراجعة</span>`;
+    return `<div class="personal-goal view-only" data-jobno="${e.job_no}">
+        <div class="personal-goal-head">
+          <span class="personal-goal-lbl">${headLbl}</span>
+          ${editControls}
+        </div>
+        <div class="goal-pending-note">⏳ الهدف المقترح <b>${g.pct}%</b> قيد مراجعة المالك — يبدأ احتسابه فور الموافقة عليه.</div>
+      </div>`;
+  }
+
+  if(g.status === 'rejected'){
+    if(!isSelf) return '';
+    return `<div class="personal-goal" data-jobno="${e.job_no}">
+        <div class="personal-goal-head">
+          <span class="personal-goal-lbl">${headLbl}</span>
+          <span class="goal-rejected-tag">مرفوض</span>
+        </div>
+        <div class="goal-rejected-note">❌ رُفض الهدف المقترح (${g.pct}%).${g.rejected_reason?`<br><b>السبب:</b> ${escapeHtml(g.rejected_reason)}`:''}</div>
+        <div class="personal-goal-input-wrap" style="margin-top:8px;">
+          <input type="number" min="1" max="100" step="1" class="personal-goal-input" id="goalInput-${e.job_no}" placeholder="مثلا 95">
+          <span class="personal-goal-pct-sign">%</span>
+          <button type="button" class="personal-goal-save" data-jobno="${e.job_no}">إعادة التقديم</button>
+        </div>
+      </div>`;
+  }
+
+  // status === 'approved'
   const selfPct = ceilPct(e.perf_final);
   const pct = selfPct===null ? 0 : selfPct;
-  const goal = getPersonalGoalPct(e.job_no);
-  const months = getGoalMonths(e.job_no);
-  let statusHTML = '';
-  let barHTML = '';
-  if(goal!==null){
-    const ratio = Math.max(0, Math.min(100, Math.round((pct/goal)*100)));
-    const reached = pct >= goal;
-    barHTML = `<div class="goal-progress-wrap">
-        <div class="goal-progress-bar"><div class="goal-progress-fill${reached?' reached':''}" style="width:${ratio}%;"></div></div>
-        <div class="goal-progress-txt${reached?' reached':''}">${reached ? '🎉 وصل للهدف هذا الشهر' : ('باقي ' + (Math.round((goal-pct)*10)/10) + '% نقطة للوصول للهدف')} <span class="goal-progress-nums">(${selfPct===null?'—':selfPct+'%'} من ${goal}%)</span></div>
-      </div>`;
-    const ach = computeGoalAchievement(e, goal, months);
-    const achClass = ach.achieved ? 'achieved' : (ach.sustainedSoFar ? 'pending' : 'off');
-    const achText = ach.achieved
-      ? `✅ تحقق الهدف فعليا (${ach.monthsNeed} أشهر متتالية بنسبة ${goal}% فأكثر)`
-      : (ach.sustainedSoFar
-        ? `⏳ مستمر على الهدف حتى الآن (${ach.monthsHave} من ${ach.monthsNeed} أشهر مطلوبة)`
-        : `↩️ لم يكتمل بعد — يلزم ${ach.monthsNeed} أشهر متتالية بنسبة ${goal}% فأكثر لاعتباره "محقَّقا"`);
-    statusHTML = `<div class="goal-achieve-status ${achClass}">${achText}</div>`;
+  const ratio = Math.max(0, Math.min(100, Math.round((pct/g.pct)*100)));
+  const reached = pct >= g.pct;
+  const barHTML = `<div class="goal-progress-wrap">
+      <div class="goal-progress-bar"><div class="goal-progress-fill${reached?' reached':''}" style="width:${ratio}%;"></div></div>
+      <div class="goal-progress-txt${reached?' reached':''}">${reached ? '🎉 وصل للهدف هذا الشهر' : ('باقي ' + (Math.round((g.pct-pct)*10)/10) + '% نقطة للوصول للهدف')} <span class="goal-progress-nums">(${selfPct===null?'—':selfPct+'%'} من ${g.pct}%)</span></div>
+    </div>`;
+  const ach = computeGoalAchievement(e, g.pct, months, g.approved_at);
+  const achClass = ach.achieved ? 'achieved' : (ach.sustainedSoFar ? 'pending' : 'off');
+  const achText = ach.achieved
+    ? `🏆 مبروك! حققت هدفك (${g.pct}% لمدة ${ach.monthsNeed} أشهر متتالية) — أداء يستحق الفخر، استمر بهذا التميز وواصل التقدم! 👏`
+    : (ach.sustainedSoFar
+      ? `⏳ مستمر على الهدف حتى الآن (${ach.monthsHave} من ${ach.monthsNeed} أشهر مطلوبة)`
+      : `↩️ لم يكتمل بعد — يلزم ${ach.monthsNeed} أشهر متتالية بنسبة ${g.pct}% فأكثر لاعتباره "محقَّقا"`);
+  const statusHTML = `<div class="goal-achieve-status ${achClass}">${achText}</div>`;
+  if(ach.achieved && isSelf && !g.celebrated){
+    setTimeout(()=>markGoalCelebrated(e.job_no), 0);
   }
-  const headLbl = isSelf ? '🎯 هدفي الشهري' : `🎯 الهدف الشخصي — ${e.name||''}`;
-  const editControls = isSelf ? `
-        <div class="personal-goal-input-wrap">
-          <input type="number" min="1" max="100" step="1" class="personal-goal-input" id="goalInput-${e.job_no}" value="${goal===null?'':goal}" placeholder="مثلا 95">
-          <span class="personal-goal-pct-sign">%</span>
-          <button type="button" class="personal-goal-save" data-jobno="${e.job_no}">حفظ</button>
-          ${goal!==null?`<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}" title="إلغاء الهدف">✕</button>`:''}
-        </div>` : `<span class="goal-view-only-tag">اطلاع فقط</span>`;
+  const editControls = isSelf ? `<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}" title="إلغاء الهدف">✕ إلغاء</button>` : `<span class="goal-view-only-tag">اطلاع فقط</span>`;
   return `<div class="personal-goal${isSelf?'':' view-only'}" data-jobno="${e.job_no}">
       <div class="personal-goal-head">
         <span class="personal-goal-lbl">${headLbl}</span>
         ${editControls}
       </div>
-      <div class="goal-months-note">مدة تحقيق الهدف المعتمدة: <b>${months} أشهر متتالية</b> (يحددها المالك حسب رأي الإدارة)</div>
+      <div class="goal-months-note">✅ معتمد من المالك — مدة التحقيق: <b>${months} أشهر متتالية</b> من تاريخ الموافقة</div>
       ${barHTML}
       ${statusHTML}
     </div>`;
@@ -7643,14 +7808,17 @@ function wireGoalControls(card, e){
       alert('أدخل نسبة هدف صحيحة بين 1 و100.');
       return;
     }
-    setPersonalGoalPct(e.job_no, Math.round(val));
+    requestPersonalGoal(e.job_no, Math.round(val));
     const holder = card.querySelector('.personal-goal');
     if(holder){ holder.outerHTML = buildGoalHTML(e); wireGoalControls(card, e); }
+    alert('أُرسل هدفك للمالك للموافقة عليه 🙌');
   });
   const goalClearBtn = card.querySelector('.personal-goal-clear');
   if(goalClearBtn) goalClearBtn.addEventListener('click', ev=>{
     ev.stopPropagation();
-    if(!confirm('إلغاء هدفك الشهري الحالي؟')) return;
+    const g = getPersonalGoal(e.job_no);
+    const msg = (g && g.status==='pending') ? 'سحب طلب الهدف قبل ما يقرر المالك؟' : 'إلغاء هدفك الشهري الحالي؟';
+    if(!confirm(msg)) return;
     clearPersonalGoalPct(e.job_no);
     const holder = card.querySelector('.personal-goal');
     if(holder){ holder.outerHTML = buildGoalHTML(e); wireGoalControls(card, e); }
@@ -7964,7 +8132,7 @@ function employeeCertificateHTML(e){
   const finalVal = e.perf_final_text||'—';
   const filledCount = e.perf_filled_count||perfRows.filter(r=>r[1]!==null && r[1]!==undefined).length;
   const goal = getPersonalGoalPct(e.job_no);
-  const goalLine = goal!==null ? `حدد الموظف لنفسه هدفا شهريا بنسبة <b>${goal}%</b>.` : '';
+  const goalLine = goal!==null ? `حدد الموظف لنفسه هدفا شهريا معتمَدا من الإدارة بنسبة <b>${goal}%</b>.` : '';
   const trendSVG = (e.perf_filled_count>0) ? e.perf_trend_svg : '';
   return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
     <meta name="color-scheme" content="light only">
