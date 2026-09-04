@@ -1495,6 +1495,10 @@
       <button class="modal-close" id="closeCenterStatsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg> لوحة إحصائيات المركز</h3>
       <div class="modal-sub">نظرة عامة مجمّعة على أداء وحضور وتوجيهات كل موظفي المركز معا.</div>
+      <div style="display:flex;gap:8px;margin:10px 0 2px;">
+        <button id="centerStatsPrintBtn" type="button" class="act-btn" style="background:var(--navy);color:#fff;"><svg class="ico" viewBox="0 0 24 24"><path d="M7 2.5h7l4 4v14.2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1Z"/><path d="M14 2.5v4h4"/><path d="M9 13h6"/><path d="M9 16.5h6"/></svg> طباعة / PDF</button>
+        <button id="centerStatsExcelBtn" type="button" class="act-btn" style="background:var(--teal,#0e6a5a);color:#fff;"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تنزيل Excel</button>
+      </div>
       <div id="centerStatsBody" style="display:flex;flex-direction:column;gap:14px;margin-top:10px;max-height:75vh;overflow:auto;"></div>
     </div>
   </div>
@@ -6237,6 +6241,13 @@ function buildCenterStatsHTML(){
         </div>` : `<div style="color:var(--muted);font-size:12.5px;">لا توجد بيانات حضور مسجلة بعد.</div>`}
     </div>`;
 
+  // يُحفظ آخر حساب هنا حتى تقدر أزرار الطباعة/تصدير Excel تستخدم نفس الأرقام
+  // المعروضة بدون إعادة حسابها من الصفر.
+  window.__centerStatsData = {
+    employeeCount: list.length, centerAvgPerf, centerAvgAttRate,
+    totalCelebrationsActive, totalImprovementNotes, totalNotes,
+    monthlySums, top5, bottom5, totalRostered, totalAbsent, attEmployeeCount
+  };
   return statsHTML + trendHTML + rankHTML + attHTML;
 }
 function openCenterStats(){
@@ -6255,7 +6266,82 @@ function openCenterStats(){
   function close(){ modal.classList.remove('open'); }
   if(closeBtn) closeBtn.addEventListener('click', close);
   modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+  const printBtn = document.getElementById('centerStatsPrintBtn');
+  if(printBtn) printBtn.addEventListener('click', printCenterStats);
+  const excelBtn = document.getElementById('centerStatsExcelBtn');
+  if(excelBtn) excelBtn.addEventListener('click', exportCenterStatsXLSX);
 })();
+
+// ---------- طباعة/PDF وتصدير Excel للوحة إحصائيات المركز ----------
+function printCenterStats(){
+  const d = window.__centerStatsData;
+  if(!d){ alert('افتح لوحة الإحصائيات أولا.'); return; }
+  const today = new Date().toLocaleDateString('ar-SA-u-ca-gregory',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const monthRows = d.monthlySums.map((m,i)=> m.count ? `<tr><td>${PERF_MONTH_LABELS[i]}</td><td>${Math.round((m.sum/m.count)*100)}%</td></tr>` : '').join('');
+  const rankRows = (arr)=> arr.map(p=>`<tr><td>${p.name}</td><td>${kpiPctText(p.avg)}</td></tr>`).join('');
+  const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+    <title>إحصائيات المركز</title>
+    <style>
+      @page{ size:A4; margin:14mm; }
+      *{box-sizing:border-box;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+      body{font-family:'Almarai','Segoe UI',Tahoma,Arial,sans-serif;color:#0a0e19;font-size:12px;}
+      h1{font-size:17px;text-align:center;margin-bottom:2px;}
+      .sub{text-align:center;color:#666;font-size:11px;margin-bottom:16px;}
+      .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+      .chip{flex:1;min-width:110px;border:1px solid #ccc;border-radius:8px;padding:8px;text-align:center;}
+      .chip .l{font-size:10px;color:#666;} .chip .v{font-size:15px;font-weight:800;}
+      table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:11.5px;}
+      th,td{border:1px solid #999;padding:5px 6px;text-align:center;}
+      th{background:#e7ebf5;}
+      h3{font-size:13px;border-bottom:2px solid #0a0e19;padding-bottom:4px;}
+      .cols{display:flex;gap:14px;}
+      .cols>div{flex:1;}
+    </style></head><body>
+    <h1>لوحة إحصائيات مركز الاتصال بالأحساء</h1>
+    <div class="sub">بتاريخ ${today}</div>
+    <div class="chips">
+      <div class="chip"><div class="l">عدد الموظفين</div><div class="v">${d.employeeCount}</div></div>
+      <div class="chip"><div class="l">متوسط الأداء العام</div><div class="v">${d.centerAvgPerf!==null?kpiPctText(d.centerAvgPerf):'—'}</div></div>
+      <div class="chip"><div class="l">متوسط نسبة الحضور</div><div class="v">${d.centerAvgAttRate!==null?kpiPctText(d.centerAvgAttRate):'—'}</div></div>
+      <div class="chip"><div class="l">إشادات نشطة الآن</div><div class="v">${d.totalCelebrationsActive}</div></div>
+      <div class="chip"><div class="l">توجيهات تحسينية</div><div class="v">${d.totalImprovementNotes}</div></div>
+      <div class="chip"><div class="l">إجمالي التوجيهات</div><div class="v">${d.totalNotes}</div></div>
+    </div>
+    <h3>اتجاه متوسط الأداء الشهري (كل المركز)</h3>
+    <table><tr><th>الشهر</th><th>المتوسط</th></tr>${monthRows||'<tr><td colspan="2">لا توجد بيانات</td></tr>'}</table>
+    <div class="cols">
+      <div><h3>🏆 الأعلى أداء</h3><table><tr><th>الاسم</th><th>النسبة</th></tr>${rankRows(d.top5)||'<tr><td colspan="2">لا يوجد</td></tr>'}</table></div>
+      <div><h3>يحتاجون متابعة</h3><table><tr><th>الاسم</th><th>النسبة</th></tr>${rankRows(d.bottom5)||'<tr><td colspan="2">لا يوجد</td></tr>'}</table></div>
+    </div>
+    <h3>الحضور — إجمالي المركز (سنوي)</h3>
+    <table><tr><th>أيام العمل المجدولة</th><th>أيام الغياب</th><th>موظفون لديهم بيانات حضور</th></tr>
+      <tr><td>${d.totalRostered}</td><td>${d.totalAbsent}</td><td>${d.attEmployeeCount} من ${d.employeeCount}</td></tr></table>
+    </body></html>`;
+  printHTMLViaFrame(html, { title:'إحصائيات_المركز' });
+}
+function exportCenterStatsXLSX(){
+  const d = window.__centerStatsData;
+  if(!d){ alert('افتح لوحة الإحصائيات أولا.'); return; }
+  if(typeof XLSX === 'undefined'){ alert('تعذر تحميل مكتبة تصدير Excel — تأكد من الاتصال بالإنترنت.'); return; }
+  const wb = XLSX.utils.book_new();
+  const summaryRows = [
+    { 'المؤشر':'عدد الموظفين', 'القيمة': d.employeeCount },
+    { 'المؤشر':'متوسط الأداء العام', 'القيمة': d.centerAvgPerf!==null?kpiPctText(d.centerAvgPerf):'—' },
+    { 'المؤشر':'متوسط نسبة الحضور', 'القيمة': d.centerAvgAttRate!==null?kpiPctText(d.centerAvgAttRate):'—' },
+    { 'المؤشر':'إشادات نشطة الآن', 'القيمة': d.totalCelebrationsActive },
+    { 'المؤشر':'توجيهات تحسينية مسجلة', 'القيمة': d.totalImprovementNotes },
+    { 'المؤشر':'إجمالي التوجيهات', 'القيمة': d.totalNotes },
+    { 'المؤشر':'إجمالي أيام العمل المجدولة (سنوي)', 'القيمة': d.totalRostered },
+    { 'المؤشر':'إجمالي أيام الغياب (سنوي)', 'القيمة': d.totalAbsent },
+    { 'المؤشر':'موظفون لديهم بيانات حضور', 'القيمة': `${d.attEmployeeCount} من ${d.employeeCount}` }
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'ملخص عام');
+  const monthRows = d.monthlySums.map((m,i)=>({ 'الشهر': PERF_MONTH_LABELS[i], 'متوسط المركز': m.count?Math.round((m.sum/m.count)*100)+'%':'—' })).filter((r,i)=>d.monthlySums[i].count);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthRows), 'اتجاه الأداء الشهري');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d.top5.map(p=>({'الاسم':p.name,'النسبة':kpiPctText(p.avg)}))), 'الأعلى أداء');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d.bottom5.map(p=>({'الاسم':p.name,'النسبة':kpiPctText(p.avg)}))), 'يحتاجون متابعة');
+  XLSX.writeFile(wb, 'إحصائيات_المركز.xlsx');
+}
 
 function renderPerfNotesPermsList(){
   const list = document.getElementById('perfNotesPermsList');
