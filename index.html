@@ -6130,17 +6130,24 @@ function openEmployeeSummary(e){
 
 // ---------- لوحة إحصائيات المركز (نظرة عامة مجمّعة على كل الموظفين معا) ----------
 function buildCenterStatsHTML(){
-  const list = EMPLOYEES.filter(e=>!e.access_disabled || true); // كل الموظفين المتاحين حاليا (بعد تطبيق الحذف/الإخفاء)
+  // إصلاح: كان الفلتر "|| true" يجعله يعمل دائما بلا استثناء، فتبقى الحسابات
+  // المعطّلة/المحذوفة الوصول داخل الإحصائيات رغم أنها لا يفترض أن تظهر.
+  const list = EMPLOYEES.filter(e=>!e.access_disabled);
   const perfList = []; // {jobNo, name, avg}
   const monthlySums = PERF_MONTH_LABELS.map(()=>({ sum:0, count:0 }));
   let totalRostered = 0, totalAbsent = 0, attEmployeeCount = 0;
   const attRates = [];
 
   list.forEach(e=>{
-    const perf = employeePerformanceSummary(e.job_no);
-    if(perf.count){
-      perfList.push({ jobNo: e.job_no, name: (e.name||'').trim(), avg: perf.avg });
-      perf.scores.forEach(s=>{ monthlySums[s.month].sum += s.final; monthlySums[s.month].count++; });
+    // المشرف يُقيَّم بمقياس مختلف تماما (متوسط أداء فريقه، وليس أداءه الفردي)،
+    // فإدخاله هنا كان يشوّه متوسط المركز وترتيب "الأعلى أداء/يحتاجون متابعة" —
+    // لذلك يُستبعد من حساب الأداء الفردي، ويبقى مشمولا بإحصاءات الحضور فقط.
+    if(!e.is_supervisor){
+      const perf = employeePerformanceSummary(e.job_no);
+      if(perf.count){
+        perfList.push({ jobNo: e.job_no, name: (e.name||'').trim(), avg: perf.avg });
+        perf.scores.forEach(s=>{ monthlySums[s.month].sum += s.final; monthlySums[s.month].count++; });
+      }
     }
     const att = employeeAttendanceDetail(e.job_no);
     if(att.annual.monthsCounted){
