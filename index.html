@@ -1469,18 +1469,27 @@
 
   <!-- GOAL PERMISSIONS MODAL (owner-only): المالك يفوّض من يطّلع على أهداف
        الموظفين الشخصية (غير صاحب الهدف ومشرفه المباشر اللذين يطّلعان تلقائيا)،
-       ويحدد لكل موظف مدة تحقيق الهدف المطلوبة (شهرين/ثلاثة/أربعة). -->
+       ويفوّض من يملك حق قبول/رفض طلبات الأهداف (كمدير المركز)، ويحدد لكل موظف
+       مدة تحقيق الهدف المطلوبة (شهرين/ثلاثة/أربعة). -->
   <div class="modal-overlay" id="goalPermsModal">
     <div class="modal-box" style="max-width:560px;">
       <button class="modal-close" id="closeGoalPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg> صلاحيات الأهداف الشخصية</h3>
-      <div class="modal-sub">كل موظف يقترح هدفه الشخصي ويُرسل لك للموافقة أولا — لا يبدأ احتسابه إلا من تاريخ موافقتك. ولا يطّلع عليه أحد غيره وغير مشرفه المباشر تلقائيا. من هنا توافق/ترفض الطلبات، وتفوّض أشخاصا إضافيين (كالمدير) للاطلاع على أهداف كل الموظفين، وتحدد لكل موظف عدد الأشهر المتتالية المطلوبة لاعتبار هدفه "محقَّقا".</div>
+      <div class="modal-sub">كل موظف يقترح هدفه الشخصي ويُرسل للإدارة للموافقة أولا — لا يبدأ احتسابه إلا من تاريخ الموافقة، ولا يُلغى بعدها إلا من صاحب صلاحية القرار. من هنا توافق/ترفض الطلبات، وتفوّض أشخاصا إضافيين (كالمدير) لهذا القرار أو للاطلاع فقط، وتحدد لكل موظف عدد الأشهر المتتالية المطلوبة لاعتبار هدفه "محقَّقا".</div>
       <div style="margin-top:12px;">
-        <div style="font-size:12px;font-weight:800;color:var(--coral,#c0392b);margin-bottom:6px;">طلبات أهداف بانتظار قرارك</div>
+        <div style="font-size:12px;font-weight:800;color:var(--coral,#c0392b);margin-bottom:6px;">طلبات أهداف بانتظار قرار</div>
         <div id="goalPermsRequestsList" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
-      <div style="margin-top:10px;">
-        <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">تفويض اطلاع عام (بخلاف مشرف الموظف المباشر)</div>
+      <div style="margin-top:16px;" id="goalApproversSection">
+        <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">تفويض حق الموافقة/الرفض (بخلافك، صلاحيتك دائمة)</div>
+        <div style="display:flex;gap:6px;">
+          <input list="goalPermsEmpOptions" id="goalApproversAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <button type="button" id="goalApproversAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="goalApproversList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>
+      </div>
+      <div style="margin-top:16px;" id="goalViewersSection">
+        <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">تفويض اطلاع عام فقط (بخلاف مشرف الموظف المباشر)</div>
         <div style="display:flex;gap:6px;">
           <input list="goalPermsEmpOptions" id="goalPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
           <datalist id="goalPermsEmpOptions"></datalist>
@@ -1488,7 +1497,7 @@
         </div>
         <div id="goalPermsViewersList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;"></div>
       </div>
-      <div style="margin-top:16px;">
+      <div style="margin-top:16px;" id="goalMonthsSection">
         <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">مدة تحقيق الهدف لكل موظف حدد هدفا حاليا</div>
         <div id="goalPermsMonthsList" style="display:flex;flex-direction:column;gap:8px;max-height:38vh;overflow:auto;"></div>
       </div>
@@ -1913,6 +1922,11 @@ function loadAdminOverrides(){
     // (مثلا مدير المركز). مشرف الموظف المباشر يطّلع تلقائيا دون الحاجة لتفويض
     // (يُحسب وقت العرض من e.team_sup_name، لا يُخزَّن هنا).
     ov.goalViewers = ov.goalViewers || [];
+    // من يحق له قبول/رفض طلبات الأهداف الشخصية (غير المالك نفسه، صلاحيته دائمة):
+    // قائمة أرقام وظيفية يفوّضها المالك يدويا (مثلا مدير المركز)، حتى لا يبقى
+    // القرار حكرا عليه وحده. القرار يظهر للموظف دوما باسم "الإدارة" بشكل عام،
+    // بلا كشف مين بالتحديد قرر، فيبقى القرار مؤسسيا لا شخصيا.
+    ov.goalApprovers = ov.goalApprovers || [];
     // مدة تحقيق الهدف المطلوبة لكل موظف (شهرين/ثلاثة/أربعة) — يحددها المالك بنفسه
     // حسب رأي الإدارة، مستقلة عن نسبة الهدف التي يحددها الموظف. خريطة
     // {رقم_وظيفي: عدد_الأشهر}. الافتراضي 3 أشهر لمن لم يُحدَّد له شيء.
@@ -1923,7 +1937,7 @@ function loadAdminOverrides(){
     // مرفق باسم صاحب الاقتراح ورقمه الوظيفي (يظهران للمالك عند مراجعة الوارد).
     ov.suggestions = ov.suggestions || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalMonths:{}, kudos:[], suggestions:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -2401,7 +2415,14 @@ updateClock(); setInterval(updateClock,1000);
     const perfNotesPermsBtn = document.getElementById('perfNotesPermsBtn');
     if(perfNotesPermsBtn) perfNotesPermsBtn.style.display = isOwner ? 'flex' : 'none';
     const goalPermsBtn = document.getElementById('goalPermsBtn');
-    if(goalPermsBtn){ goalPermsBtn.style.display = isOwner ? 'flex' : 'none'; if(isOwner && typeof refreshGoalPermsBadge === 'function') refreshGoalPermsBadge(); }
+    if(goalPermsBtn){
+      // يظهر للمالك دائما، وللمفوَّض بحق القرار أيضا حتى يقدر يوافق/يرفض —
+      // لكن أقسام التفويض ومدة التحقيق تبقى صلاحية المالك حصرا (تُخفى عن
+      // المفوَّض داخل النافذة نفسها، راجع goalPermsModalWiring).
+      const canOpenGoalPerms = isOwner || (typeof canDecideGoals === 'function' && canDecideGoals());
+      goalPermsBtn.style.display = canOpenGoalPerms ? 'flex' : 'none';
+      if(canOpenGoalPerms && typeof refreshGoalPermsBadge === 'function') refreshGoalPermsBadge();
+    }
     const centerStatsBtn = document.getElementById('centerStatsBtn');
     if(centerStatsBtn) centerStatsBtn.style.display = isOwner ? 'flex' : 'none';
     const auditLogBtn = document.getElementById('auditLogBtn');
@@ -6502,6 +6523,27 @@ function renderGoalPermsViewersList(){
     renderGoalPermsViewersList();
   }));
 }
+// قائمة من فوّضهم المالك بحق قبول/رفض طلبات الأهداف (مثل مدير المركز) — هذا
+// أقوى من "تفويض الاطلاع" لأنه يمنحهم صلاحية القرار الفعلي، لا الاطلاع فقط.
+function renderGoalApproversList(){
+  const holder = document.getElementById('goalApproversList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const approvers = ov.goalApprovers || [];
+  if(!approvers.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد أحد مفوَّض بالقرار حاليا — القرار عندك أنت فقط.</div>'; return; }
+  holder.innerHTML = approvers.map(jobNo=>{
+    const emp = EMPLOYEES.find(x=>x.job_no===jobNo);
+    const nm = emp ? emp.name : jobNo;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">
+        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— ${jobNo}</span></span>
+        <button type="button" class="act-btn goal-approver-revoke" data-jobno="${jobNo}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.goal-approver-revoke').forEach(b=> b.addEventListener('click', ()=>{
+    revokeGoalApproverAccess(b.getAttribute('data-jobno'));
+    renderGoalApproversList();
+  }));
+}
 function renderGoalPermsMonthsList(){
   const holder = document.getElementById('goalPermsMonthsList');
   if(!holder) return;
@@ -6581,6 +6623,8 @@ function renderGoalPermsRequestsList(){
   const addBtn = document.getElementById('goalPermsAddBtn');
   const searchInput = document.getElementById('goalPermsAddSearch');
   const optionsList = document.getElementById('goalPermsEmpOptions');
+  const approversAddBtn = document.getElementById('goalApproversAddBtn');
+  const approversSearchInput = document.getElementById('goalApproversAddSearch');
   if(!btn || !modal) return;
   btn.addEventListener('click', ()=>{
     if(optionsList){
@@ -6589,9 +6633,20 @@ function renderGoalPermsRequestsList(){
         .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
     }
     if(searchInput) searchInput.value = '';
+    if(approversSearchInput) approversSearchInput.value = '';
+    // التفويض نفسه (من يقرر / من يطّلع فقط / مدة التحقيق) صلاحية المالك حصرا؛
+    // المفوَّض بحق القرار يشوف فقط قسم "طلبات بانتظار قرار" ويتصرف فيه.
+    const ownerOnly = isTrueOwner();
+    ['goalApproversSection','goalViewersSection','goalMonthsSection'].forEach(id=>{
+      const sec = document.getElementById(id);
+      if(sec) sec.style.display = ownerOnly ? 'block' : 'none';
+    });
     renderGoalPermsRequestsList();
-    renderGoalPermsViewersList();
-    renderGoalPermsMonthsList();
+    if(ownerOnly){
+      renderGoalApproversList();
+      renderGoalPermsViewersList();
+      renderGoalPermsMonthsList();
+    }
     modal.classList.add('open');
   });
   function close(){ modal.classList.remove('open'); }
@@ -6619,6 +6674,29 @@ function renderGoalPermsRequestsList(){
     grantGoalViewAccess(jobNo);
     searchInput.value = '';
     renderGoalPermsViewersList();
+  });
+  if(approversAddBtn) approversAddBtn.addEventListener('click', ()=>{
+    const raw = (approversSearchInput.value||'').trim();
+    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else {
+      const byNo = EMPLOYEES.find(e=> e.job_no === raw);
+      const byName = EMPLOYEES.find(e=> (e.name||'').trim() === raw);
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(e=>e.job_no===jobNo)){
+      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){
+      alert('المالك يملك صلاحية القرار دائما.');
+      return;
+    }
+    grantGoalApproverAccess(jobNo);
+    approversSearchInput.value = '';
+    renderGoalApproversList();
   });
 })();
 function latestKpiMonthFor(jobNo){
@@ -7365,15 +7443,29 @@ function requestPersonalGoal(jobNo, pct){
   };
   saveAdminOverrides(ov);
 }
-// سحب/إلغاء الهدف كليا — يستخدمها الموظف (لسحب طلبه) أو المالك (كإجراء إشرافي).
+// سحب/إلغاء الهدف: قبل اعتماده (قيد المراجعة/مرفوض) يقدر الموظف نفسه يسحبه،
+// أما بعد اعتماده من الإدارة فلا يُلغى إلا من المالك أو المفوَّض بصلاحية القرار
+// (canDecideGoals) — حتى لا يقدر الموظف يتهرب من هدف معتمَد بإلغائه بنفسه.
 function clearPersonalGoalPct(jobNo){
   const ov = loadAdminOverrides();
   ov.personalGoals = ov.personalGoals || {};
+  const g = ov.personalGoals[String(jobNo)];
+  if(g && g.status==='approved' && !canDecideGoals()) return false;
   delete ov.personalGoals[String(jobNo)];
   saveAdminOverrides(ov);
+  return true;
+}
+// من يملك حق قبول/رفض طلبات الأهداف: المالك دائما، أو أي شخص فوّضه المالك
+// يدويا (كمدير المركز) عبر قائمة goalApprovers.
+function canDecideGoals(){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  const ov = loadAdminOverrides();
+  return (ov.goalApprovers||[]).map(String).includes(String(me.job_no));
 }
 function approvePersonalGoal(jobNo){
-  if(!isTrueOwner()) return;
+  if(!canDecideGoals()) return;
   const ov = loadAdminOverrides();
   const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
   if(!g || g.status!=='pending') return;
@@ -7384,7 +7476,7 @@ function approvePersonalGoal(jobNo){
   saveAdminOverrides(ov);
 }
 function rejectPersonalGoal(jobNo, reason){
-  if(!isTrueOwner()) return;
+  if(!canDecideGoals()) return;
   const ov = loadAdminOverrides();
   const g = ov.personalGoals && ov.personalGoals[String(jobNo)];
   if(!g || g.status!=='pending') return;
@@ -7432,6 +7524,20 @@ function revokeGoalViewAccess(jobNo){
   if(!isTrueOwner()) return;
   const ov = loadAdminOverrides();
   ov.goalViewers = (ov.goalViewers||[]).filter(j=>j!==jobNo);
+  saveAdminOverrides(ov);
+}
+// تفويض حق القبول/الرفض — المالك فقط يقدر يفوّض أو يسحب هذا التفويض.
+function grantGoalApproverAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.goalApprovers = ov.goalApprovers || [];
+  if(!ov.goalApprovers.includes(jobNo)) ov.goalApprovers.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeGoalApproverAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.goalApprovers = (ov.goalApprovers||[]).filter(j=>j!==jobNo);
   saveAdminOverrides(ov);
 }
 // يحوّل تاريخا إلى رقم شهره ضمن سنة 2026 (0=يناير..11=ديسمبر) بما يطابق ترتيب
@@ -7483,7 +7589,7 @@ function buildGoalHTML(e){
             <button type="button" class="personal-goal-save" data-jobno="${e.job_no}">تقديم للموافقة</button>
           </div>
         </div>
-        <div class="goal-months-note">هدفك يُرسل للمالك للموافقة أولا، ويبدأ احتسابه من تاريخ الموافقة، لمدة <b>${months} أشهر متتالية</b> (يحددها المالك حسب رأي الإدارة).</div>
+        <div class="goal-months-note">هدفك يُرسل للإدارة للموافقة أولا، ويبدأ احتسابه من تاريخ الموافقة، لمدة <b>${months} أشهر متتالية</b> (تحددها الإدارة).</div>
       </div>`;
   }
 
@@ -7494,7 +7600,7 @@ function buildGoalHTML(e){
           <span class="personal-goal-lbl">${headLbl}</span>
           ${editControls}
         </div>
-        <div class="goal-pending-note">⏳ الهدف المقترح <b>${g.pct}%</b> قيد مراجعة المالك — يبدأ احتسابه فور الموافقة عليه.</div>
+        <div class="goal-pending-note">⏳ الهدف المقترح <b>${g.pct}%</b> قيد مراجعة الإدارة — يبدأ احتسابه فور الموافقة عليه.</div>
       </div>`;
   }
 
@@ -7534,13 +7640,18 @@ function buildGoalHTML(e){
   if(ach.achieved && isSelf && !g.celebrated){
     setTimeout(()=>markGoalCelebrated(e.job_no), 0);
   }
-  const editControls = isSelf ? `<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}" title="إلغاء الهدف">✕ إلغاء</button>` : `<span class="goal-view-only-tag">اطلاع فقط</span>`;
-  return `<div class="personal-goal${isSelf?'':' view-only'}" data-jobno="${e.job_no}">
+  const canDecide = canDecideGoals();
+  // بعد الاعتماد: لا يقدر الموظف نفسه يلغي هدفه — الإلغاء يصير فقط من المالك
+  // أو المفوَّض بصلاحية القرار، حتى لا يتهرب أحد من هدف معتمَد بإلغائه بنفسه.
+  const editControls = canDecide
+    ? `<button type="button" class="personal-goal-clear" data-jobno="${e.job_no}" title="إلغاء الهدف">✕ إلغاء</button>`
+    : (isSelf ? `<span class="goal-view-only-tag">معتمد — لا يُلغى إلا من الإدارة</span>` : `<span class="goal-view-only-tag">اطلاع فقط</span>`);
+  return `<div class="personal-goal${canDecide?'':' view-only'}" data-jobno="${e.job_no}">
       <div class="personal-goal-head">
         <span class="personal-goal-lbl">${headLbl}</span>
         ${editControls}
       </div>
-      <div class="goal-months-note">✅ معتمد من المالك — مدة التحقيق: <b>${months} أشهر متتالية</b> من تاريخ الموافقة</div>
+      <div class="goal-months-note">✅ معتمد من الإدارة — مدة التحقيق: <b>${months} أشهر متتالية</b> من تاريخ الموافقة</div>
       ${barHTML}
       ${statusHTML}
     </div>`;
@@ -7817,9 +7928,10 @@ function wireGoalControls(card, e){
   if(goalClearBtn) goalClearBtn.addEventListener('click', ev=>{
     ev.stopPropagation();
     const g = getPersonalGoal(e.job_no);
-    const msg = (g && g.status==='pending') ? 'سحب طلب الهدف قبل ما يقرر المالك؟' : 'إلغاء هدفك الشهري الحالي؟';
+    const msg = (g && g.status==='pending') ? 'سحب طلب الهدف قبل ما يقرر المالك؟' : 'إلغاء هدفك الشهري المعتمد؟';
     if(!confirm(msg)) return;
-    clearPersonalGoalPct(e.job_no);
+    const ok = clearPersonalGoalPct(e.job_no);
+    if(!ok){ alert('هذا الهدف معتمَد ولا يقدر يلغيه إلا المالك أو المفوَّض بصلاحية القرار.'); return; }
     const holder = card.querySelector('.personal-goal');
     if(holder){ holder.outerHTML = buildGoalHTML(e); wireGoalControls(card, e); }
   });
