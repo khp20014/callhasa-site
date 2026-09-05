@@ -1081,15 +1081,6 @@
       <div style="font-size:16px;font-weight:800;color:#16233f;">نظام البحث عن الموظفين</div>
       <div style="font-size:12px;color:#5b6685;line-height:1.7;">بيانات الأداء، الحضور، الأهداف الشخصية، الرسائل، وشهادات الموظفين</div>
     </button>
-    <button type="button" id="hubOpenContactReasons" class="app-hub-card" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:260px;max-width:340px;background:#ffffff;border-radius:18px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .15s;">
-      <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0e8f8f,#f2b41d);display:flex;align-items:center;justify-content:center;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
-          <path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"></path>
-        </svg>
-      </div>
-      <div style="font-size:16px;font-weight:800;color:#16233f;">مسارات أسباب الاتصال لقطاع العمل</div>
-      <div style="font-size:12px;color:#5b6685;line-height:1.7;">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين، مع اختبارات ولوحة إدارة</div>
-    </button>
   </div>
 </div>
 
@@ -2344,11 +2335,11 @@ updateClock(); setInterval(updateClock,1000);
     // value that overrides it.
     gate.style.display = 'none';
     app.style.display = 'block';
-    // بعد نجاح الدخول نعرض شاشة الاختيار الرئيسية (الهب) بدل الذهاب مباشرة
-    // لنظام البحث عن الموظفين — حتى يختار المستخدم بين النظامين، وكلاهما
-    // الآن محميان خلف نفس تسجيل الدخول هذا (بدل ما كان نظام "أسباب الاتصال"
-    // مفتوحا بلا تسجيل دخول). راجع appHubWiring لتفاصيل هذي الدوال.
-    if(typeof window.__showAppHub === 'function') window.__showAppHub();
+    // بعد نجاح الدخول ندخل مباشرة لنظام البحث عن الموظفين (بدون شاشة اختيار
+    // وسيطة) — نظام "مسارات أسباب الاتصال" صار يُفتح من داخل هذا النظام نفسه
+    // (رابط "٠٢" أعلى صفحة البحث)، وكلاهما محميان خلف نفس تسجيل الدخول هذا.
+    // راجع appHubWiring لتفاصيل هذي الدوال.
+    if(typeof window.__showEmployeeSearchApp === 'function') window.__showEmployeeSearchApp();
     window.__currentLoginUid = uid;
     applyRoleView(uid);
     const me = EMPLOYEES.find(e => (e.national_id||'').trim() === uid);
