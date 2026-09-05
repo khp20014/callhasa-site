@@ -897,50 +897,6 @@
 </head>
 <body>
 
-<!-- ========== APP HUB: الشاشة الرئيسية لاختيار النظام ========== -->
-<div id="appHub" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);font-family:'Almarai','Tajawal','Segoe UI',Tahoma,Arial,sans-serif;">
-  <div style="text-align:center;color:#fff;">
-    <div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">مركز الاتصال بالأحساء</div>
-    <div style="font-size:22px;font-weight:900;">اختر النظام</div>
-  </div>
-  <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;max-width:760px;width:100%;">
-    <button type="button" id="hubOpenEmployeeSearch" class="app-hub-card" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:260px;max-width:340px;background:#ffffff;border-radius:18px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .15s;">
-      <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);display:flex;align-items:center;justify-content:center;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
-          <path d="M4 13v-1a8 8 0 0 1 16 0v1"></path>
-          <rect x="2.5" y="13" width="5" height="7" rx="2"></rect>
-          <rect x="16.5" y="13" width="5" height="7" rx="2"></rect>
-          <path d="M20 20v1a2 2 0 0 1-2 2h-4"></path>
-        </svg>
-      </div>
-      <div style="font-size:16px;font-weight:800;color:#16233f;">نظام البحث عن الموظفين</div>
-      <div style="font-size:12px;color:#5b6685;line-height:1.7;">بيانات الأداء، الحضور، الأهداف الشخصية، الرسائل، وشهادات الموظفين</div>
-    </button>
-    <button type="button" id="hubOpenContactReasons" class="app-hub-card" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:260px;max-width:340px;background:#ffffff;border-radius:18px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .15s;">
-      <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0e8f8f,#f2b41d);display:flex;align-items:center;justify-content:center;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
-          <path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"></path>
-        </svg>
-      </div>
-      <div style="font-size:16px;font-weight:800;color:#16233f;">مسارات أسباب الاتصال لقطاع العمل</div>
-      <div style="font-size:12px;color:#5b6685;line-height:1.7;">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين، مع اختبارات ولوحة إدارة</div>
-    </button>
-  </div>
-</div>
-
-<!-- زر عائم للرجوع لشاشة الاختيار الرئيسية من داخل أي نظام -->
-<button type="button" id="hubBackBtn" style="display:none;position:fixed;top:12px;inset-inline-start:12px;z-index:99999;all:unset;box-sizing:border-box;cursor:pointer;background:#16233f;color:#fff;font-family:'Almarai','Tajawal',sans-serif;font-size:12px;font-weight:800;padding:9px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;">
-  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M15 18l-6-6 6-6"></path></svg>
-  القائمة الرئيسية
-</button>
-
-<!-- حاوية نظام مسارات أسباب الاتصال (تُحمَّل مرة واحدة عند أول فتح) -->
-<div id="contactReasonsAppWrap" style="display:none;position:fixed;inset:0;z-index:500;background:#eef2f3;">
-  <iframe id="contactReasonsFrame" title="مسارات أسباب الاتصال لقطاع العمل" style="width:100%;height:100%;border:0;display:block;"></iframe>
-</div>
-
-<div id="employeeSearchApp" style="display:none;">
-
 <!-- LOGIN GATE -->
 <div id="loginGate">
   <div class="login-hero">
@@ -1106,6 +1062,50 @@
   </div>
 </div>
 
+<!-- ========== APP HUB: الشاشة الرئيسية لاختيار النظام ========== -->
+<div id="appHub" style="display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);font-family:'Almarai','Tajawal','Segoe UI',Tahoma,Arial,sans-serif;">
+  <div style="text-align:center;color:#fff;">
+    <div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">مركز الاتصال بالأحساء</div>
+    <div style="font-size:22px;font-weight:900;">اختر النظام</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;max-width:760px;width:100%;">
+    <button type="button" id="hubOpenEmployeeSearch" class="app-hub-card" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:260px;max-width:340px;background:#ffffff;border-radius:18px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .15s;">
+      <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
+          <path d="M4 13v-1a8 8 0 0 1 16 0v1"></path>
+          <rect x="2.5" y="13" width="5" height="7" rx="2"></rect>
+          <rect x="16.5" y="13" width="5" height="7" rx="2"></rect>
+          <path d="M20 20v1a2 2 0 0 1-2 2h-4"></path>
+        </svg>
+      </div>
+      <div style="font-size:16px;font-weight:800;color:#16233f;">نظام البحث عن الموظفين</div>
+      <div style="font-size:12px;color:#5b6685;line-height:1.7;">بيانات الأداء، الحضور، الأهداف الشخصية، الرسائل، وشهادات الموظفين</div>
+    </button>
+    <button type="button" id="hubOpenContactReasons" class="app-hub-card" style="all:unset;box-sizing:border-box;cursor:pointer;flex:1;min-width:260px;max-width:340px;background:#ffffff;border-radius:18px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .15s;">
+      <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0e8f8f,#f2b41d);display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
+          <path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"></path>
+        </svg>
+      </div>
+      <div style="font-size:16px;font-weight:800;color:#16233f;">مسارات أسباب الاتصال لقطاع العمل</div>
+      <div style="font-size:12px;color:#5b6685;line-height:1.7;">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين، مع اختبارات ولوحة إدارة</div>
+    </button>
+  </div>
+</div>
+
+<!-- زر عائم للرجوع لشاشة الاختيار الرئيسية من داخل أي نظام -->
+<button type="button" id="hubBackBtn" style="display:none;position:fixed;top:12px;inset-inline-start:12px;z-index:99999;all:unset;box-sizing:border-box;cursor:pointer;background:#16233f;color:#fff;font-family:'Almarai','Tajawal',sans-serif;font-size:12px;font-weight:800;padding:9px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M15 18l-6-6 6-6"></path></svg>
+  القائمة الرئيسية
+</button>
+
+<!-- حاوية نظام مسارات أسباب الاتصال (تُحمَّل مرة واحدة عند أول فتح) -->
+<div id="contactReasonsAppWrap" style="display:none;position:fixed;inset:0;z-index:500;background:#eef2f3;">
+  <iframe id="contactReasonsFrame" title="مسارات أسباب الاتصال لقطاع العمل" style="width:100%;height:100%;border:0;display:block;"></iframe>
+</div>
+
+<div id="employeeSearchApp" style="display:none;">
+
 <div class="wrap" id="dashboardApp">
 
   <header class="top">
@@ -1157,6 +1157,7 @@
         <button id="centerStatsBtn" type="button" class="qa-btn qa-teal" title="لوحة إحصائيات المركز" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg></span></button>
         <button id="auditLogBtn" type="button" class="qa-btn qa-teal" title="سجل التدقيق" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span></button>
         <button id="suggestInboxBtn" type="button" class="qa-btn qa-gold" title="صندوق الاقتراحات (وارد)" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg></span><span id="suggestInboxBadge" class="qa-badge" style="display:none;"></span></button>
+        <button id="switchToContactReasonsBtn" type="button" class="qa-btn qa-teal" title="مسارات أسباب الاتصال لقطاع العمل"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg></span></button>
       </div>
       <div class="clockbox-body">
         <div class="val" id="liveClock">-</div>
@@ -2340,6 +2341,11 @@ updateClock(); setInterval(updateClock,1000);
     // value that overrides it.
     gate.style.display = 'none';
     app.style.display = 'block';
+    // بعد نجاح الدخول نعرض شاشة الاختيار الرئيسية (الهب) بدل الذهاب مباشرة
+    // لنظام البحث عن الموظفين — حتى يختار المستخدم بين النظامين، وكلاهما
+    // الآن محميان خلف نفس تسجيل الدخول هذا (بدل ما كان نظام "أسباب الاتصال"
+    // مفتوحا بلا تسجيل دخول). راجع appHubWiring لتفاصيل هذي الدوال.
+    if(typeof window.__showAppHub === 'function') window.__showAppHub();
     window.__currentLoginUid = uid;
     applyRoleView(uid);
     const me = EMPLOYEES.find(e => (e.national_id||'').trim() === uid);
@@ -3032,6 +3038,18 @@ updateClock(); setInterval(updateClock,1000);
       try{ localStorage.removeItem('ahsaCallCenterAuth'); localStorage.removeItem('ahsaCallCenterLastActivity'); }catch(err){}
       app.style.display = 'none';
       gate.style.display = 'flex';
+      // نُخفي الهب ونظام أسباب الاتصال أيضا عند الخروج — كلاهما صار محميا
+      // خلف نفس تسجيل الدخول، فلا يبقيان ظاهرين لأي أحد يفتح المتصفح بعدك.
+      if(typeof window.__showAppHub === 'function'){
+        const hubEl = document.getElementById('appHub');
+        const empAppEl = document.getElementById('employeeSearchApp');
+        const crWrapEl = document.getElementById('contactReasonsAppWrap');
+        const hubBackBtnEl = document.getElementById('hubBackBtn');
+        if(hubEl) hubEl.style.display = 'none';
+        if(empAppEl) empAppEl.style.display = 'none';
+        if(crWrapEl) crWrapEl.style.display = 'none';
+        if(hubBackBtnEl) hubBackBtnEl.style.display = 'none';
+      }
       // نعيد الشاشة لواجهة تسجيل الدخول الأساسية صراحة — لو كان آخر مسار مر
       // منه الموظف هو شاشة التحقق الإضافي (PIN / سؤال أمان)، تكون verifyView
       // ظاهرة وloginView مخفية من وقتها، وبدون هذا السطر تظل الشاشة فارغة
@@ -3070,6 +3088,16 @@ updateClock(); setInterval(updateClock,1000);
     const gate = document.getElementById('loginGate');
     if(app) app.style.display = 'none';
     if(gate) gate.style.display = 'flex';
+    // نُخفي الهب ونظام أسباب الاتصال أيضا عند الخروج التلقائي — نفس منطق زر
+    // تسجيل الخروج اليدوي، حتى لا يبقى أي نظام ظاهرا بعد انتهاء الجلسة.
+    const hubEl = document.getElementById('appHub');
+    const empAppEl = document.getElementById('employeeSearchApp');
+    const crWrapEl = document.getElementById('contactReasonsAppWrap');
+    const hubBackBtnEl = document.getElementById('hubBackBtn');
+    if(hubEl) hubEl.style.display = 'none';
+    if(empAppEl) empAppEl.style.display = 'none';
+    if(crWrapEl) crWrapEl.style.display = 'none';
+    if(hubBackBtnEl) hubBackBtnEl.style.display = 'none';
     const verifyViewEl = document.getElementById('verifyView');
     const resetViewEl = document.getElementById('resetView');
     const loginViewEl = document.getElementById('loginView');
@@ -10432,6 +10460,22 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
       // تحميل كسول: نفك ترميز التطبيق الثاني ونحقنه بالإطار أول مرة فقط
       // لتفادي إبطاء تحميل الصفحة الرئيسية بمحتوى 2500 سطر غير مُستخدَم دائما.
       crFrame.srcdoc = decodeUtf8B64(CR_APP_B64);
+      // مهم: النظامين صارا خلف نفس تسجيل الدخول، وله خروج تلقائي بعد 7 دقائق
+      // خمول — لكن هذا الإطار مستند مستقل، فحركات الموظف بداخله (نقر، كتابة)
+      // ما توصل تلقائيا لمستند الصفحة الرئيسية اللي يراقبها مؤقت الخمول. لو
+      // تركناها كذا، ينكشف عليه تسجيل الخروج رغم استخدامه الفعلي للنظام
+      // الثاني. نربط نفس نشاط الإطار بمؤقت الخمول حتى يبقى يحسب صح.
+      crFrame.addEventListener('load', function(){
+        try{
+          const idoc = crFrame.contentDocument;
+          if(!idoc) return;
+          ['click','keydown','mousemove','scroll','touchstart'].forEach(function(evt){
+            idoc.addEventListener(evt, function(){
+              if(typeof window.__armIdleLogoutTimer === 'function') window.__armIdleLogoutTimer();
+            }, {passive:true});
+          });
+        }catch(err){}
+      });
     }
   }
   const openEmp = document.getElementById('hubOpenEmployeeSearch');
@@ -10439,7 +10483,14 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
   if(openEmp) openEmp.addEventListener('click', showEmployeeSearch);
   if(openCr) openCr.addEventListener('click', showContactReasons);
   if(backBtn) backBtn.addEventListener('click', showHub);
-  showHub();
+  // نعرّض هذي الدوال عالميا حتى يستدعيها نظام تسجيل الدخول (بوابة الدخول
+  // تبقى أول ما يظهر دائما — الهب والنظامين لا يظهرون إلا بعد تسجيل دخول
+  // ناجح؛ راجع revealApp ودوال تسجيل الخروج).
+  window.__showAppHub = showHub;
+  window.__showEmployeeSearchApp = showEmployeeSearch;
+  window.__showContactReasonsApp = showContactReasons;
+  const switchBtn = document.getElementById('switchToContactReasonsBtn');
+  if(switchBtn) switchBtn.addEventListener('click', showContactReasons);
 })();
 </script>
 
