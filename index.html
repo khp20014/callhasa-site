@@ -1124,6 +1124,9 @@
         <div class="greet-line" id="headerGreetLine">صباح الخير</div>
         <div class="greet-name" id="headerUserName"></div>
       </div>
+      <div class="clockbox-body">
+        <div class="val" id="liveClock">-</div>
+      </div>
       <div class="quick-actions-row" id="quickActionsRow">
         <button type="button" class="qa-btn qa-logout" id="logoutBtn" title="تسجيل الخروج">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1162,10 +1165,8 @@
         <button id="centerStatsBtn" type="button" class="qa-btn qa-teal" title="لوحة إحصائيات المركز" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-7"/><path d="M2.5 20h19"/></svg></span></button>
         <button id="auditLogBtn" type="button" class="qa-btn qa-teal" title="سجل التدقيق" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span></button>
         <button id="suggestInboxBtn" type="button" class="qa-btn qa-gold" title="صندوق الاقتراحات (وارد)" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg></span><span id="suggestInboxBadge" class="qa-badge" style="display:none;"></span></button>
-        <button id="switchToContactReasonsBtn" type="button" class="qa-btn qa-teal" title="مسارات أسباب الاتصال لقطاع العمل"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg></span></button>
-      </div>
-      <div class="clockbox-body">
-        <div class="val" id="liveClock">-</div>
+        <button id="switchToContactReasonsBtn" type="button" class="qa-btn qa-teal" title="مسارات أسباب الاتصال لقطاع العمل" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg></span></button>
+        <button id="contactReasonsPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات مسارات أسباب الاتصال" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
       </div>
     </div>
   </header>
@@ -1553,6 +1554,24 @@
       <div style="margin-top:16px;" id="goalMonthsSection">
         <div style="font-size:12px;font-weight:800;color:var(--navy-2);margin-bottom:6px;">مدة تحقيق الهدف لكل موظف حدد هدفا حاليا</div>
         <div id="goalPermsMonthsList" style="display:flex;flex-direction:column;gap:8px;max-height:38vh;overflow:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT REASONS PERMISSIONS MODAL (owner-only): المالك يفوّض من يحق له
+       فتح "مسارات أسباب الاتصال لقطاع العمل" (غير المالك الذي يطّلع دائما). -->
+  <div class="modal-overlay" id="contactReasonsPermsModal">
+    <div class="modal-box" style="max-width:520px;">
+      <button class="modal-close" id="closeContactReasonsPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg> صلاحيات مسارات أسباب الاتصال</h3>
+      <div class="modal-sub">دليل "مسارات أسباب الاتصال لقطاع العمل" أصبح مقصورا عليك أنت (المالك)، وعلى من تفوّضه هنا بالتحديد. من لا تضيفه لن يرى زر الدخول له لا في شريط الأزرار العلوي ولا في رأس القسم الأول من الصفحة.</div>
+      <div style="margin-top:14px;">
+        <div style="display:flex;gap:6px;">
+          <input list="contactReasonsPermsEmpOptions" id="contactReasonsPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <datalist id="contactReasonsPermsEmpOptions"></datalist>
+          <button type="button" id="contactReasonsPermsAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="contactReasonsPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
       </div>
     </div>
   </div>
@@ -1989,8 +2008,13 @@ function loadAdminOverrides(){
     // صندوق الاقتراحات — كل عنصر {id, text, from_job_no, from_name, created_at}،
     // مرفق باسم صاحب الاقتراح ورقمه الوظيفي (يظهران للمالك عند مراجعة الوارد).
     ov.suggestions = ov.suggestions || [];
+    // من يحق له فتح "مسارات أسباب الاتصال لقطاع العمل" (غير المالك الذي يملك
+    // الاطلاع دائما): قائمة أرقام وظيفية يفوّضها المالك يدويا من زر "صلاحيات
+    // مسارات أسباب الاتصال". أي شخص غير موجود بهذي القائمة (وليس المالك) لا
+    // يشوف زر الدخول لا في شريط الأزرار العلوي ولا في رأس القسم 01.
+    ov.contactReasonsViewers = ov.contactReasonsViewers || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -2483,6 +2507,9 @@ updateClock(); setInterval(updateClock,1000);
     }
     const centerStatsBtn = document.getElementById('centerStatsBtn');
     if(centerStatsBtn) centerStatsBtn.style.display = isOwner ? 'flex' : 'none';
+    const contactReasonsPermsBtn = document.getElementById('contactReasonsPermsBtn');
+    if(contactReasonsPermsBtn) contactReasonsPermsBtn.style.display = isOwner ? 'flex' : 'none';
+    if(typeof refreshContactReasonsAccessUI === 'function') refreshContactReasonsAccessUI();
     const auditLogBtn = document.getElementById('auditLogBtn');
     if(auditLogBtn) auditLogBtn.style.display = isOwner ? 'flex' : 'none';
     const suggestInboxBtn = document.getElementById('suggestInboxBtn');
@@ -6603,6 +6630,27 @@ function renderGoalPermsViewersList(){
     renderGoalPermsViewersList();
   }));
 }
+// قائمة من فوّضهم المالك بالدخول على "مسارات أسباب الاتصال لقطاع العمل".
+function renderContactReasonsPermsList(){
+  const holder = document.getElementById('contactReasonsPermsList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const viewers = ov.contactReasonsViewers || [];
+  if(!viewers.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — الدخول مقصور عليك أنت فقط.</div>'; return; }
+  holder.innerHTML = viewers.map(jobNo=>{
+    const emp = EMPLOYEES.find(x=>x.job_no===jobNo);
+    const nm = emp ? emp.name : jobNo;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">
+        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— ${jobNo}</span></span>
+        <button type="button" class="act-btn cr-viewer-revoke" data-jobno="${jobNo}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.cr-viewer-revoke').forEach(b=> b.addEventListener('click', ()=>{
+    revokeContactReasonsAccess(b.getAttribute('data-jobno'));
+    renderContactReasonsPermsList();
+    if(typeof refreshContactReasonsAccessUI === 'function') refreshContactReasonsAccessUI();
+  }));
+}
 // قائمة من فوّضهم المالك بحق قبول/رفض طلبات الأهداف (مثل مدير المركز) — هذا
 // أقوى من "تفويض الاطلاع" لأنه يمنحهم صلاحية القرار الفعلي، لا الاطلاع فقط.
 function renderGoalApproversList(){
@@ -6777,6 +6825,51 @@ function renderGoalPermsRequestsList(){
     grantGoalApproverAccess(jobNo);
     approversSearchInput.value = '';
     renderGoalApproversList();
+  });
+})();
+(function contactReasonsPermsModalWiring(){
+  const btn = document.getElementById('contactReasonsPermsBtn');
+  const modal = document.getElementById('contactReasonsPermsModal');
+  const closeBtn = document.getElementById('closeContactReasonsPermsModal');
+  const addBtn = document.getElementById('contactReasonsPermsAddBtn');
+  const searchInput = document.getElementById('contactReasonsPermsAddSearch');
+  const optionsList = document.getElementById('contactReasonsPermsEmpOptions');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', ()=>{
+    if(optionsList){
+      optionsList.innerHTML = EMPLOYEES
+        .filter(e=> !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO))
+        .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
+    }
+    if(searchInput) searchInput.value = '';
+    renderContactReasonsPermsList();
+    modal.classList.add('open');
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const raw = (searchInput.value||'').trim();
+    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else {
+      const byNo = EMPLOYEES.find(e=> e.job_no === raw);
+      const byName = EMPLOYEES.find(e=> (e.name||'').trim() === raw);
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(e=>e.job_no===jobNo)){
+      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){
+      alert('المالك يطّلع دائما، لا حاجة لتفويضه.');
+      return;
+    }
+    grantContactReasonsAccess(jobNo);
+    searchInput.value = '';
+    renderContactReasonsPermsList();
   });
 })();
 function latestKpiMonthFor(jobNo){
@@ -7605,6 +7698,37 @@ function revokeGoalViewAccess(jobNo){
   const ov = loadAdminOverrides();
   ov.goalViewers = (ov.goalViewers||[]).filter(j=>j!==jobNo);
   saveAdminOverrides(ov);
+}
+// من يحق له فتح "مسارات أسباب الاتصال لقطاع العمل": المالك دائما، أو أي
+// موظف فوّضه المالك يدويا عبر ov.contactReasonsViewers.
+function canViewContactReasons(){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  const ov = loadAdminOverrides();
+  return (ov.contactReasonsViewers||[]).map(String).includes(String(me.job_no));
+}
+function grantContactReasonsAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.contactReasonsViewers = ov.contactReasonsViewers || [];
+  if(!ov.contactReasonsViewers.includes(jobNo)) ov.contactReasonsViewers.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeContactReasonsAccess(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.contactReasonsViewers = (ov.contactReasonsViewers||[]).filter(j=>j!==jobNo);
+  saveAdminOverrides(ov);
+}
+// يظهر/يخفي زر أيقونة "مسارات أسباب الاتصال" ورأس القسم 01 حسب من يحق له
+// الدخول فعليا (المالك + المفوَّضون في ov.contactReasonsViewers فقط).
+function refreshContactReasonsAccessUI(){
+  const canView = typeof canViewContactReasons === 'function' && canViewContactReasons();
+  const iconBtn = document.getElementById('switchToContactReasonsBtn');
+  if(iconBtn) iconBtn.style.display = canView ? 'flex' : 'none';
+  const secLink = document.getElementById('secHeadContactReasonsLink');
+  if(secLink) secLink.style.display = canView ? 'flex' : 'none';
 }
 // تفويض حق القبول/الرفض — المالك فقط يقدر يفوّض أو يسحب هذا التفويض.
 function grantGoalApproverAccess(jobNo){
@@ -10459,6 +10583,10 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(backBtn) backBtn.style.display = 'flex';
   }
   function showContactReasons(){
+    if(typeof canViewContactReasons === 'function' && !canViewContactReasons()){
+      alert('دخول "مسارات أسباب الاتصال لقطاع العمل" مقصور على المالك ومن يفوّضه.');
+      return;
+    }
     if(hub) hub.style.display = 'none';
     if(empApp) empApp.style.display = 'none';
     if(crWrap) crWrap.style.display = 'block';
