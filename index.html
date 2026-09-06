@@ -2691,9 +2691,31 @@ updateClock(); setInterval(updateClock,1000);
   function loadTwoFA(){
     try{ return JSON.parse(localStorage.getItem(TWOFA_KEY) || '{}'); }catch(err){ return {}; }
   }
-  function saveTwoFAFor(uid, obj){
+  // رمز الأمان (PIN) وجواب سؤال الأمان يُخزَّنان مشفَّرين (SHA-256) بنفس أسلوب
+  // كلمة المرور بالضبط — البادئة "h1:" تميّز القيمة المشفّرة عن أي قيمة قديمة
+  // غير مشفرة محفوظة قبل هذا التحديث (تبقى مقبولة للتحقق فقط لأجل التوافق،
+  // لكن أي حفظ جديد — تغيير الرمز، أو إعادة تعيينه بعد "نسيت رمز الأمان" —
+  // يُخزَّن من الآن فصاعدا مشفَّرا دائما).
+  async function hashTwoFAValue(str){
+    return 'h1:' + await sha256Hex(str);
+  }
+  async function verifyTwoFAValue(entered, stored){
+    if(typeof stored !== 'string' || !stored) return false;
+    if(stored.indexOf('h1:') === 0){
+      const hash = await sha256Hex(entered);
+      return stored === ('h1:' + hash);
+    }
+    return stored === entered; // توافق مع قيمة قديمة غير مشفرة (أو الرمز الثابت الافتراضي لحساب المالك)
+  }
+  async function saveTwoFAFor(uid, obj){
     const map = loadTwoFA();
-    map[uid] = obj;
+    const toStore = Object.assign({}, obj);
+    if(toStore.type === 'pin' && toStore.pin){
+      toStore.pin = await hashTwoFAValue(toStore.pin);
+    } else if(toStore.type === 'question' && toStore.answer){
+      toStore.answer = await hashTwoFAValue(toStore.answer);
+    }
+    map[uid] = toStore;
     try{ localStorage.setItem(TWOFA_KEY, JSON.stringify(map)); }catch(err){}
     if(typeof save2FAToCloud === 'function') save2FAToCloud(map).catch(()=>{});
     if(typeof bumpChangeCounter === 'function') bumpChangeCounter(uid, 'security_code_change_count');
@@ -2837,16 +2859,16 @@ updateClock(); setInterval(updateClock,1000);
     finishVerification(verifyUid);
   });
 
-  checkPinBtn.addEventListener('click', ()=>{
+  checkPinBtn.addEventListener('click', async ()=>{
     const twoFA = getEffectiveTwoFA(verifyUid);
     const entered = (checkPinInput.value || '').trim();
-    if(twoFA && entered === twoFA.pin){ finishVerification(verifyUid); }
+    if(twoFA && await verifyTwoFAValue(entered, twoFA.pin)){ finishVerification(verifyUid); }
     else { showVerifyCheckError('الرمز غير صحيح.'); checkPinInput.value=''; checkPinInput.focus(); }
   });
-  checkQuestionBtn.addEventListener('click', ()=>{
+  checkQuestionBtn.addEventListener('click', async ()=>{
     const twoFA = getEffectiveTwoFA(verifyUid);
     const entered = normalizeAnswer(checkQuestionAnswer.value);
-    if(twoFA && entered && entered === twoFA.answer){ finishVerification(verifyUid); }
+    if(twoFA && entered && await verifyTwoFAValue(entered, twoFA.answer)){ finishVerification(verifyUid); }
     else { showVerifyCheckError('الجواب غير صحيح.'); checkQuestionAnswer.value=''; checkQuestionAnswer.focus(); }
   });
   [checkPinInput].forEach(inp=>{ inp.addEventListener('keydown', ev=>{ if(ev.key==='Enter') checkPinBtn.click(); }); });
@@ -2929,7 +2951,7 @@ updateClock(); setInterval(updateClock,1000);
   function getEffectiveTwoFA(uid){
     if(isOwnerNationalId(uid)){
       const custom = getTwoFAFor(uid);
-      if(custom && custom.type === 'pin' && isValidPin(custom.pin)) return custom;
+      if(custom && custom.type === 'pin' && typeof custom.pin === 'string' && custom.pin) return custom;
       return {type:'pin', pin: OWNER_FIXED_VERIFY_CODE};
     }
     return getTwoFAFor(uid);
@@ -2973,15 +2995,15 @@ updateClock(); setInterval(updateClock,1000);
     }
   }
 
-  resetVerifyBtn.addEventListener('click', ()=>{
+  resetVerifyBtn.addEventListener('click', async ()=>{
     const uid = (resetUser.value || '').trim();
     const twoFA = getEffectiveTwoFA(uid);
     if(!twoFA){ evaluateResetGate(); return; }
     let ok = false;
     if(twoFA.type === 'pin'){
-      ok = (resetVerifyPin.value || '').trim() === twoFA.pin;
+      ok = await verifyTwoFAValue((resetVerifyPin.value || '').trim(), twoFA.pin);
     } else {
-      ok = normalizeAnswer(resetVerifyAnswer.value) === twoFA.answer;
+      ok = await verifyTwoFAValue(normalizeAnswer(resetVerifyAnswer.value), twoFA.answer);
     }
     if(ok){
       resetVerifiedUid = uid;
@@ -4767,12 +4789,12 @@ function subscribeToIncomingMessagesRealtime(){
     });
     if(closeOwnerPin) closeOwnerPin.addEventListener('click', ()=> ownerPinModal.classList.remove('open'));
     ownerPinModal.addEventListener('click', (e)=>{ if(e.target === ownerPinModal) ownerPinModal.classList.remove('open'); });
-    if(saveEl) saveEl.addEventListener('click', ()=>{
+    if(saveEl) saveEl.addEventListener('click', async ()=>{
       errEl.style.display = 'none';
       const me = window.__currentEmployee;
       if(!me || !me.national_id){ showPinErr('تعذر التحقق من حسابك، أعد تسجيل الدخول وحاول ثانية.'); return; }
       const current = getEffectiveTwoFA(me.national_id);
-      if(!current || current.pin !== curEl.value.trim()){ showPinErr('الرمز الحالي غير صحيح.'); return; }
+      if(!current || !(await verifyTwoFAValue(curEl.value.trim(), current.pin))){ showPinErr('الرمز الحالي غير صحيح.'); return; }
       const np = newEl.value.trim(), cp = confEl.value.trim();
       if(!isValidPin(np)){ showPinErr('الرمز الجديد يجب أن يكون 6 أرقام فقط.'); return; }
       if(np !== cp){ showPinErr('تأكيد الرمز الجديد لا يطابق الرمز الجديد.'); return; }
