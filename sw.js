@@ -7,7 +7,7 @@
 // بالأسفل (CACHE_NAME) حتى يجبر كل المتصفحات على حذف الكاش القديم
 // والتحديث فورا بدون أي التباس.
 
-const CACHE_NAME = 'ahsa-cc-cache-v2';
+const CACHE_NAME = 'ahsa-cc-cache-v3';
 
 // نضيف فقط الصفحة الرئيسية للكاش الاحتياطي (وضع عدم الاتصال).
 // أي ملفات إضافية (صور/أيقونات) تقدر تضيفها هنا لاحقا لو احتجت.
@@ -42,6 +42,13 @@ self.addEventListener('activate', (event) => {
 
 // ---------- الجلب: شبكة أولا، وكاش فقط عند عدم الاتصال ----------
 self.addEventListener('fetch', (event) => {
+  // Cache API يدعم فقط طلبات GET — أي طلب غير ذلك (POST/HEAD/PUT...) نتركه
+  // يمر للشبكة مباشرة بدون أي تدخل من عامل الخدمة، لأن محاولة تخزينه بالكاش
+  // تسبب خطأ "Failed to execute 'put' on 'Cache'" في الكونسول.
+  if (event.request.method !== 'GET') {
+    return; // لا event.respondWith هنا = يمر الطلب للشبكة كأن السيرفس وركر مو موجود
+  }
+
   // نتعامل فقط مع طلبات التنقل (فتح/تحديث الصفحة نفسها) بأسلوب شبكة أولا،
   // حتى نضمن دائما أحدث نسخة من index.html بدل نسخة مخزنة قديمة.
   if (event.request.mode === 'navigate') {
@@ -50,7 +57,7 @@ self.addEventListener('fetch', (event) => {
         .then((networkResponse) => {
           // نحدّث الكاش الاحتياطي بأحدث نسخة ناجحة، لاستخدامها لاحقا عند انقطاع النت
           const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
           return networkResponse;
         })
         .catch(() => {
@@ -69,7 +76,7 @@ self.addEventListener('fetch', (event) => {
       const fetchPromise = fetch(event.request)
         .then((networkResponse) => {
           const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
           return networkResponse;
         })
         .catch(() => cached);
