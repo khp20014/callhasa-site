@@ -3065,10 +3065,32 @@ updateClock(); setInterval(updateClock,1000);
     const lastActivity = parseInt(localStorage.getItem('ahsaCallCenterLastActivity')||'0', 10);
     const idleExpired = !lastActivity || (Date.now() - lastActivity) > (7*60*1000);
     if(savedUid && validIds.has(savedUid) && !idleExpired){
-      // نؤجل التنفيذ خطوة واحدة (0ms) لأن هذا الكود يعمل مبكرا جدا في تحميل السكربت،
-      // قبل أن تكتمل معالجة/إثراء بيانات EMPLOYEES (perf_final، is_supervisor، إلخ)
-      // الموجودة لاحقا بالملف — استدعاء renderList قبل اكتمالها يسبب أخطاء.
-      setTimeout(()=>revealApp(savedUid, false), 0);
+      // مهم جدا: قبل ما نستدعي revealApp لازم نتأكد إن الصفحة خلصت تحميلها بالكامل
+      // فعلا (وليس بعد setTimeout(0) البسيط اللي كان يستخدم سابقا). سبب التعديل:
+      // كانت revealApp تستدعي window.__showEmployeeSearchApp، وهذي الدالة تتعرّف
+      // متأخرا جدا بالملف (قرب النهاية). مع شبكة بطيئة أو ملف كبير يوصل على دفعات،
+      // كان يصير أحيانا إن setTimeout(0) يشتغل قبل ما يوصل تحميل المتصفح لتعريف
+      // تلك الدالة، فيفشل الشرط typeof===... بصمت، ويضل قسم البحث عن الموظفين
+      // (وبداخله كل اللوحة) مخفيا للأبد = صفحة بيضاء بالكامل رغم نجاح تسجيل الدخول
+      // تلقائيا خلف الكواليس. الحل: ننتظر حدث تحميل الصفحة الكامل (load) قبل أي
+      // محاولة، ومعها فحص احتياطي (polling) قصير لو تأخرت الدالة لأي سبب آخر.
+      const attemptRestore = () => {
+        let tries = 0;
+        const tryReveal = () => {
+          tries++;
+          if(typeof window.__showEmployeeSearchApp === 'function' || tries > 40){
+            revealApp(savedUid, false);
+          } else {
+            setTimeout(tryReveal, 50); // إعادة محاولة كل 50ms لمدة تصل لـ2 ثانية كحد أقصى
+          }
+        };
+        tryReveal();
+      };
+      if(document.readyState === 'complete'){
+        attemptRestore();
+      } else {
+        window.addEventListener('load', attemptRestore, { once:true });
+      }
     } else {
       if(savedUid && idleExpired){
         try{ localStorage.removeItem('ahsaCallCenterAuth'); localStorage.removeItem('ahsaCallCenterLastActivity'); }catch(err){}
@@ -3076,6 +3098,7 @@ updateClock(); setInterval(updateClock,1000);
       userInput.focus();
     }
   }catch(err){ userInput.focus(); }
+
 
   // ---------- Logout ----------
   const logoutBtn = document.getElementById('logoutBtn');
