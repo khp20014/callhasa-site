@@ -2386,14 +2386,18 @@ updateClock(); setInterval(updateClock,1000);
     // راجع appHubWiring لتفاصيل هذي الدوال.
     if(typeof window.__showEmployeeSearchApp === 'function') window.__showEmployeeSearchApp();
     window.__currentLoginUid = uid;
-    applyRoleView(uid);
     const me = EMPLOYEES.find(e => (e.national_id||'').trim() === uid);
+    // مهم: نضبط window.__currentEmployee قبل أي استدعاء لدوال تعتمد عليه
+    // (مثل canViewContactReasons داخل updateAdminButtonVisibility) — قبل هذا
+    // التعديل كانت هذي الدوال تُستدعى وwindow.__currentEmployee لسا غير محدث
+    // بعد، فتفشل صلاحية "مسارات أسباب الاتصال" حتى للمالك نفسه.
+    window.__currentEmployee = me;
+    window.__currentUserName = me ? me.name : '';
+    applyRoleView(uid);
     applyHeaderGreeting(me);
     showBirthdayWelcomeIfToday(me);
     updateAdminButtonVisibility(me);
     if(typeof updateBulkExportButtonVisibility === 'function') updateBulkExportButtonVisibility(me);
-    window.__currentEmployee = me;
-    window.__currentUserName = me ? me.name : '';
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
     loadMyMessages(me);
     refreshKudosBadge();
