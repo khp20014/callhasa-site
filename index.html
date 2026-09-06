@@ -1566,6 +1566,12 @@
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg> صلاحيات مسارات أسباب الاتصال</h3>
       <div class="modal-sub">دليل "مسارات أسباب الاتصال لقطاع العمل" أصبح مقصورا عليك أنت (المالك)، وعلى من تفوّضه هنا بالتحديد. من لا تضيفه لن يرى زر الدخول له لا في شريط الأزرار العلوي ولا في رأس القسم الأول من الصفحة.</div>
       <div style="margin-top:14px;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <select id="contactReasonsPermsSectorSelect" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;"><option value="">اختر القطاع أولا…</option></select>
+          <select id="contactReasonsPermsEmpSelect" style="flex:1.4;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;" disabled><option value="">ثم اختر الموظف…</option></select>
+          <button type="button" id="contactReasonsPermsQuickAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;" disabled>منح الصلاحية</button>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);margin:-2px 0 8px;">أو ابحث بالاسم/الرقم الوظيفي مباشرة:</div>
         <div style="display:flex;gap:6px;">
           <input list="contactReasonsPermsEmpOptions" id="contactReasonsPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
           <datalist id="contactReasonsPermsEmpOptions"></datalist>
@@ -6843,13 +6849,51 @@ function flashContactReasonsSaveStatus(){
   const addBtn = document.getElementById('contactReasonsPermsAddBtn');
   const searchInput = document.getElementById('contactReasonsPermsAddSearch');
   const optionsList = document.getElementById('contactReasonsPermsEmpOptions');
+  const sectorSelect = document.getElementById('contactReasonsPermsSectorSelect');
+  const empSelect = document.getElementById('contactReasonsPermsEmpSelect');
+  const quickAddBtn = document.getElementById('contactReasonsPermsQuickAddBtn');
   if(!btn || !modal) return;
+  function eligibleEmployees(){
+    return EMPLOYEES.filter(e=> !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO));
+  }
+  function populateSectors(){
+    if(!sectorSelect) return;
+    const sectors = Array.from(new Set(eligibleEmployees().map(e=> (e.sector||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare('ar'));
+    sectorSelect.innerHTML = '<option value="">اختر القطاع أولا…</option>' + sectors.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+  function populateEmpsForSector(sector){
+    if(!empSelect) return;
+    const ov = loadAdminOverrides();
+    const already = new Set((ov.contactReasonsViewers||[]).map(String));
+    const list = eligibleEmployees().filter(e=> (e.sector||'').trim() === sector);
+    if(!list.length){ empSelect.innerHTML = '<option value="">لا يوجد موظفون بهذا القطاع</option>'; empSelect.disabled = true; quickAddBtn.disabled = true; return; }
+    empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>' + list.map(e=>{
+      const tag = already.has(String(e.job_no)) ? ' (مفوَّض حاليا)' : (e.supervisor ? ` — مشرفه: ${e.supervisor}` : '');
+      return `<option value="${e.job_no}">${e.name}${tag}</option>`;
+    }).join('');
+    empSelect.disabled = false;
+  }
+  if(sectorSelect) sectorSelect.addEventListener('change', ()=>{
+    if(sectorSelect.value){ populateEmpsForSector(sectorSelect.value); }
+    else { empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>'; empSelect.disabled = true; quickAddBtn.disabled = true; }
+  });
+  if(empSelect) empSelect.addEventListener('change', ()=>{ quickAddBtn.disabled = !empSelect.value; });
+  if(quickAddBtn) quickAddBtn.addEventListener('click', ()=>{
+    const jobNo = empSelect.value;
+    if(!jobNo) return;
+    grantContactReasonsAccess(jobNo);
+    renderContactReasonsPermsList();
+    populateEmpsForSector(sectorSelect.value);
+    flashContactReasonsSaveStatus();
+  });
   btn.addEventListener('click', ()=>{
     if(optionsList){
-      optionsList.innerHTML = EMPLOYEES
-        .filter(e=> !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO))
+      optionsList.innerHTML = eligibleEmployees()
         .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
     }
+    populateSectors();
+    if(empSelect){ empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>'; empSelect.disabled = true; }
+    if(quickAddBtn) quickAddBtn.disabled = true;
     if(searchInput) searchInput.value = '';
     renderContactReasonsPermsList();
     modal.classList.add('open');
