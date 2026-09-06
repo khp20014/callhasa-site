@@ -2699,6 +2699,7 @@ updateClock(); setInterval(updateClock,1000);
   async function hashTwoFAValue(str){
     return 'h1:' + await sha256Hex(str);
   }
+  window.hashTwoFAValue = hashTwoFAValue;
   async function verifyTwoFAValue(entered, stored){
     if(typeof stored !== 'string' || !stored) return false;
     if(stored.indexOf('h1:') === 0){
@@ -2707,6 +2708,7 @@ updateClock(); setInterval(updateClock,1000);
     }
     return stored === entered; // توافق مع قيمة قديمة غير مشفرة (أو الرمز الثابت الافتراضي لحساب المالك)
   }
+  window.verifyTwoFAValue = verifyTwoFAValue;
   async function saveTwoFAFor(uid, obj){
     const map = loadTwoFA();
     const toStore = Object.assign({}, obj);
