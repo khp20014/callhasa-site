@@ -7,7 +7,7 @@
 // بالأسفل (CACHE_NAME) حتى يجبر كل المتصفحات على حذف الكاش القديم
 // والتحديث فورا بدون أي التباس.
 
-const CACHE_NAME = 'ahsa-cc-cache-v3';
+const CACHE_NAME = 'ahsa-cc-cache-v4';
 
 // نضيف فقط الصفحة الرئيسية للكاش الاحتياطي (وضع عدم الاتصال).
 // أي ملفات إضافية (صور/أيقونات) تقدر تضيفها هنا لاحقا لو احتجت.
@@ -49,6 +49,16 @@ self.addEventListener('fetch', (event) => {
     return; // لا event.respondWith هنا = يمر الطلب للشبكة كأن السيرفس وركر مو موجود
   }
 
+  // مهم جدا: أي طلب لموقع/نطاق خارجي (مثل خدمات تحديد الموقع الجغرافي،
+  // أو أي API خارجي) نتركه يمر تمامًا بدون أي تدخل من عامل الخدمة. اعتراض
+  // طلبات خارجية غالبا يفشل بسبب قيود CORS، وأي تعامل خاطئ مع هذا الفشل هنا
+  // يكسر كود الصفحة اللي ينتظر نتيجة ذلك الطلب (وهذا بالضبط ما كان يسبب
+  // بقاء شاشة الدخول ولوحة البيانات مخفيتين معا = صفحة بيضاء بالكامل).
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
   // نتعامل فقط مع طلبات التنقل (فتح/تحديث الصفحة نفسها) بأسلوب شبكة أولا،
   // حتى نضمن دائما أحدث نسخة من index.html بدل نسخة مخزنة قديمة.
   if (event.request.mode === 'navigate') {
@@ -70,7 +80,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // لباقي الملفات (صور/سكربتات ثابتة): كاش أولا مع تحديث بالخلفية
+  // لباقي الملفات (صور/سكربتات ثابتة) من نفس الموقع فقط: كاش أولا مع تحديث بالخلفية
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
@@ -79,7 +89,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
           return networkResponse;
         })
-        .catch(() => cached);
+        .catch(() => cached || Response.error());
       return cached || fetchPromise;
     })
   );
