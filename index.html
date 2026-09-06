@@ -1099,7 +1099,7 @@
 </div>
 
 <!-- زر عائم للرجوع لشاشة الاختيار الرئيسية من داخل أي نظام -->
-<button type="button" id="hubBackBtn" style="display:none;position:fixed;top:12px;inset-inline-start:12px;z-index:99999;all:unset;box-sizing:border-box;cursor:pointer;background:#16233f;color:#fff;font-family:'Almarai','Tajawal',sans-serif;font-size:12px;font-weight:800;padding:9px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;gap:6px;">
+<button type="button" id="hubBackBtn" style="display:none;position:fixed;top:12px;inset-inline-start:12px;z-index:99999;all:unset;box-sizing:border-box;cursor:pointer;background:#16233f;color:#fff;font-family:'Almarai','Tajawal',sans-serif;font-size:12px;font-weight:800;padding:9px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.3);align-items:center;gap:6px;">
   <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M15 18l-6-6 6-6"></path></svg>
   القائمة الرئيسية
 </button>
@@ -1571,6 +1571,7 @@
           <datalist id="contactReasonsPermsEmpOptions"></datalist>
           <button type="button" id="contactReasonsPermsAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
         </div>
+        <div id="contactReasonsPermsSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
         <div id="contactReasonsPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
       </div>
     </div>
@@ -6649,6 +6650,7 @@ function renderContactReasonsPermsList(){
     revokeContactReasonsAccess(b.getAttribute('data-jobno'));
     renderContactReasonsPermsList();
     if(typeof refreshContactReasonsAccessUI === 'function') refreshContactReasonsAccessUI();
+    flashContactReasonsSaveStatus();
   }));
 }
 // قائمة من فوّضهم المالك بحق قبول/رفض طلبات الأهداف (مثل مدير المركز) — هذا
@@ -6827,6 +6829,13 @@ function renderGoalPermsRequestsList(){
     renderGoalApproversList();
   });
 })();
+function flashContactReasonsSaveStatus(){
+  const el = document.getElementById('contactReasonsPermsSaveStatus');
+  if(!el) return;
+  el.style.opacity = '1';
+  clearTimeout(el.__hideTimer);
+  el.__hideTimer = setTimeout(()=>{ el.style.opacity = '0'; }, 1600);
+}
 (function contactReasonsPermsModalWiring(){
   const btn = document.getElementById('contactReasonsPermsBtn');
   const modal = document.getElementById('contactReasonsPermsModal');
@@ -6870,6 +6879,7 @@ function renderGoalPermsRequestsList(){
     grantContactReasonsAccess(jobNo);
     searchInput.value = '';
     renderContactReasonsPermsList();
+    flashContactReasonsSaveStatus();
   });
 })();
 function latestKpiMonthFor(jobNo){
@@ -7712,13 +7722,13 @@ function grantContactReasonsAccess(jobNo){
   if(!isTrueOwner()) return;
   const ov = loadAdminOverrides();
   ov.contactReasonsViewers = ov.contactReasonsViewers || [];
-  if(!ov.contactReasonsViewers.includes(jobNo)) ov.contactReasonsViewers.push(jobNo);
+  if(!ov.contactReasonsViewers.map(String).includes(String(jobNo))) ov.contactReasonsViewers.push(jobNo);
   saveAdminOverrides(ov);
 }
 function revokeContactReasonsAccess(jobNo){
   if(!isTrueOwner()) return;
   const ov = loadAdminOverrides();
-  ov.contactReasonsViewers = (ov.contactReasonsViewers||[]).filter(j=>j!==jobNo);
+  ov.contactReasonsViewers = (ov.contactReasonsViewers||[]).filter(j=>String(j)!==String(jobNo));
   saveAdminOverrides(ov);
 }
 // يظهر/يخفي زر أيقونة "مسارات أسباب الاتصال" ورأس القسم 01 حسب من يحق له
