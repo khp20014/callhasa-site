@@ -4643,9 +4643,12 @@ function renderIncomingMsgList(){
   modal.addEventListener('click', (e)=>{ if(e.target === modal) close(); });
 })();
 
+let __incomingMessagesRealtimeSubscribed = false;
 function subscribeToIncomingMessagesRealtime(){
+  if(__incomingMessagesRealtimeSubscribed) return; // تفادي إعادة الاشتراك بنفس القناة بعد تسجيل دخول ثاني بنفس تحميل الصفحة
   const client = getSupabaseClient();
   if(!client) return;
+  __incomingMessagesRealtimeSubscribed = true;
   client
     .channel('incoming_messages_badge')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, ()=>{
