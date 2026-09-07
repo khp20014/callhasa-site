@@ -3814,7 +3814,7 @@ async function fetch2FAFromCloud(){
 function applyCloud2FA(cloudMap){
   if(!cloudMap) return;
   __applyingCloud2FA = true;
-  try{ localStorage.setItem(TWOFA_KEY, JSON.stringify(cloudMap)); }
+  try{ localStorage.setItem('ahsaCallCenter2FA', JSON.stringify(cloudMap)); }
   finally{ __applyingCloud2FA = false; }
 }
 
@@ -3839,7 +3839,7 @@ function subscribeTo2FARealtime(){
 // يمسح الخريطة محليا وسحابيا، فيضطر كل موظف لإعداد رمز أمان/سؤال أمان جديد
 // عند أول محاولة دخول تالية له. لا يمس كلمات المرور ولا بيانات الموظفين.
 async function ownerResetAll2FA(){
-  try{ localStorage.setItem(TWOFA_KEY, JSON.stringify({})); }catch(err){}
+  try{ localStorage.setItem('ahsaCallCenter2FA', JSON.stringify({})); }catch(err){}
   await save2FAToCloud({});
 }
 
