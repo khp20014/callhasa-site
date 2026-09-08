@@ -4369,11 +4369,137 @@ async function deleteBackupSnapshot(idx){
   }
 }
 
-function downloadBackupSnapshot(snapshot){
+function downloadBackupSnapshot(snapshot, format){
+  format = format || 'json';
+  if(format === 'xlsx') return downloadBackupAsExcel(snapshot);
+  if(format === 'html') return downloadBackupAsHTML(snapshot);
   const blob = new Blob([JSON.stringify(snapshot, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'نسخة-احتياطية-' + snapshot.created_at.slice(0,10) + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+
+// يحول أرقام الموظفين الوظيفية بخريطة overrides لأسمائهم الحقيقية حيثما أمكن،
+// حتى تكون النسخة المصدّرة (Excel أو HTML) مقروءة مباشرة بدون رجوع لملف الموظفين.
+function backupJobNoToName(jobNo){
+  const emp = (typeof EMPLOYEES !== 'undefined') ? EMPLOYEES.find(e=>String(e.job_no)===String(jobNo)) : null;
+  return emp ? (emp.name||'').trim() : ('#' + jobNo);
+}
+
+function downloadBackupAsExcel(snapshot){
+  const ov = snapshot.overrides || {};
+  const dt = snapshot.created_at ? snapshot.created_at.slice(0,10) : '';
+  const wb = XLSX.utils.book_new();
+
+  // ملخص عام
+  const summaryRows = [
+    {'البند':'تاريخ النسخة', 'القيمة': new Date(snapshot.created_at).toLocaleString('ar-SA', {dateStyle:'medium', timeStyle:'short'})},
+    {'البند':'عدد التعديلات على موظفين', 'القيمة': Object.keys(ov.edits||{}).length},
+    {'البند':'عدد الموظفين المحذوفين', 'القيمة': (ov.deleted||[]).length},
+    {'البند':'عدد الموظفين المضافين', 'القيمة': (ov.added||[]).length},
+    {'البند':'عدد المسميات المخصصة', 'القيمة': Object.keys(ov.labelOverrides||{}).length},
+    {'البند':'عدد حركات سجل التدقيق', 'القيمة': (ov.auditLog||[]).length},
+    {'البند':'عدد التوجيهات التحسينية', 'القيمة': Object.values(ov.perfNotes||{}).reduce((a,l)=>a+(l?l.length:0),0)},
+    {'البند':'عدد الأهداف الشخصية', 'القيمة': Object.keys(ov.personalGoals||{}).length}
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'ملخص عام');
+
+  // التعديلات على بيانات الموظفين (كل حقل معدّل بصف مستقل)
+  const editRows = [];
+  Object.keys(ov.edits||{}).forEach(jobNo=>{
+    const fields = ov.edits[jobNo] || {};
+    Object.keys(fields).forEach(field=>{
+      editRows.push({'الرقم الوظيفي': jobNo, 'الاسم': backupJobNoToName(jobNo), 'الحقل': field, 'القيمة الجديدة': String(fields[field])});
+    });
+  });
+  if(editRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(editRows), 'تعديلات بيانات الموظفين');
+
+  // المحذوفون والمضافون
+  if((ov.deleted||[]).length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ov.deleted.map(jn=>({'الرقم الوظيفي':jn,'الاسم':backupJobNoToName(jn)}))), 'موظفون محذوفون');
+  if((ov.added||[]).length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ov.added), 'موظفون مضافون');
+
+  // سجل التدقيق
+  if((ov.auditLog||[]).length){
+    const auditRows = ov.auditLog.map(a=>({'التاريخ': a.at ? new Date(a.at).toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}) : '', 'البيان': a.summary||''}));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(auditRows), 'سجل التدقيق');
+  }
+
+  // التوجيهات التحسينية
+  const noteRows = [];
+  Object.keys(ov.perfNotes||{}).forEach(jobNo=>{
+    (ov.perfNotes[jobNo]||[]).forEach(n=>{
+      noteRows.push({'الرقم الوظيفي': jobNo, 'الاسم': backupJobNoToName(jobNo), 'التاريخ': n.date||'', 'النوع': n.type||'', 'الملاحظة': n.note||'', 'أضافه': n.addedBy||''});
+    });
+  });
+  if(noteRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(noteRows), 'التوجيهات التحسينية');
+
+  // الأهداف الشخصية
+  const goalRows = Object.keys(ov.personalGoals||{}).map(jobNo=>{
+    const g = ov.personalGoals[jobNo] || {};
+    return {'الرقم الوظيفي': jobNo, 'الاسم': backupJobNoToName(jobNo), 'النسبة المستهدفة': g.pct!=null?(g.pct+'%'):'', 'الحالة': g.status||''};
+  });
+  if(goalRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(goalRows), 'الأهداف الشخصية');
+
+  XLSX.writeFile(wb, 'نسخة-احتياطية-' + dt + '.xlsx');
+}
+
+function downloadBackupAsHTML(snapshot){
+  const ov = snapshot.overrides || {};
+  const dtFull = new Date(snapshot.created_at).toLocaleString('ar-SA', {dateStyle:'medium', timeStyle:'short'});
+  const esc = (s)=> String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  const editRows = [];
+  Object.keys(ov.edits||{}).forEach(jobNo=>{
+    const fields = ov.edits[jobNo] || {};
+    Object.keys(fields).forEach(field=>{
+      editRows.push(`<tr><td>${esc(jobNo)}</td><td>${esc(backupJobNoToName(jobNo))}</td><td>${esc(field)}</td><td>${esc(fields[field])}</td></tr>`);
+    });
+  });
+  const auditRows = (ov.auditLog||[]).slice().reverse().map(a=>
+    `<tr><td>${a.at ? esc(new Date(a.at).toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'})) : ''}</td><td>${esc(a.summary)}</td></tr>`
+  ).join('');
+  const noteRows = [];
+  Object.keys(ov.perfNotes||{}).forEach(jobNo=>{
+    (ov.perfNotes[jobNo]||[]).forEach(n=>{
+      noteRows.push(`<tr><td>${esc(backupJobNoToName(jobNo))}</td><td>${esc(n.date)}</td><td>${esc(n.type)}</td><td>${esc(n.note)}</td></tr>`);
+    });
+  });
+  const goalRows = Object.keys(ov.personalGoals||{}).map(jobNo=>{
+    const g = ov.personalGoals[jobNo] || {};
+    return `<tr><td>${esc(backupJobNoToName(jobNo))}</td><td>${g.pct!=null?esc(g.pct+'%'):''}</td><td>${esc(g.status)}</td></tr>`;
+  }).join('');
+
+  const section = (title, theadHtml, rowsHtml, emptyMsg)=> rowsHtml.length ? `
+    <h2>${title}</h2>
+    <table><thead><tr>${theadHtml}</tr></thead><tbody>${Array.isArray(rowsHtml)?rowsHtml.join(''):rowsHtml}</tbody></table>` :
+    `<h2>${title}</h2><p class="empty">${emptyMsg}</p>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8">
+<title>نسخة احتياطية — ${esc(dtFull)}</title>
+<style>
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f4f6f7;color:#1c2b30;margin:0;padding:24px;}
+  h1{color:#0e6a5a;font-size:20px;} h2{color:#173a4a;font-size:15px;margin-top:28px;border-bottom:2px solid #e2e8ea;padding-bottom:6px;}
+  table{width:100%;border-collapse:collapse;margin-top:8px;background:#fff;font-size:12.5px;}
+  th,td{border:1px solid #e2e8ea;padding:7px 10px;text-align:right;}
+  th{background:#eef6f4;color:#0e6a5a;}
+  .empty{color:#8a9aa0;font-size:12.5px;}
+  .meta{color:#5a6b70;font-size:12.5px;margin-bottom:14px;}
+</style></head><body>
+  <h1>📦 تقرير نسخة احتياطية — لوحة بيانات موظفين مركز الاتصال بالأحساء</h1>
+  <div class="meta">تاريخ أخذ النسخة: ${esc(dtFull)}</div>
+  ${section('تعديلات بيانات الموظفين', '<th>الرقم الوظيفي</th><th>الاسم</th><th>الحقل</th><th>القيمة الجديدة</th>', editRows, 'لا توجد تعديلات مسجلة بهذه النسخة.')}
+  ${section('سجل التدقيق', '<th>التاريخ</th><th>البيان</th>', auditRows, 'لا يوجد سجل تدقيق بهذه النسخة.')}
+  ${section('التوجيهات التحسينية', '<th>الاسم</th><th>التاريخ</th><th>النوع</th><th>الملاحظة</th>', noteRows, 'لا توجد توجيهات مسجلة بهذه النسخة.')}
+  ${section('الأهداف الشخصية', '<th>الاسم</th><th>النسبة المستهدفة</th><th>الحالة</th>', goalRows, 'لا توجد أهداف شخصية مسجلة بهذه النسخة.')}
+</body></html>`;
+
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'نسخة-احتياطية-' + snapshot.created_at.slice(0,10) + '.html';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 2000);
 }
@@ -4419,16 +4545,25 @@ async function renderBackupsList(){
   list.innerHTML = snapshots.slice().reverse().map((s,i)=>{
     const dt = new Date(s.created_at).toLocaleString('ar-SA', {dateStyle:'medium', timeStyle:'short'});
     const isLatest = i===0;
-    return `<div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+    return `<div style="border:1px solid var(--hair);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
       <div style="font-size:12.5px;font-weight:700;">${dt}${isLatest?' <span style="color:var(--teal);font-weight:800;">(الأحدث)</span>':''}</div>
-      <div style="display:flex;gap:6px;flex-shrink:0;">
+      <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+        <select class="backup-format-select" data-idx="${snapshots.length-1-i}" style="padding:4px 6px;font-size:11px;border-radius:8px;border:1px solid var(--hair);">
+          <option value="json">JSON</option>
+          <option value="xlsx">Excel</option>
+          <option value="html">HTML</option>
+        </select>
         <button type="button" class="act-btn backup-download-btn" data-idx="${snapshots.length-1-i}" style="padding:5px 10px;font-size:11px;">تنزيل</button>
         <button type="button" class="act-btn backup-restore-btn" data-idx="${snapshots.length-1-i}" style="padding:5px 10px;font-size:11px;background:var(--amber);color:#fff;">استعادة</button>
         <button type="button" class="act-btn backup-delete-btn" data-idx="${snapshots.length-1-i}" style="padding:5px 10px;font-size:11px;background:#fff;color:#c0392b;border-color:#c0392b;">حذف</button>
       </div>
     </div>`;
   }).join('');
-  list.querySelectorAll('.backup-download-btn').forEach(b=> b.addEventListener('click', ()=> downloadBackupSnapshot(snapshots[+b.getAttribute('data-idx')])));
+  list.querySelectorAll('.backup-download-btn').forEach(b=> b.addEventListener('click', ()=>{
+    const idx = +b.getAttribute('data-idx');
+    const sel = list.querySelector(`.backup-format-select[data-idx="${idx}"]`);
+    downloadBackupSnapshot(snapshots[idx], sel ? sel.value : 'json');
+  }));
   list.querySelectorAll('.backup-restore-btn').forEach(b=> b.addEventListener('click', ()=> restoreBackupSnapshot(snapshots[+b.getAttribute('data-idx')])));
   list.querySelectorAll('.backup-delete-btn').forEach(b=> b.addEventListener('click', ()=> deleteBackupSnapshot(+b.getAttribute('data-idx'))));
 }
