@@ -238,6 +238,34 @@
   .celeb-msg{font-size:13px;line-height:1.9;color:var(--text);background:rgba(255,255,255,.6);border-radius:10px;padding:10px 12px;position:relative;}
   .celeb-meta{font-size:10.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;}
 
+  /* ---------- لوحة الصدارة الشهرية ---------- */
+  .leaderboard-card{
+    background:linear-gradient(180deg,var(--panel-2,#fff),var(--panel));
+    border:1px solid var(--hair);border-radius:14px;padding:14px 16px;margin-bottom:14px;
+  }
+  .leaderboard-head{font-weight:800;font-size:14px;color:var(--navy);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .leaderboard-list{display:flex;flex-direction:column;gap:6px;}
+  .leaderboard-row{
+    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;
+    background:rgba(255,255,255,.55);border:1px solid var(--hair-soft);
+  }
+  .leaderboard-rank{font-size:18px;flex-shrink:0;width:26px;text-align:center;}
+  .leaderboard-name{flex:1;font-weight:700;font-size:13px;color:var(--text);}
+  .leaderboard-score{font-weight:800;font-size:13.5px;color:var(--teal);white-space:nowrap;}
+
+  /* ---------- توزيع أداء الفريق ---------- */
+  .perf-dist-card{
+    background:linear-gradient(180deg,var(--panel-2,#fff),var(--panel));
+    border:1px solid var(--hair);border-radius:14px;padding:14px 16px;margin-bottom:14px;
+  }
+  .perf-dist-head{font-weight:800;font-size:14px;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+  .perf-dist-bars{display:flex;flex-direction:column;gap:9px;}
+  .perf-dist-row{display:flex;align-items:center;gap:8px;}
+  .perf-dist-label{width:88px;flex-shrink:0;font-size:11.5px;color:var(--muted);white-space:nowrap;}
+  .perf-dist-bar-track{flex:1;height:16px;background:var(--hair-soft);border-radius:8px;overflow:hidden;}
+  .perf-dist-bar-fill{height:100%;border-radius:8px;transition:width .6s ease;min-width:2px;}
+  .perf-dist-count{width:22px;flex-shrink:0;text-align:center;font-weight:800;font-size:12.5px;color:var(--text);}
+
   /* ---------- KPI strip ---------- */
   .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px;}
   .kpi{
@@ -1192,7 +1220,7 @@
   <!-- BIRTHDAYS -->
   <section class="bday-ribbon" id="bdayRibbon" style="display:none">
     <div class="bday-inner">
-      <span class="bday-badge">🎂 أعياد ميلاد اليوم</span>
+      <span class="bday-badge">🎂 أعياد الميلاد</span>
       <div class="bday-track-wrap"><div class="bday-track" id="bdayTrack"></div></div>
     </div>
   </section>
@@ -1203,6 +1231,12 @@
   <section class="celeb-ribbon" id="celebRibbon" style="display:none">
     <div class="celeb-card" id="celebCard"></div>
   </section>
+
+  <!-- لوحة الصدارة الشهرية: أفضل 5 موظفين أداءً بآخر شهر مسجل (بدون المشرفين) -->
+  <div id="monthlyLeaderboardWrap" style="display:none;"></div>
+
+  <!-- توزيع أداء الفريق: عدد الموظفين بكل شريحة نسبة أداء بآخر شهر مسجل -->
+  <div id="perfDistributionWrap" style="display:none;"></div>
 
   <!-- DIRECTORY / SEARCH -->
   <section class="panel dir-panel" id="directorySection">
@@ -2430,6 +2464,8 @@ updateClock(); setInterval(updateClock,1000);
     updateAdminButtonVisibility(me);
     if(typeof updateBulkExportButtonVisibility === 'function') updateBulkExportButtonVisibility(me);
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
     loadMyMessages(me);
     requestNotificationPermissionOnce();
     if(me && me.job_no && !isOwnerNationalId(uid) && typeof subscribeToMyMessagesRealtime === 'function'){
@@ -3472,6 +3508,8 @@ function applyCloudOverrides(cloudOv){
     if(typeof refreshOwnerOnlyVisibility === 'function') refreshOwnerOnlyVisibility();
     if(typeof refreshBlockedAccountsBadge === 'function') refreshBlockedAccountsBadge();
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
     if(typeof refreshKudosBadge === 'function') refreshKudosBadge();
     const kudosModalEl = document.getElementById('kudosModal');
     if(kudosModalEl && kudosModalEl.classList.contains('open') && typeof renderKudosFeed === 'function'){ renderKudosFeed(); if(typeof renderKudosSentFeed==='function') renderKudosSentFeed(); }
@@ -4359,6 +4397,8 @@ async function restoreBackupSnapshot(snapshot){
   if(typeof renderHonorBoard === 'function') renderHonorBoard();
   if(typeof refreshPerfAlertsBadge === 'function') refreshPerfAlertsBadge();
   if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
   document.getElementById('backupsModal').classList.remove('open');
   alert('تمت الاستعادة بنجاح.');
 }
@@ -5767,7 +5807,7 @@ function subscribeToIncomingMessagesRealtime(){
   setInterval(next, MSG_INTERVAL_MS);
 })();
 
-// ---------- Birthdays today ----------
+// ---------- Birthdays today + upcoming (next 7 days) ----------
 (function birthdays(){
   const now = new Date();
   const mm = now.getMonth()+1, dd = now.getDate();
@@ -5777,11 +5817,33 @@ function subscribeToIncomingMessagesRealtime(){
     if(parts.length<3) return false;
     return parseInt(parts[1],10)===mm && parseInt(parts[2],10)===dd;
   });
-  if(todays.length===0) return;
+
+  // أعياد ميلاد قادمة خلال الأيام السبعة القادمة (لا تشمل اليوم نفسه، لأن له رسالته
+  // الاحتفالية المستقلة أعلاه) — تحسب الفارق بالأيام مع مراعاة الانتقال بين السنوات
+  // (مثلا عيد ميلاد بداية يناير وإحنا بآخر ديسمبر).
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const upcoming = [];
+  EMPLOYEES.forEach(e=>{
+    if(!e.birth_date) return;
+    const parts = e.birth_date.split('-');
+    if(parts.length<3) return;
+    const bm = parseInt(parts[1],10), bd = parseInt(parts[2],10);
+    if(bm===mm && bd===dd) return; // اليوم نفسه، معروض أصلا بالأعلى
+    if(isNaN(bm) || isNaN(bd)) return;
+    let next = new Date(now.getFullYear(), bm-1, bd);
+    if(next < todayMidnight) next = new Date(now.getFullYear()+1, bm-1, bd);
+    const diffDays = Math.round((next - todayMidnight) / 86400000);
+    if(diffDays >= 1 && diffDays <= 7) upcoming.push({ e, diffDays });
+  });
+  upcoming.sort((a,b)=>a.diffDays-b.diffDays);
+
+  if(todays.length===0 && upcoming.length===0) return;
   const track = document.getElementById('bdayTrack');
   const deco = ['🎂','🌹','🎉','🎈'];
-  const itemsHtml = todays.map((e,i)=>`<span class="bday-item">${deco[i%deco.length]} <b>${(e.name||'').trim()}</b> يحتفل اليوم بعيد ميلاده ${deco[(i+1)%deco.length]}</span>`).join('');
-  track.innerHTML = itemsHtml + itemsHtml;
+  const todaysHtml = todays.map((e,i)=>`<span class="bday-item">${deco[i%deco.length]} <b>${(e.name||'').trim()}</b> يحتفل اليوم بعيد ميلاده ${deco[(i+1)%deco.length]}</span>`).join('');
+  const dayWord = (n)=> n===1 ? 'غداً' : (n===2 ? 'بعد يومين' : `بعد ${n} أيام`);
+  const upcomingHtml = upcoming.map(({e,diffDays})=>`<span class="bday-item">🔜 <b>${(e.name||'').trim()}</b> عيد ميلاده ${dayWord(diffDays)}</span>`).join('');
+  track.innerHTML = todaysHtml + upcomingHtml + todaysHtml + upcomingHtml;
   document.getElementById('bdayRibbon').style.display = '';
 })();
 
@@ -6169,6 +6231,93 @@ function renderCelebrationsRibbon(){
   ribbon.style.display = '';
 }
 
+// يرجع رقم آخر شهر فيه بيانات أداء مسجلة فعليا (أي موظف)، أو -1 لو ما فيه بيانات بعد.
+// نعتمد هذا بدل شهر التقويم الحالي لأن رفع بيانات الأداء الشهرية يصير لاحقا بعد
+// انتهاء الشهر بأيام، فقد يكون آخر شهر مسجل فعليا أقدم من الشهر الجاري.
+function getLatestPerfMonthIndex(){
+  let latest = -1;
+  EMPLOYEES.forEach(e=>{
+    if(!Array.isArray(e.perf_months)) return;
+    e.perf_months.forEach((v,i)=>{ if(typeof v === 'number' && i > latest) latest = i; });
+  });
+  return latest;
+}
+
+// ---------- لوحة الصدارة الشهرية: أفضل الموظفين أداء بآخر شهر مسجل (بدون المشرفين) ----------
+function getMonthlyLeaderboard(limit){
+  const idx = getLatestPerfMonthIndex();
+  if(idx < 0) return { monthLabel: null, list: [] };
+  const list = EMPLOYEES
+    .filter(e => !e.is_supervisor && Array.isArray(e.perf_months) && typeof e.perf_months[idx] === 'number')
+    .map(e => ({ name: (e.name||'').trim(), score: e.perf_months[idx] }))
+    .sort((a,b) => b.score - a.score)
+    .slice(0, limit || 5);
+  return { monthLabel: PERF_MONTH_LABELS[idx], list };
+}
+function renderMonthlyLeaderboard(){
+  const wrap = document.getElementById('monthlyLeaderboardWrap');
+  if(!wrap) return;
+  const { monthLabel, list } = getMonthlyLeaderboard(5);
+  if(!monthLabel || !list.length){ wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  const medals = ['🥇','🥈','🥉','🏅','🏅'];
+  wrap.innerHTML = `
+    <div class="leaderboard-card">
+      <div class="leaderboard-head">🏆 لوحة الصدارة الشهرية — ${monthLabel}</div>
+      <div class="leaderboard-list">
+        ${list.map((it,i)=>`
+          <div class="leaderboard-row">
+            <span class="leaderboard-rank">${medals[i]||'🔹'}</span>
+            <span class="leaderboard-name">${it.name}</span>
+            <span class="leaderboard-score">${ceilPctText(it.score)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  wrap.style.display = '';
+}
+
+// ---------- توزيع أداء الفريق: عدد الموظفين بكل شريحة نسبة بآخر شهر مسجل (بدون المشرفين) ----------
+function getPerfDistribution(){
+  const idx = getLatestPerfMonthIndex();
+  if(idx < 0) return null;
+  const buckets = [
+    {label:'أقل من 80%', min:0,    max:0.80,   count:0, color:'#c0392b'},
+    {label:'80% - 89%',  min:0.80, max:0.90,   count:0, color:'#d98324'},
+    {label:'90% - 94%',  min:0.90, max:0.95,   count:0, color:'#c9a227'},
+    {label:'95% - 99%',  min:0.95, max:1.00,   count:0, color:'#3f8f5f'},
+    {label:'100%',       min:1.00, max:1.0001, count:0, color:'#0e6a5a'}
+  ];
+  let total = 0;
+  EMPLOYEES.forEach(e=>{
+    if(e.is_supervisor) return;
+    if(!Array.isArray(e.perf_months)) return;
+    const v = e.perf_months[idx];
+    if(typeof v !== 'number') return;
+    total++;
+    for(const b of buckets){ if(v >= b.min && v < b.max){ b.count++; break; } }
+  });
+  return { monthLabel: PERF_MONTH_LABELS[idx], buckets, total };
+}
+function renderPerfDistributionChart(){
+  const wrap = document.getElementById('perfDistributionWrap');
+  if(!wrap) return;
+  const dist = getPerfDistribution();
+  if(!dist || !dist.total){ wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  const maxCount = Math.max.apply(null, dist.buckets.map(b=>b.count).concat([1]));
+  wrap.innerHTML = `
+    <div class="perf-dist-card">
+      <div class="perf-dist-head">📊 توزيع أداء الفريق — ${dist.monthLabel} (${dist.total} موظف)</div>
+      <div class="perf-dist-bars">
+        ${dist.buckets.map(b=>`
+          <div class="perf-dist-row">
+            <span class="perf-dist-label">${b.label}</span>
+            <div class="perf-dist-bar-track"><div class="perf-dist-bar-fill" style="width:${(b.count/maxCount*100)}%;background:${b.color};"></div></div>
+            <span class="perf-dist-count">${b.count}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  wrap.style.display = '';
+}
+
 function buildEmployeeSummaryHTML(e, editingId){
   const jobNo = e.job_no;
   const perf = employeePerformanceSummary(jobNo);
@@ -6392,6 +6541,8 @@ function openEmployeeSummary(e){
       }
       addPerfNote(e.job_no, opts);
       if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
       render();
     });
 
@@ -6400,6 +6551,8 @@ function openEmployeeSummary(e){
         if(!confirm('حذف هذا التوجيه نهائيا؟')) return;
         deletePerfNote(e.job_no, btn.getAttribute('data-vid'));
         if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
         render();
       });
     });
@@ -6407,6 +6560,8 @@ function openEmployeeSummary(e){
       btn.addEventListener('click', ()=>{
         stopCelebration(e.job_no, btn.getAttribute('data-vid'));
         if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
         render();
       });
     });
@@ -6433,6 +6588,8 @@ function openEmployeeSummary(e){
         }
         updatePerfNote(e.job_no, vid, patch);
         if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
+      if(typeof renderMonthlyLeaderboard === 'function') renderMonthlyLeaderboard();
+      if(typeof renderPerfDistributionChart === 'function') renderPerfDistributionChart();
         editingId = null;
         render();
       });
