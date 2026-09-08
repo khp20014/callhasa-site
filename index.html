@@ -2431,6 +2431,10 @@ updateClock(); setInterval(updateClock,1000);
     if(typeof updateBulkExportButtonVisibility === 'function') updateBulkExportButtonVisibility(me);
     if(typeof renderCelebrationsRibbon === 'function') renderCelebrationsRibbon();
     loadMyMessages(me);
+    requestNotificationPermissionOnce();
+    if(me && me.job_no && !isOwnerNationalId(uid) && typeof subscribeToMyMessagesRealtime === 'function'){
+      subscribeToMyMessagesRealtime(me.job_no, me.name);
+    }
     refreshKudosBadge();
     triggerSectionRevealAnimation();
     if(showWelcome !== false) showWelcomeSplash(me);
@@ -4675,6 +4679,53 @@ function renderIncomingMsgList(){
 })();
 
 let __incomingMessagesRealtimeSubscribed = false;
+// ---------- إشعارات المتصفح (Browser Notifications) للرسائل الجديدة ----------
+// كل موظف لازم يوافق بنفسه من جهازه أول مرة (سؤال المتصفح القياسي)، ولا يمكن
+// تفعيلها له عن بعد. لو رفض أو تجاهل، يضل يعتمد على الشارة الحمراء داخل الصفحة فقط.
+function requestNotificationPermissionOnce(){
+  try{
+    if(!('Notification' in window)) return;
+    if(Notification.permission === 'default'){
+      Notification.requestPermission().catch(()=>{});
+    }
+  }catch(err){ /* بعض المتصفحات قد تمنع الطلب في سياقات معينة، نتجاهل بصمت */ }
+}
+function notifyNewMessage(title, body, onClickFocus){
+  try{
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    const n = new Notification(title, { body: body || '', icon: '🎧', tag: 'ahsa-cc-message' });
+    n.onclick = function(){
+      try{ window.focus(); }catch(err){}
+      if(typeof onClickFocus === 'function') onClickFocus();
+      n.close();
+    };
+  }catch(err){ /* الإشعارات ليست ميزة حرجة، أي خطأ هنا لا يجب أن يوقف باقي الكود */ }
+}
+
+let __myMessagesRealtimeJobNo = null;
+let __myMessagesRealtimeChannel = null;
+function subscribeToMyMessagesRealtime(jobNo, employeeName){
+  if(!jobNo || __myMessagesRealtimeJobNo === String(jobNo)) return; // نفس الموظف مشترك أصلا بهذا التحميل
+  const client = getSupabaseClient();
+  if(!client) return;
+  if(__myMessagesRealtimeChannel){
+    try{ client.removeChannel(__myMessagesRealtimeChannel); }catch(err){}
+  }
+  __myMessagesRealtimeJobNo = String(jobNo);
+  __myMessagesRealtimeChannel = client
+    .channel('my_messages_' + jobNo)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `employee_job_no=eq.${jobNo}` }, (payload)=>{
+      const row = payload && payload.new;
+      if(!row || row.sender_role !== 'admin') return; // نهتم فقط برسائل الإدارة الموجهة لهذا الموظف
+      loadMyMessages(window.__currentEmployee);
+      notifyNewMessage('رسالة جديدة من الإدارة', row.message_text || '', ()=>{
+        const btn = document.getElementById('myMessagesBtn');
+        if(btn) btn.click();
+      });
+    })
+    .subscribe();
+}
+
 function subscribeToIncomingMessagesRealtime(){
   if(__incomingMessagesRealtimeSubscribed) return; // تفادي إعادة الاشتراك بنفس القناة بعد تسجيل دخول ثاني بنفس تحميل الصفحة
   const client = getSupabaseClient();
@@ -4682,8 +4733,17 @@ function subscribeToIncomingMessagesRealtime(){
   __incomingMessagesRealtimeSubscribed = true;
   client
     .channel('incoming_messages_badge')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, ()=>{
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload)=>{
       refreshIncomingMsgBadge();
+      const row = payload && payload.new;
+      if(payload && payload.eventType === 'INSERT' && row && row.sender_role === 'employee'){
+        const emp = (typeof EMPLOYEES !== 'undefined' ? EMPLOYEES.find(e=>e.job_no===row.employee_job_no) : null);
+        const senderLabel = row.sender_name || (emp ? emp.name : 'موظف');
+        notifyNewMessage('رسالة جديدة من ' + senderLabel, row.message_text || '', ()=>{
+          const btn = document.getElementById('incomingMsgBtn');
+          if(btn) btn.click();
+        });
+      }
     })
     .subscribe();
 }
