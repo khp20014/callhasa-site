@@ -7489,17 +7489,24 @@ function kbGoSections(sector){ window.__kbState = { view:'sections', sector:sect
 function kbGoItems(sector, sectionId){ window.__kbState = { view:'items', sector:sector, sectionId:sectionId }; renderKnowledgeBank(); }
 
 function renderKbSectorsView(root){
-  root.innerHTML = kbHeader('اختر القطاع', 'اختر قطاع العمل أو قطاع التنمية للاطلاع على أقسامه', 'kbGoHub()')
-    + '<div style="max-width:900px;margin:-24px auto 40px;padding:0 18px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">'
+  root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
+    + '<button type="button" onclick="kbGoHub()" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
+    + '<div style="text-align:center;color:#fff;">'
+    + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">بنك المعرفة</div>'
+    + '<div style="font-size:22px;font-weight:900;">اختر القطاع</div>'
+    + '<div style="font-size:12.5px;opacity:.7;margin-top:6px;">اختر قطاع العمل أو قطاع التنمية للاطلاع على أقسامه</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center;max-width:760px;width:100%;">'
     + KB_SECTORS.map(function(s){
         return kbCard(
-          '<div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);display:flex;align-items:center;justify-content:center;align-self:center;">'
-          +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
-          +'</div><div style="font-size:15px;font-weight:800;color:#16233f;text-align:center;">'+kbEsc(s.name)+'</div>',
-          "kbGoSections('"+s.id+"')", 'min-width:220px;max-width:280px;align-items:center;'
+          '<div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);display:flex;align-items:center;justify-content:center;align-self:center;">'
+          +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
+          +'</div><div style="font-size:16px;font-weight:800;color:#16233f;text-align:center;">'+kbEsc(s.name)+'</div>',
+          "kbGoSections('"+s.id+"')", 'min-width:260px;max-width:340px;align-items:center;padding:26px 22px;'
         );
       }).join('')
-    + '</div>';
+    + '</div></div>';
 }
 
 function renderKbSectionsView(root){
