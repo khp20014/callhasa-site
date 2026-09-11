@@ -1151,6 +1151,12 @@
   <div id="kbRoot"></div>
 </div>
 
+<!-- حاوية "اختبر نفسك": اختبار قصير موقّت على أسئلة بنك المعرفة، بالاسم،
+     ونتيجته تُحفظ بملف الموظف ويشوفها المالك ومن يفوّضه. -->
+<div id="quizAppWrap" style="display:none;position:fixed;inset:0;z-index:500;overflow:auto;background:#f4f6f8;">
+  <div id="quizRoot"></div>
+</div>
+
 <div id="employeeSearchApp" style="display:none;">
 
 <div class="wrap" id="dashboardApp">
@@ -1210,7 +1216,9 @@
         <button id="switchToContactReasonsBtn" type="button" class="qa-btn qa-teal" title="مسارات أسباب الاتصال لقطاع العمل" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg></span></button>
         <button id="contactReasonsPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات مسارات أسباب الاتصال" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
         <button id="switchToKnowledgeBankBtn" type="button" class="qa-btn qa-teal" title="بنك المعرفة"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5.5C10.5 4 8 3.5 4 3.5v14c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-14c-4 0-6.5.5-8 2Z"/><path d="M12 5.5v14"/></svg></span></button>
+        <button id="switchToQuizBtn" type="button" class="qa-btn qa-teal" title="اختبر نفسك"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.7-1.2c.5.9.2 1.6-.6 2.3-.8.7-1.6 1.1-1.6 2.4"/><path d="M12 17h.01"/></svg></span></button>
         <button id="knowledgeBankPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات بنك المعرفة" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
+        <button id="quizPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات نتائج الاختبار" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
       </div>
     </div>
   </header>
@@ -1257,6 +1265,9 @@
     </button>
     <button type="button" id="secHeadKnowledgeBankLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
       <span class="idx">+</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق — اضغط للفتح</span>
+    </button>
+    <button type="button" id="secHeadQuizLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
+      <span class="idx">★</span><h2 style="margin:0;">اختبر نفسك</h2><span class="sub">اختبار قصير على أسئلة بنك المعرفة — بالاسم ويُحفظ لك بالنظام</span>
     </button>
     <div class="sec-head sec-c-navy reveal-sec" id="directorySecHead"><span class="idx">02</span><h2 id="directoryTitle">نظام البحث عن بيانات الموظفين</h2><button id="bulkExportBtn" type="button" class="dir-export-btn" title="تصدير بيانات الموظفين" style="display:none;"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تصدير بيانات الموظفين</button><button type="button" class="owner-edit-btn owner-only" data-owner-edit><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة / <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6 7l1 13a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> حذف موظف</button></div>
     <div class="term" id="dirSearchTerm">
@@ -1659,6 +1670,24 @@
         </div>
         <div id="knowledgeBankPermsSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
         <div id="knowledgeBankPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ RESULTS PERMISSIONS MODAL (owner-only) -->
+  <div class="modal-overlay" id="quizPermsModal">
+    <div class="modal-box" style="max-width:520px;">
+      <button class="modal-close" id="closeQuizPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg> صلاحيات نتائج الاختبار</h3>
+      <div class="modal-sub">نتائج الاختبار تظهر لك أنت (المالك) فقط، ولمن تفوّضه هنا (مدراء/مشرفين).</div>
+      <div style="margin-top:14px;">
+        <div style="display:flex;gap:6px;">
+          <input list="quizPermsEmpOptions" id="quizPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <datalist id="quizPermsEmpOptions"></datalist>
+          <button type="button" id="quizPermsAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="quizPermsSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
+        <div id="quizPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
       </div>
     </div>
   </div>
@@ -2137,11 +2166,18 @@ function loadAdminOverrides(){
     ov.knowledgeBankEditors = ov.knowledgeBankEditors || [];
     // الأقسام الفرعية داخل كل قطاع (عمل/تنمية) — كل قسم: {id, sector, name}.
     ov.knowledgeBankSections = ov.knowledgeBankSections || [];
+    // نظام "اختبر نفسك": أسئلة صح/خطأ واختيار من متعدد (3 خيارات)، مرتبطة
+    // بمصدرها من بنك المعرفة، ونتائج الموظفين، ومن يحق له مشاهدة النتائج
+    // (المالك دائما، بالإضافة لمن يفوّضه من مدراء/مشرفين).
+    ov.quizQuestions = ov.quizQuestions || [];
+    ov.quizResults = ov.quizResults || [];
+    ov.quizResultViewers = ov.quizResultViewers || [];
+    ov.quizQuestionCount = ov.quizQuestionCount || { work: 10, dev: 10 };
     // عناصر بنك المعرفة نفسها (أسئلة/أجوبة) — تُخزَّن هنا وتُزامَن سحابيا
     // بنفس آلية باقي إعدادات المالك، فتظهر لكل الموظفين فور الحفظ.
     ov.knowledgeBankItems = ov.knowledgeBankItems || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankSections:[], knowledgeBankItems:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10} }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -2645,6 +2681,7 @@ updateClock(); setInterval(updateClock,1000);
     if(contactReasonsPermsBtn) contactReasonsPermsBtn.style.display = isOwner ? 'flex' : 'none';
     if(typeof refreshContactReasonsAccessUI === 'function') refreshContactReasonsAccessUI();
     if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
+    if(typeof refreshQuizAccessUI === 'function') refreshQuizAccessUI();
     const auditLogBtn = document.getElementById('auditLogBtn');
     if(auditLogBtn) auditLogBtn.style.display = isOwner ? 'flex' : 'none';
     const suggestInboxBtn = document.getElementById('suggestInboxBtn');
@@ -3576,6 +3613,7 @@ function applyCloudOverrides(cloudOv){
       if(typeof renderGoalPermsMonthsList === 'function') renderGoalPermsMonthsList();
     }
     if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
+    if(typeof refreshQuizAccessUI === 'function') refreshQuizAccessUI();
   } finally {
     __applyingCloudOverrides = false;
   }
@@ -7488,14 +7526,55 @@ function kbGoSectors(){ window.__kbState = { view:'sectors', sector:null, sectio
 function kbGoSections(sector){ window.__kbState = { view:'sections', sector:sector, sectionId:null }; renderKnowledgeBank(); }
 function kbGoItems(sector, sectionId){ window.__kbState = { view:'items', sector:sector, sectionId:sectionId }; renderKnowledgeBank(); }
 
+function kbSearchAll(query, scopedSector){
+  const ov = loadAdminOverrides();
+  const q = (query||'').trim().toLowerCase();
+  if(!q) return [];
+  const items = ov.knowledgeBankItems || [];
+  const sections = ov.knowledgeBankSections || [];
+  return items.filter(function(it){
+    if(scopedSector && it.sector !== scopedSector) return false;
+    const hay = [it.question, it.answer_text||'', (it.options||[]).join(' ')].join(' ').toLowerCase();
+    return hay.indexOf(q) !== -1;
+  }).slice(0,30).map(function(it){
+    const sec = sections.find(function(s){ return s.id===it.sectionId; });
+    const sectorInfo = KB_SECTORS.find(function(s){ return s.id===it.sector; });
+    return { item:it, sectionName: sec?sec.name:'', sectorName: sectorInfo?sectorInfo.name:'' };
+  });
+}
+function kbRenderSearchResults(boxId, results){
+  const box = document.getElementById(boxId);
+  if(!box) return;
+  if(!results.length){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display = 'block';
+  box.innerHTML = results.map(function(r){
+    const answerPreview = r.item.q_type==='mcq'
+      ? (r.item.options||[])[r.item.correct_index]||''
+      : (r.item.answer_text||'');
+    return '<button type="button" onclick="kbSearchGo(\''+r.item.sector+'\','+r.item.sectionId+','+r.item.id+')" style="all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;text-align:right;padding:10px 12px;border-bottom:1px solid #eef1f3;">'
+      + '<div style="font-size:10.5px;color:#0e6a5a;font-weight:800;">'+kbEsc(r.sectorName)+' ← '+kbEsc(r.sectionName)+'</div>'
+      + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-top:2px;">'+kbEsc(r.item.question)+'</div>'
+      + (answerPreview ? '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+kbEsc(answerPreview)+'</div>' : '')
+      + '</button>';
+  }).join('');
+}
+function kbSearchGo(sector, sectionId, itemId){
+  window.__kbHighlightId = itemId;
+  kbGoItems(sector, sectionId);
+}
+
 function renderKbSectorsView(root){
-  root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
+  root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
     + '<button type="button" onclick="kbGoHub()" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
     + '<div style="text-align:center;color:#fff;">'
     + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">بنك المعرفة</div>'
     + '<div style="font-size:22px;font-weight:900;">اختر القطاع</div>'
     + '<div style="font-size:12.5px;opacity:.7;margin-top:6px;">اختر قطاع العمل أو قطاع التنمية للاطلاع على أقسامه</div>'
+    + '</div>'
+    + '<div style="width:100%;max-width:420px;position:relative;">'
+    + '<input id="kbGlobalSearch" oninput="kbRenderSearchResults(\'kbGlobalSearchResults\', kbSearchAll(this.value, null))" placeholder="🔍 ابحث بكل بنك المعرفة (القطاعين معا)…" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:none;font-size:13.5px;font-family:inherit;">'
+    + '<div id="kbGlobalSearchResults" style="display:none;position:absolute;top:48px;right:0;left:0;background:#fff;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.25);max-height:280px;overflow:auto;z-index:5;"></div>'
     + '</div>'
     + '<div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center;max-width:760px;width:100%;">'
     + KB_SECTORS.map(function(s){
@@ -7516,7 +7595,11 @@ function renderKbSectionsView(root){
   const sections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.sector===st.sector; });
   const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
   let html = kbHeader(sectorInfo?sectorInfo.name:'', 'الأقسام المتاحة', 'kbGoSectors()')
-    + '<div style="max-width:900px;margin:-24px auto 40px;padding:0 18px;">';
+    + '<div style="max-width:900px;margin:-24px auto 40px;padding:0 18px;">'
+    + '<div style="position:relative;margin-bottom:16px;">'
+    + '<input id="kbSectorSearch" oninput="kbRenderSearchResults(\'kbSectorSearchResults\', kbSearchAll(this.value, \''+st.sector+'\'))" placeholder="🔍 ابحث داخل هذا القطاع…" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e6ea;font-size:13.5px;font-family:inherit;">'
+    + '<div id="kbSectorSearchResults" style="display:none;position:absolute;top:48px;right:0;left:0;background:#fff;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.18);max-height:280px;overflow:auto;z-index:5;"></div>'
+    + '</div>';
   if(canManage){
     html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;gap:8px;">'
       + '<input id="kbNewSectionName" placeholder="اسم القسم الجديد" style="flex:1;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;">'
@@ -7647,7 +7730,7 @@ function kbRenderItemsList(items, canManage){
       ? '<button type="button" onclick="kbEditItem('+it.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
         + '<button type="button" onclick="kbDeleteItem('+it.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🗑 حذف</button>'
       : '';
-    return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
+    return '<div id="kbItemCard-'+it.id+'" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);transition:box-shadow .3s, background .3s;">'
       + '<div style="font-weight:800;font-size:14px;color:#16233f;">'+kbEsc(it.question)+'</div>'
       + answerHtml + kbFileChip(it.file)
       + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'
@@ -7656,6 +7739,19 @@ function kbRenderItemsList(items, canManage){
       + mgmtBtns
       + '</div></div>';
   }).join('');
+  if(window.__kbHighlightId != null){
+    const targetId = window.__kbHighlightId;
+    window.__kbHighlightId = null;
+    setTimeout(function(){
+      const el = document.getElementById('kbItemCard-'+targetId);
+      if(el){
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        el.style.background = '#fff6da';
+        el.style.boxShadow = '0 0 0 3px #f0c33d';
+        setTimeout(function(){ el.style.background = '#fff'; el.style.boxShadow = '0 6px 18px rgba(15,46,61,.06)'; }, 2200);
+      }
+    }, 80);
+  }
 }
 async function kbAddItem(){
   if(!canManageKnowledgeBank()) return;
@@ -7764,6 +7860,458 @@ function kbExportExcel(id){
   link.click();
   document.body.removeChild(link);
 }
+// ===== نظام "اختبر نفسك": اختبار موقّت على أسئلة بنك المعرفة =====
+window.__quizState = { view:'sectors', sector:null };
+window.__quizRun = null; // { sector, questions, idx, answers, startedAt, qStartedAt, timerHandle, remaining }
+window.__quizEditingId = null;
+
+function quizNextId(){
+  const ov = loadAdminOverrides();
+  const all = [].concat(ov.quizQuestions||[], ov.quizResults||[]);
+  return all.reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
+}
+function quizGoSectors(){ window.__quizState = { view:'sectors', sector:null }; renderQuiz(); }
+function quizGoManage(sector){ window.__quizState = { view:'manage', sector:sector }; window.__quizEditingId = null; renderQuiz(); }
+function quizGoResultsList(){ window.__quizState = { view:'results', sector:null }; renderQuiz(); }
+function quizStart(sector){
+  const ov = loadAdminOverrides();
+  const pool = (ov.quizQuestions||[]).filter(function(q){ return q.sector===sector; });
+  if(!pool.length){ alert('لا يوجد أسئلة اختبار بهذا القطاع بعد.'); return; }
+  const count = Math.min((ov.quizQuestionCount||{})[sector] || 10, pool.length);
+  const shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
+  window.__quizRun = { sector:sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), qStartedAt:Date.now(), timerHandle:null, remaining:60 };
+  window.__quizState = { view:'run', sector:sector };
+  renderQuiz();
+}
+
+function renderQuiz(){
+  const root = document.getElementById('quizRoot');
+  if(!root) return;
+  const st = window.__quizState;
+  if(st.view === 'manage') return renderQuizManageView(root);
+  if(st.view === 'run') return renderQuizRunView(root);
+  if(st.view === 'results') return renderQuizResultsView(root);
+  return renderQuizSectorsView(root);
+}
+
+function renderQuizSectorsView(root){
+  const canManage = typeof canManageQuiz === 'function' && canManageQuiz();
+  const canResults = typeof canViewQuizResults === 'function' && canViewQuizResults();
+  root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
+    + '<button type="button" onclick="window.__showAppHub && window.__showAppHub()" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
+    + (canResults ? '<button type="button" onclick="quizGoResultsList()" style="all:unset;cursor:pointer;position:absolute;top:20px;left:20px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">📋 النتائج</button>' : '')
+    + '<div style="text-align:center;color:#fff;">'
+    + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">اختبر نفسك</div>'
+    + '<div style="font-size:22px;font-weight:900;">اختر القطاع</div>'
+    + '<div style="font-size:12.5px;opacity:.7;margin-top:6px;">اختبار قصير موقّت — نتيجتك تُحفظ باسمك بالنظام</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:center;max-width:760px;width:100%;">'
+    + KB_SECTORS.map(function(s){
+        const manageBtn = canManage ? '<button type="button" onclick="event.stopPropagation();quizGoManage(\''+s.id+'\')" style="margin-top:6px;background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">⚙ إدارة الأسئلة</button>' : '';
+        return kbCard(
+          '<div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);display:flex;align-items:center;justify-content:center;align-self:center;">'
+          +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.7-1.2c.5.9.2 1.6-.6 2.3-.8.7-1.6 1.1-1.6 2.4"/><path d="M12 17h.01"/></svg>'
+          +'</div><div style="font-size:16px;font-weight:800;color:#16233f;text-align:center;">'+kbEsc(s.name)+'</div>'
+          +'<div style="text-align:center;">'+manageBtn+'</div>',
+          "quizStart('"+s.id+"')", 'min-width:260px;max-width:340px;align-items:center;padding:26px 22px;'
+        );
+      }).join('')
+    + '</div></div>';
+}
+
+// ---------- إدارة الأسئلة (المالك فقط) ----------
+function renderQuizManageView(root){
+  const st = window.__quizState;
+  const ov = loadAdminOverrides();
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
+  const questions = (ov.quizQuestions||[]).filter(function(q){ return q.sector===st.sector; });
+  const countVal = (ov.quizQuestionCount||{})[st.sector] || 10;
+  let html = kbHeader('إدارة أسئلة الاختبار', sectorInfo?sectorInfo.name:'', 'quizGoSectors()')
+    + '<div style="max-width:900px;margin:-24px auto 60px;padding:0 18px;">'
+    + '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;align-items:center;gap:10px;">'
+    + '<label style="font-size:12.5px;font-weight:700;color:#16233f;">عدد أسئلة الاختبار الواحد:</label>'
+    + '<input type="number" min="1" id="quizCountInput" value="'+countVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
+    + '<button type="button" onclick="quizSaveCount()" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;">حفظ</button>'
+    + '</div>'
+    + '<div id="quizFormBox"></div>'
+    + '<div id="quizQuestionsListBox" style="display:flex;flex-direction:column;gap:12px;margin-top:14px;"></div>'
+    + '</div>';
+  root.innerHTML = html;
+  const formBox = document.getElementById('quizFormBox');
+  if(window.__quizEditingId == null){ formBox.innerHTML = quizRenderForm(null); }
+  quizRenderQuestionsList(questions);
+}
+function quizSaveCount(){
+  const ov = loadAdminOverrides();
+  const v = parseInt(document.getElementById('quizCountInput').value, 10) || 10;
+  ov.quizQuestionCount = ov.quizQuestionCount || {};
+  ov.quizQuestionCount[window.__quizState.sector] = v;
+  saveAdminOverrides(ov);
+  alert('تم الحفظ ✓');
+}
+function quizSourceOptionsHtml(sector, selectedSectionId, selectedItemId){
+  const ov = loadAdminOverrides();
+  const sections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.sector===sector; });
+  let secHtml = '<option value="">— بدون ربط بمصدر —</option>';
+  secHtml += sections.map(function(s){ return '<option value="'+s.id+'" '+(selectedSectionId===s.id?'selected':'')+'>'+kbEsc(s.name)+'</option>'; }).join('');
+  return secHtml;
+}
+function quizItemOptionsHtml(sector, sectionId, selectedItemId){
+  if(!sectionId) return '<option value="">اختر قسما أولا</option>';
+  const ov = loadAdminOverrides();
+  const items = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sector===sector && it.sectionId===parseInt(sectionId,10); });
+  if(!items.length) return '<option value="">لا يوجد أسئلة بهذا القسم</option>';
+  return items.map(function(it){ return '<option value="'+it.id+'" '+(selectedItemId===it.id?'selected':'')+'>'+kbEsc(it.question.slice(0,40))+'</option>'; }).join('');
+}
+function quizOnSourceSectionChange(idAttr){
+  const sector = window.__quizState.sector;
+  const sectionId = document.getElementById('quizSrcSection-'+idAttr).value;
+  document.getElementById('quizSrcItem-'+idAttr).innerHTML = quizItemOptionsHtml(sector, sectionId, null);
+}
+function quizRenderForm(editQ){
+  const q = editQ || { q_type:'tf', question:'', options:['','',''], correct_index:0, sourceSectionId:null, sourceItemId:null };
+  const idAttr = editQ ? editQ.id : 'new';
+  const sector = window.__quizState.sector;
+  let mcqInputs = '';
+  for(let i=0;i<3;i++){
+    mcqInputs += '<input id="quizOpt'+i+'-'+idAttr+'" placeholder="الخيار '+(i+1)+'" value="'+kbEsc((q.options||[])[i]||'')+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">';
+  }
+  let correctMcqOpts = '';
+  for(let i=0;i<3;i++){ correctMcqOpts += '<option value="'+i+'" '+(q.correct_index===i?'selected':'')+'>الإجابة الصحيحة: الخيار '+(i+1)+'</option>'; }
+  const tfCorrectHtml = '<select id="quizTfCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '<option value="0" '+(q.correct_index===0?'selected':'')+'>الإجابة الصحيحة: صح</option>'
+    + '<option value="1" '+(q.correct_index===1?'selected':'')+'>الإجابة الصحيحة: خطأ</option>'
+    + '</select>';
+  const saveCall = editQ ? ('quizSaveEdit('+editQ.id+')') : 'quizAddQuestion()';
+  return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);margin-bottom:14px;">'
+    + '<div style="font-weight:800;font-size:13.5px;margin-bottom:10px;color:#16233f;">'+(editQ?'تعديل سؤال الاختبار':'+ إضافة سؤال اختبار جديد')+'</div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
+    + '<select id="quizType-'+idAttr+'" onchange="quizToggleTypeFields(\''+idAttr+'\')" style="width:150px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '<option value="tf" '+(q.q_type==='tf'?'selected':'')+'>صح / خطأ</option>'
+    + '<option value="mcq" '+(q.q_type==='mcq'?'selected':'')+'>اختيار من متعدد (3 خيارات)</option>'
+    + '</select>'
+    + '<input id="quizQuestion-'+idAttr+'" placeholder="نص السؤال" value="'+kbEsc(q.question)+'" style="flex:1;min-width:180px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '</div>'
+    + '<div id="quizTfWrap-'+idAttr+'" style="display:'+(q.q_type==='tf'?'block':'none')+';margin-bottom:8px;">'+tfCorrectHtml+'</div>'
+    + '<div id="quizMcqWrap-'+idAttr+'" style="display:'+(q.q_type==='mcq'?'grid':'none')+';gap:6px;margin-bottom:8px;">'+mcqInputs+'<select id="quizMcqCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'+correctMcqOpts+'</select></div>'
+    + '<div style="margin-bottom:10px;padding:10px;background:#f8fafb;border-radius:9px;">'
+    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">🔗 توثيق: ربط السؤال بمصدره من بنك المعرفة (اختياري، يظهر للموظف بعد إجابته)</label>'
+    + '<div style="display:flex;gap:6px;">'
+    + '<select id="quizSrcSection-'+idAttr+'" onchange="quizOnSourceSectionChange(\''+idAttr+'\')" style="flex:1;padding:8px 9px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12px;font-family:inherit;">'+quizSourceOptionsHtml(sector, q.sourceSectionId, q.sourceItemId)+'</select>'
+    + '<select id="quizSrcItem-'+idAttr+'" style="flex:1;padding:8px 9px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12px;font-family:inherit;">'+quizItemOptionsHtml(sector, q.sourceSectionId, q.sourceItemId)+'</select>'
+    + '</div></div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button type="button" onclick="'+saveCall+'" style="background:#0e6a5a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">'+(editQ?'حفظ التعديل':'+ إضافة السؤال')+'</button>'
+    + (editQ ? '<button type="button" onclick="quizCancelEdit()" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">إلغاء</button>' : '')
+    + '</div></div>';
+}
+function quizToggleTypeFields(idAttr){
+  const type = document.getElementById('quizType-'+idAttr).value;
+  document.getElementById('quizTfWrap-'+idAttr).style.display = type==='tf' ? 'block' : 'none';
+  document.getElementById('quizMcqWrap-'+idAttr).style.display = type==='mcq' ? 'grid' : 'none';
+}
+function quizRenderQuestionsList(questions){
+  const box = document.getElementById('quizQuestionsListBox');
+  if(!box) return;
+  if(!questions.length){ box.innerHTML = '<div style="color:#8a93a6;font-size:13px;padding:16px;text-align:center;">لا يوجد أسئلة اختبار بعد بهذا القطاع.</div>'; return; }
+  box.innerHTML = questions.map(function(q){
+    if(window.__quizEditingId === q.id) return quizRenderForm(q);
+    const answerLabel = q.q_type==='tf' ? (q.correct_index===0?'صح':'خطأ') : (q.options||[])[q.correct_index]||'';
+    return '<div style="background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
+      + '<div><div style="font-weight:800;font-size:13.5px;color:#16233f;">'+kbEsc(q.question)+'</div>'
+      + '<div style="font-size:11.5px;color:#8a93a6;margin-top:3px;">('+ (q.q_type==='tf'?'صح/خطأ':'اختيار من متعدد') +') — الإجابة: '+kbEsc(answerLabel)+'</div></div>'
+      + '<div style="display:flex;gap:6px;flex-shrink:0;">'
+      + '<button type="button" onclick="quizEditQuestion('+q.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">✎</button>'
+      + '<button type="button" onclick="quizDeleteQuestion('+q.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">🗑</button>'
+      + '</div></div>';
+  }).join('');
+}
+function quizAddQuestion(){
+  if(!canManageQuiz()) return;
+  const idAttr = 'new';
+  const type = document.getElementById('quizType-'+idAttr).value;
+  const question = document.getElementById('quizQuestion-'+idAttr).value.trim();
+  if(!question){ alert('لازم تكتب نص السؤال'); return; }
+  const q = { id: quizNextId(), sector: window.__quizState.sector, q_type: type, question: question };
+  if(type === 'tf'){
+    q.correct_index = parseInt(document.getElementById('quizTfCorrect-'+idAttr).value, 10);
+  } else {
+    const opts = [0,1,2].map(function(i){ return document.getElementById('quizOpt'+i+'-'+idAttr).value.trim(); });
+    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي الخيارات الثلاثة'); return; }
+    q.options = opts;
+    q.correct_index = parseInt(document.getElementById('quizMcqCorrect-'+idAttr).value, 10);
+  }
+  const srcSection = document.getElementById('quizSrcSection-'+idAttr).value;
+  const srcItem = document.getElementById('quizSrcItem-'+idAttr).value;
+  if(srcSection && srcItem){ q.sourceSectionId = parseInt(srcSection,10); q.sourceItemId = parseInt(srcItem,10); }
+  const ov = loadAdminOverrides();
+  ov.quizQuestions = ov.quizQuestions || [];
+  ov.quizQuestions.push(q);
+  saveAdminOverrides(ov);
+  renderQuiz();
+}
+function quizEditQuestion(id){ window.__quizEditingId = id; renderQuiz(); }
+function quizCancelEdit(){ window.__quizEditingId = null; renderQuiz(); }
+function quizSaveEdit(id){
+  if(!canManageQuiz()) return;
+  const ov = loadAdminOverrides();
+  const q = (ov.quizQuestions||[]).find(function(x){ return x.id===id; });
+  if(!q) return;
+  const type = document.getElementById('quizType-'+id).value;
+  const question = document.getElementById('quizQuestion-'+id).value.trim();
+  if(!question){ alert('لازم تكتب نص السؤال'); return; }
+  q.q_type = type; q.question = question;
+  if(type === 'tf'){
+    q.correct_index = parseInt(document.getElementById('quizTfCorrect-'+id).value, 10);
+    delete q.options;
+  } else {
+    const opts = [0,1,2].map(function(i){ return document.getElementById('quizOpt'+i+'-'+id).value.trim(); });
+    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي الخيارات الثلاثة'); return; }
+    q.options = opts;
+    q.correct_index = parseInt(document.getElementById('quizMcqCorrect-'+id).value, 10);
+  }
+  const srcSection = document.getElementById('quizSrcSection-'+id).value;
+  const srcItem = document.getElementById('quizSrcItem-'+id).value;
+  if(srcSection && srcItem){ q.sourceSectionId = parseInt(srcSection,10); q.sourceItemId = parseInt(srcItem,10); }
+  else { delete q.sourceSectionId; delete q.sourceItemId; }
+  saveAdminOverrides(ov);
+  window.__quizEditingId = null;
+  renderQuiz();
+}
+function quizDeleteQuestion(id){
+  if(!canManageQuiz()) return;
+  if(!confirm('متأكد تبي تحذف هذا السؤال من الاختبار؟')) return;
+  const ov = loadAdminOverrides();
+  ov.quizQuestions = (ov.quizQuestions||[]).filter(function(x){ return x.id!==id; });
+  saveAdminOverrides(ov);
+  renderQuiz();
+}
+
+// ---------- تشغيل الاختبار (للموظف) ----------
+function quizClearTimer(){
+  if(window.__quizRun && window.__quizRun.timerHandle){ clearInterval(window.__quizRun.timerHandle); window.__quizRun.timerHandle = null; }
+}
+function renderQuizRunView(root){
+  const run = window.__quizRun;
+  if(!run){ quizGoSectors(); return; }
+  const q = run.questions[run.idx];
+  const total = run.questions.length;
+  const already = run.answers[run.idx];
+  let optionsHtml;
+  if(q.q_type === 'tf'){
+    const opts = ['صح','خطأ'];
+    optionsHtml = opts.map(function(label,i){ return quizOptionBtn(i, label, q, already); }).join('');
+  } else {
+    optionsHtml = (q.options||[]).map(function(label,i){ return quizOptionBtn(i, label, q, already); }).join('');
+  }
+  const sourceBtn = (already && q.sourceSectionId && q.sourceItemId)
+    ? '<button type="button" onclick="quizGoToSource(\''+run.sector+'\','+q.sourceSectionId+','+q.sourceItemId+')" style="margin-top:10px;background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;">📍 تحقق من المصدر بنك المعرفة</button>'
+    : '';
+  const nextBtn = already
+    ? '<button type="button" onclick="quizNextQuestion()" style="margin-top:14px;background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13.5px;cursor:pointer;width:100%;">'+(run.idx+1<total?'السؤال التالي ←':'إنهاء الاختبار')+'</button>'
+    : '';
+  root.innerHTML = '<div style="min-height:100vh;background:#f4f6f8;padding:20px 16px 60px;">'
+    + '<div style="max-width:640px;margin:0 auto;">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
+    + '<div style="font-size:12.5px;font-weight:800;color:#16233f;">سؤال '+(run.idx+1)+' من '+total+'</div>'
+    + '<div id="quizTimerBadge" style="font-size:13px;font-weight:900;color:#0e6a5a;background:#fff;border-radius:20px;padding:6px 14px;box-shadow:0 4px 10px rgba(15,46,61,.08);">⏱ 60</div>'
+    + '</div>'
+    + '<div style="height:6px;background:#e2e6ea;border-radius:3px;overflow:hidden;margin-bottom:20px;"><div style="width:'+Math.round((run.idx)/total*100)+'%;height:100%;background:#0e6a5a;"></div></div>'
+    + '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 22px rgba(15,46,61,.08);">'
+    + '<div style="font-size:16px;font-weight:800;color:#16233f;margin-bottom:16px;">'+kbEsc(q.question)+'</div>'
+    + '<div id="quizOptionsBox" style="display:flex;flex-direction:column;gap:10px;">'+optionsHtml+'</div>'
+    + sourceBtn + nextBtn
+    + '</div></div></div>';
+  quizStartTimer();
+}
+function quizOptionBtn(i, label, q, already){
+  let style = 'display:block;width:100%;box-sizing:border-box;text-align:right;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e6ea;background:#fff;font-size:13.5px;font-weight:700;color:#16233f;cursor:pointer;';
+  let suffix = '';
+  if(already){
+    if(i === q.correct_index){ style = 'display:block;width:100%;box-sizing:border-box;text-align:right;padding:12px 14px;border-radius:10px;border:1.5px solid #0e6a5a;background:#e7f6f1;font-size:13.5px;font-weight:800;color:#0e6a5a;'; suffix = ' ✔'; }
+    else if(i === already.chosenIndex){ style = 'display:block;width:100%;box-sizing:border-box;text-align:right;padding:12px 14px;border-radius:10px;border:1.5px solid #c0392b;background:#fdecea;font-size:13.5px;font-weight:800;color:#c0392b;'; suffix = ' ✕'; }
+  }
+  const clickAttr = already ? '' : ' onclick="quizAnswer('+i+')"';
+  return '<button type="button"'+clickAttr+' style="'+style+'">'+kbEsc(label)+suffix+'</button>';
+}
+function quizStartTimer(){
+  quizClearTimer();
+  const run = window.__quizRun;
+  run.remaining = 60;
+  run.qStartedAt = Date.now();
+  const badge = document.getElementById('quizTimerBadge');
+  if(badge) badge.textContent = '⏱ 60';
+  run.timerHandle = setInterval(function(){
+    run.remaining -= 1;
+    const b = document.getElementById('quizTimerBadge');
+    if(b){
+      b.textContent = '⏱ ' + run.remaining;
+      if(run.remaining <= 10){ b.style.color = '#c0392b'; b.style.background = '#fdecea'; }
+    }
+    if(run.remaining <= 0){
+      quizClearTimer();
+      if(!run.answers[run.idx]) quizAnswer(-1); // وقت السؤال انتهى بدون إجابة
+    }
+  }, 1000);
+}
+function quizAnswer(chosenIndex){
+  const run = window.__quizRun;
+  if(!run || run.answers[run.idx]) return;
+  quizClearTimer();
+  const q = run.questions[run.idx];
+  const timeTaken = Math.round((Date.now() - run.qStartedAt)/1000);
+  run.answers[run.idx] = { qId:q.id, chosenIndex:chosenIndex, correct: chosenIndex===q.correct_index, timeTakenSeconds:timeTaken };
+  renderQuiz();
+}
+function quizNextQuestion(){
+  const run = window.__quizRun;
+  if(!run) return;
+  if(run.idx + 1 < run.questions.length){
+    run.idx += 1;
+    renderQuiz();
+  } else {
+    quizFinish();
+  }
+}
+function quizGoToSource(sector, sectionId, itemId){
+  if(!confirm('بتخرج من الاختبار الحالي للتحقق من المصدر. تقدر تبدأ اختبارا جديدا بعدين. متابعة؟')) return;
+  quizClearTimer();
+  window.__quizRun = null;
+  if(window.__showKnowledgeBankApp) window.__showKnowledgeBankApp();
+  window.__kbHighlightId = itemId;
+  kbGoItems(sector, sectionId);
+}
+function quizFinish(){
+  const run = window.__quizRun;
+  if(!run) return;
+  quizClearTimer();
+  const total = run.questions.length;
+  const score = run.answers.filter(function(a){ return a && a.correct; }).length;
+  const durationSeconds = Math.round((Date.now() - run.startedAt)/1000);
+  const me = window.__currentEmployee;
+  const ov = loadAdminOverrides();
+  ov.quizResults = ov.quizResults || [];
+  const result = { id: quizNextId(), jobNo: me?me.job_no:null, employeeName: me?me.name:'—', sector: run.sector, score:score, total:total, durationSeconds:durationSeconds, takenAt: Date.now() };
+  ov.quizResults.push(result);
+  saveAdminOverrides(ov);
+  window.__quizLastResult = result;
+  window.__quizRun = null;
+  window.__quizState = { view:'done' };
+  renderQuizDoneView(document.getElementById('quizRoot'), result);
+}
+function renderQuizDoneView(root, result){
+  if(!root) return;
+  const mins = Math.floor(result.durationSeconds/60), secs = result.durationSeconds%60;
+  root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);color:#fff;text-align:center;">'
+    + '<div style="font-size:44px;">🎯</div>'
+    + '<div style="font-size:20px;font-weight:900;">انتهى الاختبار</div>'
+    + '<div style="font-size:15px;">نتيجتك: <b>'+result.score+' / '+result.total+'</b></div>'
+    + '<div style="font-size:12.5px;opacity:.75;">المدة: '+mins+' دقيقة و'+secs+' ثانية</div>'
+    + '<div style="display:flex;gap:10px;margin-top:10px;">'
+    + '<button type="button" onclick="quizGoSectors()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:13px;cursor:pointer;">رجوع لاختبر نفسك</button>'
+    + '<button type="button" onclick="window.__showAppHub && window.__showAppHub()" style="background:rgba(255,255,255,.14);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:13px;cursor:pointer;">الصفحة الرئيسية</button>'
+    + '</div></div>';
+}
+
+// ---------- عرض النتائج (المالك ومن يفوّضهم) ----------
+function renderQuizResultsView(root){
+  if(!(typeof canViewQuizResults === 'function' && canViewQuizResults())){ quizGoSectors(); return; }
+  const ov = loadAdminOverrides();
+  const results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
+  const canManage = typeof canManageQuiz === 'function' && canManageQuiz();
+  let rows = results.map(function(r){
+    const sectorInfo = KB_SECTORS.find(function(s){ return s.id===r.sector; });
+    const mins = Math.floor(r.durationSeconds/60), secs = r.durationSeconds%60;
+    const dt = new Date(r.takenAt);
+    const delBtn = canManage ? '<button type="button" onclick="quizDeleteResult('+r.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">حذف</button>' : '';
+    return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;">'+kbEsc(r.employeeName)+'</div>'
+      + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+(sectorInfo?sectorInfo.name:'')+' — '+dt.toLocaleDateString('ar-SA')+' — المدة '+mins+'د '+secs+'ث</div></div>'
+      + '<div style="display:flex;align-items:center;gap:10px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+r.score+'/'+r.total+'</div>'+delBtn+'</div></div>';
+  }).join('');
+  if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي نتيجة اختبار بعد.</div>';
+  root.innerHTML = kbHeader('نتائج اختبر نفسك', results.length+' نتيجة', 'quizGoSectors()')
+    + '<div style="max-width:700px;margin:-24px auto 60px;padding:0 18px;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
+}
+function quizDeleteResult(id){
+  if(!canManageQuiz()) return;
+  if(!confirm('حذف هذه النتيجة نهائيا؟')) return;
+  const ov = loadAdminOverrides();
+  ov.quizResults = (ov.quizResults||[]).filter(function(x){ return x.id!==id; });
+  saveAdminOverrides(ov);
+  renderQuiz();
+}
+
+// ---------- نافذة صلاحيات مشاهدة النتائج ----------
+function renderQuizPermsList(){
+  const holder = document.getElementById('quizPermsList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const viewers = ov.quizResultViewers || [];
+  if(!viewers.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — مشاهدة النتائج مقصورة عليك أنت فقط.</div>'; return; }
+  holder.innerHTML = viewers.map(function(jobNo){
+    const emp = EMPLOYEES.find(function(x){ return x.job_no===jobNo; });
+    const nm = emp ? emp.name : jobNo;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">'
+      +'<span style="font-size:12px;font-weight:700;">'+nm+' <span style="color:var(--muted);font-weight:500;">— '+jobNo+'</span></span>'
+      +'<button type="button" class="act-btn quiz-viewer-revoke" data-jobno="'+jobNo+'" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button></div>';
+  }).join('');
+  holder.querySelectorAll('.quiz-viewer-revoke').forEach(function(b){ b.addEventListener('click', function(){
+    revokeQuizResultViewer(b.getAttribute('data-jobno'));
+    renderQuizPermsList();
+    flashQuizSaveStatus();
+  }); });
+}
+function flashQuizSaveStatus(){
+  const el = document.getElementById('quizPermsSaveStatus');
+  if(!el) return;
+  el.style.opacity = '1';
+  clearTimeout(el.__hideTimer);
+  el.__hideTimer = setTimeout(function(){ el.style.opacity = '0'; }, 1600);
+}
+(function quizPermsModalWiring(){
+  const btn = document.getElementById('quizPermsBtn');
+  const modal = document.getElementById('quizPermsModal');
+  const closeBtn = document.getElementById('closeQuizPermsModal');
+  const addBtn = document.getElementById('quizPermsAddBtn');
+  const searchInput = document.getElementById('quizPermsAddSearch');
+  const optionsList = document.getElementById('quizPermsEmpOptions');
+  if(!btn || !modal) return;
+  btn.addEventListener('click', function(){
+    if(optionsList){
+      optionsList.innerHTML = EMPLOYEES.filter(function(e){ return !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO); })
+        .map(function(e){ return '<option value="'+(e.name||'').trim()+' — '+e.job_no+'"></option>'; }).join('');
+    }
+    if(searchInput) searchInput.value = '';
+    renderQuizPermsList();
+    modal.classList.add('open');
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', function(ev){ if(ev.target === modal) close(); });
+  if(addBtn) addBtn.addEventListener('click', function(){
+    const raw = (searchInput.value||'').trim();
+    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else {
+      const byNo = EMPLOYEES.find(function(e){ return e.job_no === raw; });
+      const byName = EMPLOYEES.find(function(e){ return (e.name||'').trim() === raw; });
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(function(e){ return e.job_no===jobNo; })){
+      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){ alert('المالك يطّلع دائما.'); return; }
+    grantQuizResultViewer(jobNo);
+    searchInput.value = '';
+    renderQuizPermsList();
+    flashQuizSaveStatus();
+  });
+})();
 function latestKpiMonthFor(jobNo){
   for(let i=PERF_MONTH_LABELS.length-1;i>=0;i--){
     if(MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo]) return i;
@@ -8654,6 +9202,33 @@ function refreshKnowledgeBankAccessUI(){
   const permsBtn = document.getElementById('knowledgeBankPermsBtn');
   if(permsBtn) permsBtn.style.display = isTrueOwner() ? 'flex' : 'none';
   if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
+}
+// اختبر نفسك: إدارة الأسئلة (إضافة/تعديل/حذف) مقصورة على المالك فقط.
+function canManageQuiz(){ return isTrueOwner(); }
+// مشاهدة نتائج الاختبار: المالك دائما، أو من فوّضه عبر ov.quizResultViewers.
+function canViewQuizResults(){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  const ov = loadAdminOverrides();
+  return (ov.quizResultViewers||[]).map(String).includes(String(me.job_no));
+}
+function grantQuizResultViewer(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizResultViewers = ov.quizResultViewers || [];
+  if(!ov.quizResultViewers.map(String).includes(String(jobNo))) ov.quizResultViewers.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeQuizResultViewer(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizResultViewers = (ov.quizResultViewers||[]).filter(j=>String(j)!==String(jobNo));
+  saveAdminOverrides(ov);
+}
+function refreshQuizAccessUI(){
+  const permsBtn = document.getElementById('quizPermsBtn');
+  if(permsBtn) permsBtn.style.display = isTrueOwner() ? 'flex' : 'none';
 }
 // تفويض حق القبول/الرفض — المالك فقط يقدر يفوّض أو يسحب هذا التفويض.
 function grantGoalApproverAccess(jobNo){
@@ -11504,6 +12079,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
   const crWrap = document.getElementById('contactReasonsAppWrap');
   const crFrame = document.getElementById('contactReasonsFrame');
   const kbWrap = document.getElementById('knowledgeBankAppWrap');
+  const quizWrap = document.getElementById('quizAppWrap');
   const backBtn = document.getElementById('hubBackBtn');
   let crLoaded = false;
 
@@ -11512,6 +12088,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(empApp) empApp.style.display = 'none';
     if(crWrap) crWrap.style.display = 'none';
     if(kbWrap) kbWrap.style.display = 'none';
+    if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'none';
   }
   function showEmployeeSearch(){
@@ -11519,6 +12096,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(empApp) empApp.style.display = 'block';
     if(crWrap) crWrap.style.display = 'none';
     if(kbWrap) kbWrap.style.display = 'none';
+    if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
   }
   function showKnowledgeBank(){
@@ -11527,10 +12105,21 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(empApp) empApp.style.display = 'none';
     if(crWrap) crWrap.style.display = 'none';
     if(kbWrap) kbWrap.style.display = 'block';
+    if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
     window.__kbState = { view:'sectors', sector:null, sectionId:null };
     window.__kbEditingId = null;
     if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
+  }
+  function showQuiz(){
+    if(hub) hub.style.display = 'none';
+    if(empApp) empApp.style.display = 'none';
+    if(crWrap) crWrap.style.display = 'none';
+    if(kbWrap) kbWrap.style.display = 'none';
+    if(quizWrap) quizWrap.style.display = 'block';
+    if(backBtn) backBtn.style.display = 'flex';
+    window.__quizState = { view:'sectors', sector:null };
+    if(typeof renderQuiz === 'function') renderQuiz();
   }
   function showContactReasons(){
     if(typeof canViewContactReasons === 'function' && !canViewContactReasons()){
@@ -11541,6 +12130,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(empApp) empApp.style.display = 'none';
     if(crWrap) crWrap.style.display = 'block';
     if(kbWrap) kbWrap.style.display = 'none';
+    if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
     if(!crLoaded){
       crLoaded = true;
@@ -11577,6 +12167,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
   window.__showEmployeeSearchApp = showEmployeeSearch;
   window.__showContactReasonsApp = showContactReasons;
   window.__showKnowledgeBankApp = showKnowledgeBank;
+  window.__showQuizApp = showQuiz;
   const switchBtn = document.getElementById('switchToContactReasonsBtn');
   if(switchBtn) switchBtn.addEventListener('click', showContactReasons);
   const secHeadLink = document.getElementById('secHeadContactReasonsLink');
@@ -11587,6 +12178,10 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
   if(kbSecHeadLink) kbSecHeadLink.addEventListener('click', showKnowledgeBank);
   const kbBackBtn = document.getElementById('knowledgeBankBackBtn');
   if(kbBackBtn) kbBackBtn.addEventListener('click', showHub);
+  const quizSwitchBtn = document.getElementById('switchToQuizBtn');
+  if(quizSwitchBtn) quizSwitchBtn.addEventListener('click', showQuiz);
+  const quizSecHeadLink = document.getElementById('secHeadQuizLink');
+  if(quizSecHeadLink) quizSecHeadLink.addEventListener('click', showQuiz);
 })();
 </script>
 
