@@ -1145,6 +1145,19 @@
   <iframe id="contactReasonsFrame" title="مسارات أسباب الاتصال لقطاع العمل" style="width:100%;height:100%;border:0;display:block;"></iframe>
 </div>
 
+<!-- حاوية "بنك المعرفة": أسئلة وأجوبة تدريبية يراها كل الموظفين، ويضيف/يعدّل/
+     يحذف منها المالك أو من فوّضهم عبر زر "صلاحيات بنك المعرفة". -->
+<div id="knowledgeBankAppWrap" style="display:none;position:fixed;inset:0;z-index:500;background:var(--bg);overflow:auto;">
+  <div style="max-width:820px;margin:0 auto;padding:16px 16px 60px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <button type="button" id="knowledgeBankBackBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;"><svg class="ico" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg> رجوع</button>
+      <h2 style="margin:0;font-size:17px;">بنك المعرفة</h2>
+    </div>
+    <div id="knowledgeBankManageBox" style="display:none;margin-bottom:18px;"></div>
+    <div id="knowledgeBankListBox"></div>
+  </div>
+</div>
+
 <div id="employeeSearchApp" style="display:none;">
 
 <div class="wrap" id="dashboardApp">
@@ -1203,6 +1216,8 @@
         <button id="suggestInboxBtn" type="button" class="qa-btn qa-gold" title="صندوق الاقتراحات (وارد)" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.2 1 2.4h6c0-1.2.4-1.9 1-2.4A6.5 6.5 0 0 0 12 3Z"/></svg></span><span id="suggestInboxBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="switchToContactReasonsBtn" type="button" class="qa-btn qa-teal" title="مسارات أسباب الاتصال لقطاع العمل" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M3 5.5C3 4.67 3.67 4 4.5 4H8l2 5-2.5 1.5a13 13 0 0 0 6 6L15 14l5 2v3.5c0 .83-.67 1.5-1.5 1.5C10.5 21 3 13.5 3 5.5Z"/></svg></span></button>
         <button id="contactReasonsPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات مسارات أسباب الاتصال" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
+        <button id="switchToKnowledgeBankBtn" type="button" class="qa-btn qa-teal" title="بنك المعرفة"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 5.5C10.5 4 8 3.5 4 3.5v14c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-14c-4 0-6.5.5-8 2Z"/><path d="M12 5.5v14"/></svg></span></button>
+        <button id="knowledgeBankPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات بنك المعرفة" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
       </div>
     </div>
   </header>
@@ -1246,6 +1261,9 @@
   <section class="panel dir-panel" id="directorySection">
     <button type="button" id="secHeadContactReasonsLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
       <span class="idx">01</span><h2 style="margin:0;">مسارات أسباب الاتصال لقطاع العمل</h2><span class="sub">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين — اضغط للفتح</span>
+    </button>
+    <button type="button" id="secHeadKnowledgeBankLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
+      <span class="idx">+</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق — اضغط للفتح</span>
     </button>
     <div class="sec-head sec-c-navy reveal-sec" id="directorySecHead"><span class="idx">02</span><h2 id="directoryTitle">نظام البحث عن بيانات الموظفين</h2><button id="bulkExportBtn" type="button" class="dir-export-btn" title="تصدير بيانات الموظفين" style="display:none;"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تصدير بيانات الموظفين</button><button type="button" class="owner-edit-btn owner-only" data-owner-edit><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة / <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6 7l1 13a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> حذف موظف</button></div>
     <div class="term" id="dirSearchTerm">
@@ -1623,6 +1641,31 @@
         </div>
         <div id="contactReasonsPermsSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
         <div id="contactReasonsPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE BANK PERMISSIONS MODAL (owner-only): المالك يفوّض من يحق له
+       إضافة/تعديل/حذف عناصر "بنك المعرفة" (الاطلاع متاح للجميع دائما). -->
+  <div class="modal-overlay" id="knowledgeBankPermsModal">
+    <div class="modal-box" style="max-width:520px;">
+      <button class="modal-close" id="closeKnowledgeBankPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg> صلاحيات بنك المعرفة</h3>
+      <div class="modal-sub">كل الموظفين يقدرون يشوفون بنك المعرفة، لكن الإضافة والتعديل والحذف مقصورة عليك أنت (المالك) وعلى من تفوّضه هنا بالتحديد.</div>
+      <div style="margin-top:14px;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <select id="knowledgeBankPermsSectorSelect" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;"><option value="">اختر القطاع أولا…</option></select>
+          <select id="knowledgeBankPermsEmpSelect" style="flex:1.4;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;" disabled><option value="">ثم اختر الموظف…</option></select>
+          <button type="button" id="knowledgeBankPermsQuickAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;" disabled>منح الصلاحية</button>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);margin:-2px 0 8px;">أو ابحث بالاسم/الرقم الوظيفي مباشرة:</div>
+        <div style="display:flex;gap:6px;">
+          <input list="knowledgeBankPermsEmpOptions" id="knowledgeBankPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <datalist id="knowledgeBankPermsEmpOptions"></datalist>
+          <button type="button" id="knowledgeBankPermsAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="knowledgeBankPermsSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
+        <div id="knowledgeBankPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
       </div>
     </div>
   </div>
@@ -2095,8 +2138,15 @@ function loadAdminOverrides(){
     // مسارات أسباب الاتصال". أي شخص غير موجود بهذي القائمة (وليس المالك) لا
     // يشوف زر الدخول لا في شريط الأزرار العلوي ولا في رأس القسم 01.
     ov.contactReasonsViewers = ov.contactReasonsViewers || [];
+    // من يحق له إضافة/تعديل/حذف عناصر "بنك المعرفة" (غير المالك الذي يملك
+    // هذه الصلاحية دائما): قائمة أرقام وظيفية يفوّضها المالك يدويا من زر
+    // "صلاحيات بنك المعرفة". الاطلاع على بنك المعرفة نفسه متاح لكل الموظفين.
+    ov.knowledgeBankEditors = ov.knowledgeBankEditors || [];
+    // عناصر بنك المعرفة نفسها (أسئلة/أجوبة) — تُخزَّن هنا وتُزامَن سحابيا
+    // بنفس آلية باقي إعدادات المالك، فتظهر لكل الموظفين فور الحفظ.
+    ov.knowledgeBankItems = ov.knowledgeBankItems || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankItems:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -2599,6 +2649,7 @@ updateClock(); setInterval(updateClock,1000);
     const contactReasonsPermsBtn = document.getElementById('contactReasonsPermsBtn');
     if(contactReasonsPermsBtn) contactReasonsPermsBtn.style.display = isOwner ? 'flex' : 'none';
     if(typeof refreshContactReasonsAccessUI === 'function') refreshContactReasonsAccessUI();
+    if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
     const auditLogBtn = document.getElementById('auditLogBtn');
     if(auditLogBtn) auditLogBtn.style.display = isOwner ? 'flex' : 'none';
     const suggestInboxBtn = document.getElementById('suggestInboxBtn');
@@ -3529,6 +3580,7 @@ function applyCloudOverrides(cloudOv){
       if(typeof renderGoalPermsRequestsList === 'function') renderGoalPermsRequestsList();
       if(typeof renderGoalPermsMonthsList === 'function') renderGoalPermsMonthsList();
     }
+    if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
   } finally {
     __applyingCloudOverrides = false;
   }
@@ -7269,6 +7321,285 @@ function flashContactReasonsSaveStatus(){
     flashContactReasonsSaveStatus();
   });
 })();
+// ===== نظام صلاحيات بنك المعرفة (نسخة من نمط مسارات أسباب الاتصال) =====
+function renderKnowledgeBankPermsList(){
+  const holder = document.getElementById('knowledgeBankPermsList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const editors = ov.knowledgeBankEditors || [];
+  if(!editors.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — الإدارة مقصورة عليك أنت فقط.</div>'; return; }
+  holder.innerHTML = editors.map(jobNo=>{
+    const emp = EMPLOYEES.find(x=>x.job_no===jobNo);
+    const nm = emp ? emp.name : jobNo;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">
+        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— ${jobNo}</span></span>
+        <button type="button" class="act-btn kb-editor-revoke" data-jobno="${jobNo}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>
+      </div>`;
+  }).join('');
+  holder.querySelectorAll('.kb-editor-revoke').forEach(b=> b.addEventListener('click', ()=>{
+    revokeKnowledgeBankEditor(b.getAttribute('data-jobno'));
+    renderKnowledgeBankPermsList();
+    if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
+    flashKnowledgeBankSaveStatus();
+  }));
+}
+function flashKnowledgeBankSaveStatus(){
+  const el = document.getElementById('knowledgeBankPermsSaveStatus');
+  if(!el) return;
+  el.style.opacity = '1';
+  clearTimeout(el.__hideTimer);
+  el.__hideTimer = setTimeout(()=>{ el.style.opacity = '0'; }, 1600);
+}
+(function knowledgeBankPermsModalWiring(){
+  const btn = document.getElementById('knowledgeBankPermsBtn');
+  const modal = document.getElementById('knowledgeBankPermsModal');
+  const closeBtn = document.getElementById('closeKnowledgeBankPermsModal');
+  const addBtn = document.getElementById('knowledgeBankPermsAddBtn');
+  const searchInput = document.getElementById('knowledgeBankPermsAddSearch');
+  const optionsList = document.getElementById('knowledgeBankPermsEmpOptions');
+  const sectorSelect = document.getElementById('knowledgeBankPermsSectorSelect');
+  const empSelect = document.getElementById('knowledgeBankPermsEmpSelect');
+  const quickAddBtn = document.getElementById('knowledgeBankPermsQuickAddBtn');
+  if(!btn || !modal) return;
+  function eligibleEmployees(){
+    return EMPLOYEES.filter(e=> !(typeof OWNER_JOBNO !== 'undefined' && e.job_no === OWNER_JOBNO));
+  }
+  function populateSectors(){
+    if(!sectorSelect) return;
+    const sectors = Array.from(new Set(eligibleEmployees().map(e=> (e.sector||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare('ar'));
+    sectorSelect.innerHTML = '<option value="">اختر القطاع أولا…</option>' + sectors.map(s=>`<option value="${s}">${s}</option>`).join('');
+  }
+  function populateEmpsForSector(sector){
+    if(!empSelect) return;
+    const ov = loadAdminOverrides();
+    const already = new Set((ov.knowledgeBankEditors||[]).map(String));
+    const list = eligibleEmployees().filter(e=> (e.sector||'').trim() === sector);
+    if(!list.length){ empSelect.innerHTML = '<option value="">لا يوجد موظفون بهذا القطاع</option>'; empSelect.disabled = true; quickAddBtn.disabled = true; return; }
+    empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>' + list.map(e=>{
+      const tag = already.has(String(e.job_no)) ? ' (مفوَّض حاليا)' : (e.supervisor ? ` — مشرفه: ${e.supervisor}` : '');
+      return `<option value="${e.job_no}">${e.name}${tag}</option>`;
+    }).join('');
+    empSelect.disabled = false;
+  }
+  if(sectorSelect) sectorSelect.addEventListener('change', ()=>{
+    if(sectorSelect.value){ populateEmpsForSector(sectorSelect.value); }
+    else { empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>'; empSelect.disabled = true; quickAddBtn.disabled = true; }
+  });
+  if(empSelect) empSelect.addEventListener('change', ()=>{ quickAddBtn.disabled = !empSelect.value; });
+  if(quickAddBtn) quickAddBtn.addEventListener('click', ()=>{
+    const jobNo = empSelect.value;
+    if(!jobNo) return;
+    grantKnowledgeBankEditor(jobNo);
+    renderKnowledgeBankPermsList();
+    populateEmpsForSector(sectorSelect.value);
+    flashKnowledgeBankSaveStatus();
+  });
+  btn.addEventListener('click', ()=>{
+    if(optionsList){
+      optionsList.innerHTML = eligibleEmployees()
+        .map(e=>`<option value="${(e.name||'').trim()} — ${e.job_no}"></option>`).join('');
+    }
+    populateSectors();
+    if(empSelect){ empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>'; empSelect.disabled = true; }
+    if(quickAddBtn) quickAddBtn.disabled = true;
+    if(searchInput) searchInput.value = '';
+    renderKnowledgeBankPermsList();
+    modal.classList.add('open');
+  });
+  function close(){ modal.classList.remove('open'); }
+  if(closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (ev)=>{ if(ev.target === modal) close(); });
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const raw = (searchInput.value||'').trim();
+    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
+    let jobNo = null;
+    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+    if(dashMatch){ jobNo = dashMatch[1]; }
+    else {
+      const byNo = EMPLOYEES.find(e=> e.job_no === raw);
+      const byName = EMPLOYEES.find(e=> (e.name||'').trim() === raw);
+      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
+    }
+    if(!jobNo || !EMPLOYEES.some(e=>e.job_no===jobNo)){
+      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
+      return;
+    }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){
+      alert('المالك يطّلع دائما، لا حاجة لتفويضه.');
+      return;
+    }
+    grantKnowledgeBankEditor(jobNo);
+    searchInput.value = '';
+    renderKnowledgeBankPermsList();
+    flashKnowledgeBankSaveStatus();
+  });
+})();
+
+// ===== محتوى بنك المعرفة نفسه: عرض + إضافة/تعديل/حذف (لمن يملك الصلاحية) =====
+function kbNextId(){
+  const ov = loadAdminOverrides();
+  return (ov.knowledgeBankItems||[]).reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
+}
+function renderKnowledgeBank(){
+  const manageBox = document.getElementById('knowledgeBankManageBox');
+  const listBox = document.getElementById('knowledgeBankListBox');
+  if(!manageBox || !listBox) return;
+  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
+  const ov = loadAdminOverrides();
+  const items = ov.knowledgeBankItems || [];
+
+  manageBox.style.display = canManage ? 'block' : 'none';
+  if(canManage){
+    manageBox.innerHTML = `
+      <div class="admin-card">
+        <h3>＋ إضافة سؤال جديد</h3>
+        <div class="admin-form-row" style="grid-template-columns:120px 1fr;">
+          <select id="kbNewType" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
+            <option value="text">نصي</option>
+            <option value="mcq">اختيار من متعدد</option>
+          </select>
+          <input id="kbNewQuestion" placeholder="نص السؤال">
+        </div>
+        <div id="kbNewTextWrap" class="admin-form-row" style="grid-template-columns:1fr;">
+          <input id="kbNewAnswerText" placeholder="نص الإجابة">
+        </div>
+        <div id="kbNewMcqWrap" class="admin-form-row" style="grid-template-columns:1fr;display:none;">
+          <input id="kbNewOpt0" placeholder="الخيار الأول">
+          <input id="kbNewOpt1" placeholder="الخيار الثاني">
+          <input id="kbNewOpt2" placeholder="الخيار الثالث">
+          <input id="kbNewOpt3" placeholder="الخيار الرابع">
+          <select id="kbNewCorrect" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
+            <option value="0">الإجابة الصحيحة: الخيار الأول</option>
+            <option value="1">الإجابة الصحيحة: الخيار الثاني</option>
+            <option value="2">الإجابة الصحيحة: الخيار الثالث</option>
+            <option value="3">الإجابة الصحيحة: الخيار الرابع</option>
+          </select>
+        </div>
+        <button type="button" class="admin-btn-add" onclick="kbAddItem()">＋ إضافة السؤال</button>
+      </div>`;
+    const typeSel = document.getElementById('kbNewType');
+    typeSel.addEventListener('change', ()=>{
+      document.getElementById('kbNewTextWrap').style.display = typeSel.value==='text' ? 'grid' : 'none';
+      document.getElementById('kbNewMcqWrap').style.display = typeSel.value==='mcq' ? 'grid' : 'none';
+    });
+  } else {
+    manageBox.innerHTML = '';
+  }
+
+  if(!items.length){
+    listBox.innerHTML = `<div class="admin-empty">🔍 لا يوجد أي سؤال بعد ببنك المعرفة.</div>`;
+    return;
+  }
+  listBox.innerHTML = items.slice().reverse().map(it => {
+    if(it.id === window.__kbEditingId){
+      const opts = (it.options||['','','','']);
+      return `<div class="admin-card" id="kbItem${it.id}">
+        <div class="admin-form-row" style="grid-template-columns:120px 1fr;">
+          <select id="kbEditType${it.id}" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
+            <option value="text" ${it.q_type==='text'?'selected':''}>نصي</option>
+            <option value="mcq" ${it.q_type==='mcq'?'selected':''}>اختيار من متعدد</option>
+          </select>
+          <input id="kbEditQuestion${it.id}" value="${qAttr(it.question)}">
+        </div>
+        <div class="admin-form-row" style="grid-template-columns:1fr;">
+          <input id="kbEditAnswerText${it.id}" placeholder="نص الإجابة" value="${qAttr(it.answer_text||'')}">
+        </div>
+        <div class="admin-form-row" style="grid-template-columns:1fr;">
+          <input id="kbEditOpt0-${it.id}" placeholder="الخيار الأول" value="${qAttr(opts[0]||'')}">
+          <input id="kbEditOpt1-${it.id}" placeholder="الخيار الثاني" value="${qAttr(opts[1]||'')}">
+          <input id="kbEditOpt2-${it.id}" placeholder="الخيار الثالث" value="${qAttr(opts[2]||'')}">
+          <input id="kbEditOpt3-${it.id}" placeholder="الخيار الرابع" value="${qAttr(opts[3]||'')}">
+          <select id="kbEditCorrect${it.id}" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
+            <option value="0" ${it.correct_index===0?'selected':''}>الإجابة الصحيحة: الأول</option>
+            <option value="1" ${it.correct_index===1?'selected':''}>الإجابة الصحيحة: الثاني</option>
+            <option value="2" ${it.correct_index===2?'selected':''}>الإجابة الصحيحة: الثالث</option>
+            <option value="3" ${it.correct_index===3?'selected':''}>الإجابة الصحيحة: الرابع</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="admin-icon-mini" title="حفظ" onclick="kbSaveEdit(${it.id})">💾</button>
+          <button type="button" class="admin-icon-mini" title="إلغاء" onclick="kbCancelEdit()">✕</button>
+        </div>
+      </div>`;
+    }
+    const answerLine = it.q_type === 'mcq'
+      ? `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;">الخيارات: ${(it.options||[]).join(' / ')}<br>الإجابة الصحيحة: ${(it.options||[])[it.correct_index] || ''}</div>`
+      : `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;">الإجابة: ${it.answer_text||''}</div>`;
+    return `<div class="admin-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:13.5px;">${it.question}</div>
+          ${answerLine}
+        </div>
+        ${canManage ? `<div class="admin-row-actions">
+          <button type="button" class="admin-icon-mini" title="تعديل" onclick="kbEditItem(${it.id})">✎</button>
+          <button type="button" class="admin-icon-mini danger" title="حذف" onclick="kbDeleteItem(${it.id})">🗑</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function kbAddItem(){
+  if(!canManageKnowledgeBank()) return;
+  const type = document.getElementById('kbNewType').value;
+  const question = document.getElementById('kbNewQuestion').value.trim();
+  if(!question){ alert('لازم تكتب نص السؤال'); return; }
+  const item = { id: kbNextId(), q_type: type, question };
+  if(type === 'text'){
+    const ans = document.getElementById('kbNewAnswerText').value.trim();
+    if(!ans){ alert('لازم تكتب نص الإجابة'); return; }
+    item.answer_text = ans;
+  } else {
+    const opts = [0,1,2,3].map(i=> document.getElementById('kbNewOpt'+i).value.trim());
+    if(opts.some(o=>!o)){ alert('لازم تعبّي كل الخيارات الأربعة'); return; }
+    item.options = opts;
+    item.correct_index = parseInt(document.getElementById('kbNewCorrect').value, 10);
+  }
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankItems = ov.knowledgeBankItems || [];
+  ov.knowledgeBankItems.push(item);
+  saveAdminOverrides(ov);
+  alert('تمت إضافة السؤال ✅');
+  renderKnowledgeBank();
+}
+function kbEditItem(id){ window.__kbEditingId = id; renderKnowledgeBank(); }
+function kbCancelEdit(){ window.__kbEditingId = null; renderKnowledgeBank(); }
+function kbSaveEdit(id){
+  if(!canManageKnowledgeBank()) return;
+  const ov = loadAdminOverrides();
+  const it = (ov.knowledgeBankItems||[]).find(x=>x.id===id);
+  if(!it) return;
+  const type = document.getElementById('kbEditType'+id).value;
+  const question = document.getElementById('kbEditQuestion'+id).value.trim();
+  if(!question){ alert('لازم تكتب نص السؤال'); return; }
+  it.q_type = type;
+  it.question = question;
+  if(type === 'text'){
+    const ans = document.getElementById('kbEditAnswerText'+id).value.trim();
+    if(!ans){ alert('لازم تكتب نص الإجابة'); return; }
+    it.answer_text = ans;
+    delete it.options; delete it.correct_index;
+  } else {
+    const opts = [0,1,2,3].map(i=> document.getElementById('kbEditOpt'+i+'-'+id).value.trim());
+    if(opts.some(o=>!o)){ alert('لازم تعبّي كل الخيارات الأربعة'); return; }
+    it.options = opts;
+    it.correct_index = parseInt(document.getElementById('kbEditCorrect'+id).value, 10);
+    delete it.answer_text;
+  }
+  saveAdminOverrides(ov);
+  window.__kbEditingId = null;
+  alert('تم حفظ التعديل ✅');
+  renderKnowledgeBank();
+}
+function kbDeleteItem(id){
+  if(!canManageKnowledgeBank()) return;
+  if(!confirm('متأكد تبي تحذف هذا السؤال؟')) return;
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankItems = (ov.knowledgeBankItems||[]).filter(x=>x.id!==id);
+  saveAdminOverrides(ov);
+  alert('تم حذف السؤال');
+  renderKnowledgeBank();
+}
 function latestKpiMonthFor(jobNo){
   for(let i=PERF_MONTH_LABELS.length-1;i>=0;i--){
     if(MONTHLY_KPI_BREAKDOWN[i] && MONTHLY_KPI_BREAKDOWN[i][jobNo]) return i;
@@ -8126,6 +8457,39 @@ function refreshContactReasonsAccessUI(){
   if(iconBtn) iconBtn.style.display = canView ? 'flex' : 'none';
   const secLink = document.getElementById('secHeadContactReasonsLink');
   if(secLink) secLink.style.display = canView ? 'flex' : 'none';
+}
+// بنك المعرفة: الاطلاع متاح لكل موظف مسجّل دخوله، بغض النظر عن التفويض.
+function canViewKnowledgeBank(){
+  return !!window.__currentEmployee;
+}
+// من يحق له إضافة/تعديل/حذف عناصر بنك المعرفة: المالك دائما، أو أي موظف
+// فوّضه المالك يدويا عبر ov.knowledgeBankEditors.
+function canManageKnowledgeBank(){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  const ov = loadAdminOverrides();
+  return (ov.knowledgeBankEditors||[]).map(String).includes(String(me.job_no));
+}
+function grantKnowledgeBankEditor(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankEditors = ov.knowledgeBankEditors || [];
+  if(!ov.knowledgeBankEditors.map(String).includes(String(jobNo))) ov.knowledgeBankEditors.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeKnowledgeBankEditor(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankEditors = (ov.knowledgeBankEditors||[]).filter(j=>String(j)!==String(jobNo));
+  saveAdminOverrides(ov);
+}
+// يظهر/يخفي زر صلاحيات بنك المعرفة (للمالك فقط) ويعيد رسم قائمة العناصر
+// والوضع الحالي (وضع إدارة أو وضع عرض فقط) كلما تغيّرت الإعدادات.
+function refreshKnowledgeBankAccessUI(){
+  const permsBtn = document.getElementById('knowledgeBankPermsBtn');
+  if(permsBtn) permsBtn.style.display = isTrueOwner() ? 'flex' : 'none';
+  if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
 }
 // تفويض حق القبول/الرفض — المالك فقط يقدر يفوّض أو يسحب هذا التفويض.
 function grantGoalApproverAccess(jobNo){
@@ -10975,6 +11339,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
   const empApp = document.getElementById('employeeSearchApp');
   const crWrap = document.getElementById('contactReasonsAppWrap');
   const crFrame = document.getElementById('contactReasonsFrame');
+  const kbWrap = document.getElementById('knowledgeBankAppWrap');
   const backBtn = document.getElementById('hubBackBtn');
   let crLoaded = false;
 
@@ -10982,13 +11347,24 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(hub) hub.style.display = 'flex';
     if(empApp) empApp.style.display = 'none';
     if(crWrap) crWrap.style.display = 'none';
+    if(kbWrap) kbWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'none';
   }
   function showEmployeeSearch(){
     if(hub) hub.style.display = 'none';
     if(empApp) empApp.style.display = 'block';
     if(crWrap) crWrap.style.display = 'none';
+    if(kbWrap) kbWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
+  }
+  function showKnowledgeBank(){
+    if(typeof canViewKnowledgeBank === 'function' && !canViewKnowledgeBank()){ return; }
+    if(hub) hub.style.display = 'none';
+    if(empApp) empApp.style.display = 'none';
+    if(crWrap) crWrap.style.display = 'none';
+    if(kbWrap) kbWrap.style.display = 'block';
+    if(backBtn) backBtn.style.display = 'flex';
+    if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
   }
   function showContactReasons(){
     if(typeof canViewContactReasons === 'function' && !canViewContactReasons()){
@@ -10998,6 +11374,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(hub) hub.style.display = 'none';
     if(empApp) empApp.style.display = 'none';
     if(crWrap) crWrap.style.display = 'block';
+    if(kbWrap) kbWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
     if(!crLoaded){
       crLoaded = true;
@@ -11033,10 +11410,17 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
   window.__showAppHub = showHub;
   window.__showEmployeeSearchApp = showEmployeeSearch;
   window.__showContactReasonsApp = showContactReasons;
+  window.__showKnowledgeBankApp = showKnowledgeBank;
   const switchBtn = document.getElementById('switchToContactReasonsBtn');
   if(switchBtn) switchBtn.addEventListener('click', showContactReasons);
   const secHeadLink = document.getElementById('secHeadContactReasonsLink');
   if(secHeadLink) secHeadLink.addEventListener('click', showContactReasons);
+  const kbSwitchBtn = document.getElementById('switchToKnowledgeBankBtn');
+  if(kbSwitchBtn) kbSwitchBtn.addEventListener('click', showKnowledgeBank);
+  const kbSecHeadLink = document.getElementById('secHeadKnowledgeBankLink');
+  if(kbSecHeadLink) kbSecHeadLink.addEventListener('click', showKnowledgeBank);
+  const kbBackBtn = document.getElementById('knowledgeBankBackBtn');
+  if(kbBackBtn) kbBackBtn.addEventListener('click', showHub);
 })();
 </script>
 
