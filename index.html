@@ -1145,17 +1145,10 @@
   <iframe id="contactReasonsFrame" title="مسارات أسباب الاتصال لقطاع العمل" style="width:100%;height:100%;border:0;display:block;"></iframe>
 </div>
 
-<!-- حاوية "بنك المعرفة": أسئلة وأجوبة تدريبية يراها كل الموظفين، ويضيف/يعدّل/
-     يحذف منها المالك أو من فوّضهم عبر زر "صلاحيات بنك المعرفة". -->
-<div id="knowledgeBankAppWrap" style="display:none;position:fixed;inset:0;z-index:500;background:var(--bg);overflow:auto;">
-  <div style="max-width:820px;margin:0 auto;padding:16px 16px 60px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <button type="button" id="knowledgeBankBackBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;"><svg class="ico" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/></svg> رجوع</button>
-      <h2 style="margin:0;font-size:17px;">بنك المعرفة</h2>
-    </div>
-    <div id="knowledgeBankManageBox" style="display:none;margin-bottom:18px;"></div>
-    <div id="knowledgeBankListBox"></div>
-  </div>
+<!-- حاوية "بنك المعرفة": قطاعان (عمل/تنمية) ← أقسام ← أسئلة، بنفس الهوية
+     البصرية لشاشة "اختر النظام"، مع رفع/تنزيل ملفات وطباعة وتصدير إكسل. -->
+<div id="knowledgeBankAppWrap" style="display:none;position:fixed;inset:0;z-index:500;overflow:auto;background:#f4f6f8;">
+  <div id="kbRoot"></div>
 </div>
 
 <div id="employeeSearchApp" style="display:none;">
@@ -2142,11 +2135,13 @@ function loadAdminOverrides(){
     // هذه الصلاحية دائما): قائمة أرقام وظيفية يفوّضها المالك يدويا من زر
     // "صلاحيات بنك المعرفة". الاطلاع على بنك المعرفة نفسه متاح لكل الموظفين.
     ov.knowledgeBankEditors = ov.knowledgeBankEditors || [];
+    // الأقسام الفرعية داخل كل قطاع (عمل/تنمية) — كل قسم: {id, sector, name}.
+    ov.knowledgeBankSections = ov.knowledgeBankSections || [];
     // عناصر بنك المعرفة نفسها (أسئلة/أجوبة) — تُخزَّن هنا وتُزامَن سحابيا
     // بنفس آلية باقي إعدادات المالك، فتظهر لكل الموظفين فور الحفظ.
     ov.knowledgeBankItems = ov.knowledgeBankItems || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankItems:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankSections:[], knowledgeBankItems:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -7435,170 +7430,332 @@ function flashKnowledgeBankSaveStatus(){
   });
 })();
 
-// ===== محتوى بنك المعرفة نفسه: عرض + إضافة/تعديل/حذف (لمن يملك الصلاحية) =====
+// ===== بنك المعرفة: قطاعان (عمل/تنمية) ← أقسام ← أسئلة، بملفات مرفقة =====
+const KB_SECTORS = [
+  { id:'work', name:'قطاع العمل' },
+  { id:'dev',  name:'قطاع التنمية' }
+];
+window.__kbState = { view:'sectors', sector:null, sectionId:null };
+window.__kbEditingId = null;
+
+function kbEsc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function kbNextId(){
   const ov = loadAdminOverrides();
-  return (ov.knowledgeBankItems||[]).reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
+  const all = [].concat(ov.knowledgeBankItems||[], ov.knowledgeBankSections||[]);
+  return all.reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
 }
+async function kbUploadFile(fileInput){
+  if(!fileInput || !fileInput.files || !fileInput.files[0]) return null;
+  const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+  if(!client){ alert('تعذر الاتصال بمخزن الملفات، حاول مرة أخرى.'); return null; }
+  const file = fileInput.files[0];
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\u0621-\u064A_-]/g,'_');
+  const path = Date.now() + '_' + safeName;
+  try{
+    const { error } = await client.storage.from('knowledge-bank-files').upload(path, file, { upsert:true });
+    if(error){ alert('تعذر رفع الملف: ' + error.message); return null; }
+    const { data } = client.storage.from('knowledge-bank-files').getPublicUrl(path);
+    return { url: data.publicUrl, name: file.name, type: file.type };
+  }catch(err){ alert('تعذر رفع الملف.'); return null; }
+}
+
+function kbCard(html, onclick, extraStyle){
+  return '<button type="button" onclick="'+onclick+'" style="all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:8px;text-align:right;box-shadow:0 6px 18px rgba(15,46,61,.10);border:1px solid #e7ecef;'+(extraStyle||'')+'">'+html+'</button>';
+}
+function kbHeader(title, subtitle, onBack){
+  return '<div style="background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);padding:22px 18px 40px;color:#fff;">'
+    +'<div style="max-width:900px;margin:0 auto;display:flex;align-items:center;gap:12px;">'
+    +'<button type="button" onclick="'+onBack+'" style="all:unset;cursor:pointer;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+    +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>'
+    +'</button><div><div style="font-size:12px;opacity:.7;font-weight:700;">بنك المعرفة</div>'
+    +'<div style="font-size:18px;font-weight:900;">'+kbEsc(title)+'</div>'
+    +(subtitle ? '<div style="font-size:12px;opacity:.75;margin-top:2px;">'+kbEsc(subtitle)+'</div>' : '')
+    +'</div></div></div>';
+}
+
 function renderKnowledgeBank(){
-  const manageBox = document.getElementById('knowledgeBankManageBox');
-  const listBox = document.getElementById('knowledgeBankListBox');
-  if(!manageBox || !listBox) return;
-  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
+  const root = document.getElementById('kbRoot');
+  if(!root) return;
+  const st = window.__kbState;
+  if(st.view === 'sections') return renderKbSectionsView(root);
+  if(st.view === 'items') return renderKbItemsView(root);
+  return renderKbSectorsView(root);
+}
+function kbGoHub(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; if(typeof showHub==='function') showHub(); }
+function kbGoSectors(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; renderKnowledgeBank(); }
+function kbGoSections(sector){ window.__kbState = { view:'sections', sector:sector, sectionId:null }; renderKnowledgeBank(); }
+function kbGoItems(sector, sectionId){ window.__kbState = { view:'items', sector:sector, sectionId:sectionId }; renderKnowledgeBank(); }
+
+function renderKbSectorsView(root){
+  root.innerHTML = kbHeader('اختر القطاع', 'اختر قطاع العمل أو قطاع التنمية للاطلاع على أقسامه', 'kbGoHub()')
+    + '<div style="max-width:900px;margin:-24px auto 40px;padding:0 18px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">'
+    + KB_SECTORS.map(function(s){
+        return kbCard(
+          '<div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);display:flex;align-items:center;justify-content:center;align-self:center;">'
+          +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
+          +'</div><div style="font-size:15px;font-weight:800;color:#16233f;text-align:center;">'+kbEsc(s.name)+'</div>',
+          "kbGoSections('"+s.id+"')", 'min-width:220px;max-width:280px;align-items:center;'
+        );
+      }).join('')
+    + '</div>';
+}
+
+function renderKbSectionsView(root){
+  const st = window.__kbState;
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
   const ov = loadAdminOverrides();
-  const items = ov.knowledgeBankItems || [];
-
-  manageBox.style.display = canManage ? 'block' : 'none';
+  const sections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.sector===st.sector; });
+  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
+  let html = kbHeader(sectorInfo?sectorInfo.name:'', 'الأقسام المتاحة', 'kbGoSectors()')
+    + '<div style="max-width:900px;margin:-24px auto 40px;padding:0 18px;">';
   if(canManage){
-    manageBox.innerHTML = `
-      <div class="admin-card">
-        <h3>＋ إضافة سؤال جديد</h3>
-        <div class="admin-form-row" style="grid-template-columns:120px 1fr;">
-          <select id="kbNewType" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
-            <option value="text">نصي</option>
-            <option value="mcq">اختيار من متعدد</option>
-          </select>
-          <input id="kbNewQuestion" placeholder="نص السؤال">
-        </div>
-        <div id="kbNewTextWrap" class="admin-form-row" style="grid-template-columns:1fr;">
-          <input id="kbNewAnswerText" placeholder="نص الإجابة">
-        </div>
-        <div id="kbNewMcqWrap" class="admin-form-row" style="grid-template-columns:1fr;display:none;">
-          <input id="kbNewOpt0" placeholder="الخيار الأول">
-          <input id="kbNewOpt1" placeholder="الخيار الثاني">
-          <input id="kbNewOpt2" placeholder="الخيار الثالث">
-          <input id="kbNewOpt3" placeholder="الخيار الرابع">
-          <select id="kbNewCorrect" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
-            <option value="0">الإجابة الصحيحة: الخيار الأول</option>
-            <option value="1">الإجابة الصحيحة: الخيار الثاني</option>
-            <option value="2">الإجابة الصحيحة: الخيار الثالث</option>
-            <option value="3">الإجابة الصحيحة: الخيار الرابع</option>
-          </select>
-        </div>
-        <button type="button" class="admin-btn-add" onclick="kbAddItem()">＋ إضافة السؤال</button>
-      </div>`;
-    const typeSel = document.getElementById('kbNewType');
-    typeSel.addEventListener('change', ()=>{
-      document.getElementById('kbNewTextWrap').style.display = typeSel.value==='text' ? 'grid' : 'none';
-      document.getElementById('kbNewMcqWrap').style.display = typeSel.value==='mcq' ? 'grid' : 'none';
-    });
+    html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;gap:8px;">'
+      + '<input id="kbNewSectionName" placeholder="اسم القسم الجديد" style="flex:1;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;">'
+      + '<button type="button" onclick="kbAddSection()" style="background:#0e6a5a;color:#fff;border:none;border-radius:9px;padding:9px 16px;font-weight:800;font-size:13px;cursor:pointer;">+ إضافة قسم</button>'
+      + '</div>';
+  }
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;">';
+  if(!sections.length){
+    html += '<div style="color:#8a93a6;font-size:13px;padding:20px;">لا يوجد أقسام بعد بهذا القطاع.</div>';
   } else {
-    manageBox.innerHTML = '';
+    html += sections.map(function(sec){
+      const count = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sector===st.sector && it.sectionId===sec.id; }).length;
+      const delBtn = canManage ? '<span onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="color:#c0392b;font-size:11.5px;cursor:pointer;">حذف</span>' : '';
+      return kbCard(
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        +'<div style="font-size:14.5px;font-weight:800;color:#16233f;">'+kbEsc(sec.name)+'</div>'+delBtn+'</div>'
+        +'<div style="font-size:11.5px;color:#8a93a6;">'+count+' سؤال</div>',
+        "kbGoItems('"+st.sector+"',"+sec.id+")", 'min-width:200px;max-width:260px;'
+      );
+    }).join('');
   }
+  html += '</div></div>';
+  root.innerHTML = html;
+}
+function kbAddSection(){
+  if(!canManageKnowledgeBank()) return;
+  const nameInput = document.getElementById('kbNewSectionName');
+  const name = (nameInput.value||'').trim();
+  if(!name){ alert('اكتب اسم القسم'); return; }
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankSections = ov.knowledgeBankSections || [];
+  ov.knowledgeBankSections.push({ id: kbNextId(), sector: window.__kbState.sector, name: name });
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
+}
+function kbDeleteSection(id){
+  if(!canManageKnowledgeBank()) return;
+  if(!confirm('حذف القسم يحذف كل أسئلته أيضا. متأكد؟')) return;
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankSections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.id!==id; });
+  ov.knowledgeBankItems = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sectionId!==id; });
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
+}
 
-  if(!items.length){
-    listBox.innerHTML = `<div class="admin-empty">🔍 لا يوجد أي سؤال بعد ببنك المعرفة.</div>`;
-    return;
+function renderKbItemsView(root){
+  const st = window.__kbState;
+  const ov = loadAdminOverrides();
+  const section = (ov.knowledgeBankSections||[]).find(function(s){ return s.id===st.sectionId; });
+  const items = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sector===st.sector && it.sectionId===st.sectionId; });
+  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
+  root.innerHTML = kbHeader(section?section.name:'', items.length+' سؤال', "kbGoSections('"+st.sector+"')")
+    + '<div style="max-width:900px;margin:-24px auto 60px;padding:0 18px;">'
+    + '<div id="kbAddItemBox"></div>'
+    + '<div id="kbItemsListBox" style="display:flex;flex-direction:column;gap:12px;margin-top:14px;"></div>'
+    + '</div>';
+  const addBox = document.getElementById('kbAddItemBox');
+  if(canManage && window.__kbEditingId == null){ addBox.innerHTML = kbRenderItemForm(null); }
+  kbRenderItemsList(items, canManage);
+}
+function kbRenderItemForm(editItem){
+  const it = editItem || { q_type:'text', question:'', answer_text:'', options:['','','',''], correct_index:0 };
+  const idAttr = editItem ? editItem.id : 'new';
+  const opts = it.options || ['','','',''];
+  let mcqInputs = '';
+  for(let i=0;i<4;i++){
+    mcqInputs += '<input id="kbOpt'+i+'-'+idAttr+'" placeholder="الخيار '+(i+1)+'" value="'+kbEsc(opts[i]||'')+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">';
   }
-  listBox.innerHTML = items.slice().reverse().map(it => {
-    if(it.id === window.__kbEditingId){
-      const opts = (it.options||['','','','']);
-      return `<div class="admin-card" id="kbItem${it.id}">
-        <div class="admin-form-row" style="grid-template-columns:120px 1fr;">
-          <select id="kbEditType${it.id}" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
-            <option value="text" ${it.q_type==='text'?'selected':''}>نصي</option>
-            <option value="mcq" ${it.q_type==='mcq'?'selected':''}>اختيار من متعدد</option>
-          </select>
-          <input id="kbEditQuestion${it.id}" value="${qAttr(it.question)}">
-        </div>
-        <div class="admin-form-row" style="grid-template-columns:1fr;">
-          <input id="kbEditAnswerText${it.id}" placeholder="نص الإجابة" value="${qAttr(it.answer_text||'')}">
-        </div>
-        <div class="admin-form-row" style="grid-template-columns:1fr;">
-          <input id="kbEditOpt0-${it.id}" placeholder="الخيار الأول" value="${qAttr(opts[0]||'')}">
-          <input id="kbEditOpt1-${it.id}" placeholder="الخيار الثاني" value="${qAttr(opts[1]||'')}">
-          <input id="kbEditOpt2-${it.id}" placeholder="الخيار الثالث" value="${qAttr(opts[2]||'')}">
-          <input id="kbEditOpt3-${it.id}" placeholder="الخيار الرابع" value="${qAttr(opts[3]||'')}">
-          <select id="kbEditCorrect${it.id}" style="padding:9px 10px;border:1.5px solid var(--hair);border-radius:9px;font-size:12.5px;font-family:inherit;">
-            <option value="0" ${it.correct_index===0?'selected':''}>الإجابة الصحيحة: الأول</option>
-            <option value="1" ${it.correct_index===1?'selected':''}>الإجابة الصحيحة: الثاني</option>
-            <option value="2" ${it.correct_index===2?'selected':''}>الإجابة الصحيحة: الثالث</option>
-            <option value="3" ${it.correct_index===3?'selected':''}>الإجابة الصحيحة: الرابع</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button type="button" class="admin-icon-mini" title="حفظ" onclick="kbSaveEdit(${it.id})">💾</button>
-          <button type="button" class="admin-icon-mini" title="إلغاء" onclick="kbCancelEdit()">✕</button>
-        </div>
-      </div>`;
+  let correctOpts = '';
+  for(let i=0;i<4;i++){
+    correctOpts += '<option value="'+i+'" '+(it.correct_index===i?'selected':'')+'>الإجابة الصحيحة: الخيار '+(i+1)+'</option>';
+  }
+  const saveCall = editItem ? ('kbSaveEdit('+editItem.id+')') : 'kbAddItem()';
+  return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);margin-bottom:4px;">'
+    + '<div style="font-weight:800;font-size:13.5px;margin-bottom:10px;color:#16233f;">'+(editItem?'تعديل السؤال':'+ إضافة سؤال جديد')+'</div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
+    + '<select id="kbType-'+idAttr+'" onchange="kbToggleTypeFields(\''+idAttr+'\')" style="width:150px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '<option value="text" '+(it.q_type==='text'?'selected':'')+'>نصي</option>'
+    + '<option value="mcq" '+(it.q_type==='mcq'?'selected':'')+'>اختيار من متعدد</option>'
+    + '</select>'
+    + '<input id="kbQuestion-'+idAttr+'" placeholder="نص السؤال" value="'+kbEsc(it.question)+'" style="flex:1;min-width:180px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '</div>'
+    + '<div id="kbTextWrap-'+idAttr+'" style="display:'+(it.q_type==='text'?'block':'none')+';margin-bottom:8px;">'
+    + '<input id="kbAnswerText-'+idAttr+'" placeholder="نص الإجابة" value="'+kbEsc(it.answer_text||'')+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '</div>'
+    + '<div id="kbMcqWrap-'+idAttr+'" style="display:'+(it.q_type==='mcq'?'grid':'none')+';gap:6px;margin-bottom:8px;">'
+    + mcqInputs
+    + '<select id="kbCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'+correctOpts+'</select>'
+    + '</div>'
+    + '<div style="margin-bottom:10px;">'
+    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفق (صورة / إكسل / PDF) — اختياري</label>'
+    + '<input type="file" id="kbFile-'+idAttr+'" accept="image/*,.pdf,.xlsx,.xls,.csv" style="font-size:12px;">'
+    + (it.file ? '<div style="font-size:11.5px;color:#0e6a5a;margin-top:4px;">مرفق حالي: '+kbEsc(it.file.name)+'</div>' : '')
+    + '</div>'
+    + '<div style="display:flex;gap:8px;">'
+    + '<button type="button" onclick="'+saveCall+'" style="background:#0e6a5a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">'+(editItem?'حفظ التعديل':'+ إضافة السؤال')+'</button>'
+    + (editItem ? '<button type="button" onclick="kbCancelEdit()" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">إلغاء</button>' : '')
+    + '</div></div>';
+}
+function kbToggleTypeFields(idAttr){
+  const type = document.getElementById('kbType-'+idAttr).value;
+  document.getElementById('kbTextWrap-'+idAttr).style.display = type==='text' ? 'block' : 'none';
+  document.getElementById('kbMcqWrap-'+idAttr).style.display = type==='mcq' ? 'grid' : 'none';
+}
+function kbFileChip(file){
+  if(!file) return '';
+  const isImg = /^image\//.test(file.type||'');
+  if(isImg){
+    return '<div style="margin-top:8px;"><img src="'+file.url+'" style="max-width:180px;max-height:140px;border-radius:8px;border:1px solid #e2e6ea;"></div>';
+  }
+  return '<a href="'+file.url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:#f4f6f8;border:1px solid #e2e6ea;border-radius:8px;padding:6px 10px;font-size:11.5px;color:#16233f;text-decoration:none;">📎 '+kbEsc(file.name)+'</a>';
+}
+function kbRenderItemsList(items, canManage){
+  const box = document.getElementById('kbItemsListBox');
+  if(!box) return;
+  if(!items.length){ box.innerHTML = '<div style="color:#8a93a6;font-size:13px;padding:16px;text-align:center;">لا يوجد أي سؤال بعد بهذا القسم.</div>'; return; }
+  box.innerHTML = items.map(function(it){
+    if(window.__kbEditingId === it.id) return kbRenderItemForm(it);
+    let answerHtml;
+    if(it.q_type === 'mcq'){
+      answerHtml = '<div style="font-size:12px;color:#5b6685;margin-top:6px;">' + (it.options||[]).map(function(o,i){
+        return i===it.correct_index ? '<b style="color:#0e6a5a;">✔ '+kbEsc(o)+'</b>' : kbEsc(o);
+      }).join(' &nbsp;|&nbsp; ') + '</div>';
+    } else {
+      answerHtml = '<div style="font-size:12px;color:#5b6685;margin-top:6px;"><b>الإجابة:</b> '+kbEsc(it.answer_text||'')+'</div>';
     }
-    const answerLine = it.q_type === 'mcq'
-      ? `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;">الخيارات: ${(it.options||[]).join(' / ')}<br>الإجابة الصحيحة: ${(it.options||[])[it.correct_index] || ''}</div>`
-      : `<div style="font-size:11.5px;color:var(--muted);margin-top:4px;">الإجابة: ${it.answer_text||''}</div>`;
-    return `<div class="admin-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-        <div style="flex:1;">
-          <div style="font-weight:700;font-size:13.5px;">${it.question}</div>
-          ${answerLine}
-        </div>
-        ${canManage ? `<div class="admin-row-actions">
-          <button type="button" class="admin-icon-mini" title="تعديل" onclick="kbEditItem(${it.id})">✎</button>
-          <button type="button" class="admin-icon-mini danger" title="حذف" onclick="kbDeleteItem(${it.id})">🗑</button>
-        </div>` : ''}
-      </div>
-    </div>`;
+    const mgmtBtns = canManage
+      ? '<button type="button" onclick="kbEditItem('+it.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
+        + '<button type="button" onclick="kbDeleteItem('+it.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🗑 حذف</button>'
+      : '';
+    return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
+      + '<div style="font-weight:800;font-size:14px;color:#16233f;">'+kbEsc(it.question)+'</div>'
+      + answerHtml + kbFileChip(it.file)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'
+      + '<button type="button" onclick="kbPrintItem('+it.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🖨 طباعة</button>'
+      + '<button type="button" onclick="kbExportExcel('+it.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">📊 تصدير إكسل</button>'
+      + mgmtBtns
+      + '</div></div>';
   }).join('');
 }
-function kbAddItem(){
+async function kbAddItem(){
   if(!canManageKnowledgeBank()) return;
-  const type = document.getElementById('kbNewType').value;
-  const question = document.getElementById('kbNewQuestion').value.trim();
+  const idAttr = 'new';
+  const type = document.getElementById('kbType-'+idAttr).value;
+  const question = document.getElementById('kbQuestion-'+idAttr).value.trim();
   if(!question){ alert('لازم تكتب نص السؤال'); return; }
-  const item = { id: kbNextId(), q_type: type, question };
+  const item = { id: kbNextId(), sector: window.__kbState.sector, sectionId: window.__kbState.sectionId, q_type: type, question: question };
   if(type === 'text'){
-    const ans = document.getElementById('kbNewAnswerText').value.trim();
+    const ans = document.getElementById('kbAnswerText-'+idAttr).value.trim();
     if(!ans){ alert('لازم تكتب نص الإجابة'); return; }
     item.answer_text = ans;
   } else {
-    const opts = [0,1,2,3].map(i=> document.getElementById('kbNewOpt'+i).value.trim());
-    if(opts.some(o=>!o)){ alert('لازم تعبّي كل الخيارات الأربعة'); return; }
+    const opts = [0,1,2,3].map(function(i){ return document.getElementById('kbOpt'+i+'-'+idAttr).value.trim(); });
+    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي كل الخيارات الأربعة'); return; }
     item.options = opts;
-    item.correct_index = parseInt(document.getElementById('kbNewCorrect').value, 10);
+    item.correct_index = parseInt(document.getElementById('kbCorrect-'+idAttr).value, 10);
+  }
+  const fileInput = document.getElementById('kbFile-'+idAttr);
+  if(fileInput && fileInput.files && fileInput.files[0]){
+    const uploaded = await kbUploadFile(fileInput);
+    if(uploaded) item.file = uploaded;
   }
   const ov = loadAdminOverrides();
   ov.knowledgeBankItems = ov.knowledgeBankItems || [];
   ov.knowledgeBankItems.push(item);
   saveAdminOverrides(ov);
-  alert('تمت إضافة السؤال ✅');
   renderKnowledgeBank();
 }
 function kbEditItem(id){ window.__kbEditingId = id; renderKnowledgeBank(); }
 function kbCancelEdit(){ window.__kbEditingId = null; renderKnowledgeBank(); }
-function kbSaveEdit(id){
+async function kbSaveEdit(id){
   if(!canManageKnowledgeBank()) return;
   const ov = loadAdminOverrides();
-  const it = (ov.knowledgeBankItems||[]).find(x=>x.id===id);
+  const it = (ov.knowledgeBankItems||[]).find(function(x){ return x.id===id; });
   if(!it) return;
-  const type = document.getElementById('kbEditType'+id).value;
-  const question = document.getElementById('kbEditQuestion'+id).value.trim();
+  const type = document.getElementById('kbType-'+id).value;
+  const question = document.getElementById('kbQuestion-'+id).value.trim();
   if(!question){ alert('لازم تكتب نص السؤال'); return; }
-  it.q_type = type;
-  it.question = question;
+  it.q_type = type; it.question = question;
   if(type === 'text'){
-    const ans = document.getElementById('kbEditAnswerText'+id).value.trim();
+    const ans = document.getElementById('kbAnswerText-'+id).value.trim();
     if(!ans){ alert('لازم تكتب نص الإجابة'); return; }
-    it.answer_text = ans;
-    delete it.options; delete it.correct_index;
+    it.answer_text = ans; delete it.options; delete it.correct_index;
   } else {
-    const opts = [0,1,2,3].map(i=> document.getElementById('kbEditOpt'+i+'-'+id).value.trim());
-    if(opts.some(o=>!o)){ alert('لازم تعبّي كل الخيارات الأربعة'); return; }
-    it.options = opts;
-    it.correct_index = parseInt(document.getElementById('kbEditCorrect'+id).value, 10);
+    const opts = [0,1,2,3].map(function(i){ return document.getElementById('kbOpt'+i+'-'+id).value.trim(); });
+    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي كل الخيارات الأربعة'); return; }
+    it.options = opts; it.correct_index = parseInt(document.getElementById('kbCorrect-'+id).value, 10);
     delete it.answer_text;
+  }
+  const fileInput = document.getElementById('kbFile-'+id);
+  if(fileInput && fileInput.files && fileInput.files[0]){
+    const uploaded = await kbUploadFile(fileInput);
+    if(uploaded) it.file = uploaded;
   }
   saveAdminOverrides(ov);
   window.__kbEditingId = null;
-  alert('تم حفظ التعديل ✅');
   renderKnowledgeBank();
 }
 function kbDeleteItem(id){
   if(!canManageKnowledgeBank()) return;
   if(!confirm('متأكد تبي تحذف هذا السؤال؟')) return;
   const ov = loadAdminOverrides();
-  ov.knowledgeBankItems = (ov.knowledgeBankItems||[]).filter(x=>x.id!==id);
+  ov.knowledgeBankItems = (ov.knowledgeBankItems||[]).filter(function(x){ return x.id!==id; });
   saveAdminOverrides(ov);
-  alert('تم حذف السؤال');
   renderKnowledgeBank();
+}
+function kbPrintItem(id){
+  const ov = loadAdminOverrides();
+  const it = (ov.knowledgeBankItems||[]).find(function(x){ return x.id===id; });
+  if(!it) return;
+  const w = window.open('', '_blank');
+  if(!w) return;
+  let answerHtml;
+  if(it.q_type === 'mcq'){
+    answerHtml = '<ol>' + (it.options||[]).map(function(o,i){
+      return '<li'+(i===it.correct_index?' style="font-weight:900;color:#0e6a5a;"':'')+'>'+kbEsc(o)+'</li>';
+    }).join('') + '</ol>';
+  } else {
+    answerHtml = '<p><b>الإجابة:</b> '+kbEsc(it.answer_text||'')+'</p>';
+  }
+  const fileLine = it.file ? '<p><a href="'+it.file.url+'">'+kbEsc(it.file.name)+'</a></p>' : '';
+  w.document.write('<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>'+kbEsc(it.question)+'</title>'
+    +'<style>body{font-family:Tahoma,Arial,sans-serif;padding:30px;color:#16233f;} h2{color:#16233f;}</style></head>'
+    +'<body><h2>'+kbEsc(it.question)+'</h2>'+answerHtml+fileLine+'</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(function(){ w.print(); }, 300);
+}
+function kbExportExcel(id){
+  const ov = loadAdminOverrides();
+  const it = (ov.knowledgeBankItems||[]).find(function(x){ return x.id===id; });
+  if(!it) return;
+  let answer;
+  if(it.q_type === 'mcq'){
+    answer = (it.options||[]).map(function(o,i){ return (i===it.correct_index?'✔ ':'') + o; }).join(' | ');
+  } else {
+    answer = it.answer_text || '';
+  }
+  const html = '<table border="1"><tr><th>السؤال</th><th>الإجابة</th></tr><tr><td>'+kbEsc(it.question)+'</td><td>'+kbEsc(answer)+'</td></tr></table>';
+  const blob = new Blob(['\ufeff' + html], { type:'application/vnd.ms-excel' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'سؤال.xls';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 function latestKpiMonthFor(jobNo){
   for(let i=PERF_MONTH_LABELS.length-1;i>=0;i--){
@@ -11364,6 +11521,8 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(crWrap) crWrap.style.display = 'none';
     if(kbWrap) kbWrap.style.display = 'block';
     if(backBtn) backBtn.style.display = 'flex';
+    window.__kbState = { view:'sectors', sector:null, sectionId:null };
+    window.__kbEditingId = null;
     if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
   }
   function showContactReasons(){
