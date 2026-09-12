@@ -1208,7 +1208,7 @@
         <button id="exportGrantsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات التصدير" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></svg></span></button>
         <button id="perfAlertsBtn" type="button" class="qa-btn qa-coral" title="تنبيهات تراجع الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 2.3 18a1.8 1.8 0 0 0 1.6 2.7h16.2a1.8 1.8 0 0 0 1.6-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"/></svg></span><span id="perfAlertsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="backupsBtn" type="button" class="qa-btn qa-teal" title="النسخ الاحتياطية الأسبوعية" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></span></button>
-        <button id="perfNotesPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات إضافة توجيهات تطوير الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg></span></button>
+        <button id="perfNotesPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات إضافة توجيهات تطوير الأداء" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5V6a2 2 0 0 1 2-2h8l6 6v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 4v6h6"/><path d="M9 14l1.7 1.7L15 12"/></svg></span></button>
         <button id="goalPermsBtn" type="button" class="qa-btn qa-gold" title="صلاحيات الاطلاع على الأهداف الشخصية ومدة تحقيقها" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M9 12.5 11.2 15 16 9.5"/><circle cx="12" cy="12" r="9.5"/></svg></span><span id="goalPermsBadge" class="qa-badge" style="display:none;"></span></button>
         <button id="centerStatsBtn" type="button" class="qa-btn qa-teal" title="لوحة إحصائيات المركز" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M12 12V3a9 9 0 1 0 9 9h-9Z"/><path d="M14.5 3.5A9 9 0 0 1 20.5 9.5h-6V3.5Z"/></svg></span></button>
         <button id="auditLogBtn" type="button" class="qa-btn qa-teal" title="سجل التدقيق" style="display:none;"><span class="qa-ico"><svg class="ico" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span></button>
@@ -2174,6 +2174,9 @@ function loadAdminOverrides(){
     // طلبات إضافة/تعديل/حذف مقدَّمة من مضيف عادي (غير معتمد) بانتظار مراجعة
     // المالك أو أحد المعتمدين: {id, action, sector, sectionId, itemId?, payload?, submittedBy, submittedByName, submittedAt}
     ov.knowledgeBankPending = ov.knowledgeBankPending || [];
+    // مقالات بنك المعرفة (محتوى أطول من سؤال/جواب، بمرفقات متعددة وتاريخ):
+    // {id, sector, sectionId, title, body, attachments:[{url,name,type}], createdAt, updatedAt, createdByName}
+    ov.knowledgeBankArticles = ov.knowledgeBankArticles || [];
     // الأقسام الفرعية داخل كل قطاع (عمل/تنمية) — كل قسم: {id, sector, name}.
     ov.knowledgeBankSections = ov.knowledgeBankSections || [];
     // نظام "اختبر نفسك": أسئلة صح/خطأ واختيار من متعدد (3 خيارات)، مرتبطة
@@ -2187,7 +2190,7 @@ function loadAdminOverrides(){
     // بنفس آلية باقي إعدادات المالك، فتظهر لكل الموظفين فور الحفظ.
     ov.knowledgeBankItems = ov.knowledgeBankItems || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankApprovers:[], knowledgeBankPending:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10} }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankApprovers:[], knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10} }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -7539,6 +7542,29 @@ async function kbUploadFile(fileInput){
     return { url: data.publicUrl, name: file.name, type: file.type };
   }catch(err){ alert('تعذر رفع الملف.'); return null; }
 }
+// يرفع عدة ملفات دفعة واحدة (للمقالات: صور/إكسل/PDF/وورد معا) ويرجع مصفوفة
+async function kbUploadFiles(fileInput){
+  if(!fileInput || !fileInput.files || !fileInput.files.length) return [];
+  const out = [];
+  for(let i=0;i<fileInput.files.length;i++){
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if(!client) continue;
+    const file = fileInput.files[i];
+    const safeName = file.name.replace(/[^a-zA-Z0-9.\u0621-\u064A_-]/g,'_');
+    const path = Date.now() + '_' + i + '_' + safeName;
+    try{
+      const { error } = await client.storage.from('knowledge-bank-files').upload(path, file, { upsert:true });
+      if(error) continue;
+      const { data } = client.storage.from('knowledge-bank-files').getPublicUrl(path);
+      out.push({ url: data.publicUrl, name: file.name, type: file.type });
+    }catch(err){}
+  }
+  return out;
+}
+function kbFmtDate(ts){
+  if(!ts) return '';
+  try{ return new Date(ts).toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' }); }catch(err){ return ''; }
+}
 
 function kbCard(html, onclick, extraStyle){
   return '<button type="button" onclick="'+onclick+'" style="all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:8px;text-align:right;box-shadow:0 6px 18px rgba(15,46,61,.10);border:1px solid #e7ecef;'+(extraStyle||'')+'">'+html+'</button>';
@@ -7671,9 +7697,9 @@ function renderKbSectionsView(root){
     + '<div id="kbSectorSearchResults" style="display:none;position:absolute;top:48px;right:0;left:0;background:#fff;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.18);max-height:280px;overflow:auto;z-index:5;"></div>'
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
-    + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🎯 ابدأ اختبار المعرفة</button>'
-    + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#eef1f3;color:#16233f;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">⚙ إدارة أسئلة الاختبار</button>' : '')
-    + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#eef1f3;color:#16233f;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">📋 نتائج اختبار المعرفة</button>' : '')
+    + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ اختبار المعرفة</button>'
+    + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
+    + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📋 نتائج اختبار المعرفة</button>' : '')
     + '</div>';
   if(canManage){
     html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;gap:8px;">'
@@ -7699,23 +7725,37 @@ function renderKbSectionsView(root){
   html += '</div></div>';
   root.innerHTML = html;
 }
-function kbAddSection(){
+function kbAddSection(parentSectionId){
   if(!canManageKnowledgeBank()) return;
-  const nameInput = document.getElementById('kbNewSectionName');
+  const inputId = parentSectionId ? ('kbNewSubSectionName-'+parentSectionId) : 'kbNewSectionName';
+  const nameInput = document.getElementById(inputId);
   const name = (nameInput.value||'').trim();
   if(!name){ alert('اكتب اسم القسم'); return; }
   const ov = loadAdminOverrides();
   ov.knowledgeBankSections = ov.knowledgeBankSections || [];
-  ov.knowledgeBankSections.push({ id: kbNextId(), sector: window.__kbState.sector, name: name });
+  ov.knowledgeBankSections.push({ id: kbNextId(), sector: window.__kbState.sector, name: name, parentSectionId: parentSectionId||null });
   saveAdminOverrides(ov);
   renderKnowledgeBank();
 }
+// يجمع أي قسم فرعي (وفروعه بدوره) تحت قسم معيّن، بلا حد لعمق التداخل
+function kbCollectDescendantSectionIds(allSections, rootId){
+  const result = [];
+  const queue = [rootId];
+  while(queue.length){
+    const cur = queue.shift();
+    allSections.forEach(function(s){ if(s.parentSectionId === cur){ result.push(s.id); queue.push(s.id); } });
+  }
+  return result;
+}
 function kbDeleteSection(id){
   if(!canManageKnowledgeBank()) return;
-  if(!confirm('حذف القسم يحذف كل أسئلته أيضا. متأكد؟')) return;
+  if(!confirm('حذف القسم يحذف كل أقسامه الفرعية وأسئلته ومقالاته أيضا. متأكد؟')) return;
   const ov = loadAdminOverrides();
-  ov.knowledgeBankSections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.id!==id; });
-  ov.knowledgeBankItems = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sectionId!==id; });
+  const allSections = ov.knowledgeBankSections || [];
+  const idsToDelete = [id].concat(kbCollectDescendantSectionIds(allSections, id));
+  ov.knowledgeBankSections = allSections.filter(function(s){ return idsToDelete.indexOf(s.id)===-1; });
+  ov.knowledgeBankItems = (ov.knowledgeBankItems||[]).filter(function(it){ return idsToDelete.indexOf(it.sectionId)===-1; });
+  ov.knowledgeBankArticles = (ov.knowledgeBankArticles||[]).filter(function(a){ return idsToDelete.indexOf(a.sectionId)===-1; });
   saveAdminOverrides(ov);
   renderKnowledgeBank();
 }
@@ -7724,22 +7764,60 @@ function renderKbItemsView(root){
   const st = window.__kbState;
   const ov = loadAdminOverrides();
   const section = (ov.knowledgeBankSections||[]).find(function(s){ return s.id===st.sectionId; });
+  const childSections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===st.sectionId; });
   const items = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sector===st.sector && it.sectionId===st.sectionId; });
+  const articles = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sector===st.sector && a.sectionId===st.sectionId; });
   const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
   const canApprove = typeof canDirectlyApplyKb === 'function' && canDirectlyApplyKb();
   const pending = (ov.knowledgeBankPending||[]).filter(function(p){ return p.sectionId===st.sectionId; });
-  root.innerHTML = kbHeader(section?section.name:'', items.length+' سؤال', "kbGoSections('"+st.sector+"')")
+  const subtitle = childSections.length+' قسم فرعي — '+articles.length+' مقال — '+items.length+' سؤال';
+  root.innerHTML = kbHeader(section?section.name:'', subtitle, "kbGoSections('"+st.sector+"')")
     + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div id="kbPendingBox"></div>'
+    + '<div style="font-size:12.5px;font-weight:800;color:#16233f;margin:4px 0 8px;">📁 أقسام فرعية</div>'
+    + '<div id="kbChildSectionsBox" style="margin-bottom:20px;"></div>'
+    + '<div style="font-size:12.5px;font-weight:800;color:#16233f;margin:4px 0 8px;">📄 مقالات</div>'
+    + '<div id="kbArticleAddBox"></div>'
+    + '<div id="kbArticlesListBox" style="display:flex;flex-direction:column;gap:12px;margin-top:10px;margin-bottom:20px;"></div>'
+    + '<div style="font-size:12.5px;font-weight:800;color:#16233f;margin:4px 0 8px;">❓ أسئلة وأجوبة</div>'
     + '<div id="kbAddItemBox"></div>'
     + '<div id="kbItemsListBox" style="display:flex;flex-direction:column;gap:12px;margin-top:14px;"></div>'
     + '</div>';
   if(canApprove && pending.length){
     kbRenderPendingBox(pending);
   }
+  kbRenderChildSections(childSections, canManage);
+  const artAddBox = document.getElementById('kbArticleAddBox');
+  if(canManage && window.__kbEditingArticleId == null){ artAddBox.innerHTML = kbRenderArticleForm(null); }
+  kbRenderArticlesList(articles, canManage);
   const addBox = document.getElementById('kbAddItemBox');
   if(canManage && window.__kbEditingId == null){ addBox.innerHTML = kbRenderItemForm(null); }
   kbRenderItemsList(items, canManage);
+}
+function kbRenderChildSections(childSections, canManage){
+  const box = document.getElementById('kbChildSectionsBox');
+  if(!box) return;
+  const st = window.__kbState;
+  let html = '';
+  if(canManage){
+    html += '<div style="background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;gap:8px;">'
+      + '<input id="kbNewSubSectionName-'+st.sectionId+'" placeholder="اسم القسم الفرعي الجديد" style="flex:1;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+      + '<button type="button" onclick="kbAddSection('+st.sectionId+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12.5px;cursor:pointer;">+ إضافة قسم فرعي</button>'
+      + '</div>';
+  }
+  if(!childSections.length){
+    html += '<div style="color:#8a93a6;font-size:12.5px;padding:6px 2px;">لا يوجد أقسام فرعية بعد.</div>';
+  } else {
+    html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + childSections.map(function(sec){
+      const delBtn = canManage ? '<span onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="color:#c0392b;font-size:11.5px;cursor:pointer;">حذف</span>' : '';
+      return kbCard(
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        +'<div style="font-size:13.5px;font-weight:800;color:#16233f;">📁 '+kbEsc(sec.name)+'</div>'+delBtn+'</div>',
+        "kbGoItems('"+st.sector+"',"+sec.id+")", 'min-width:180px;max-width:240px;padding:14px 16px;'
+      );
+    }).join('') + '</div>';
+  }
+  box.innerHTML = html;
 }
 function kbRenderPendingBox(pending){
   const box = document.getElementById('kbPendingBox');
@@ -7747,12 +7825,19 @@ function kbRenderPendingBox(pending){
   box.innerHTML = '<div style="background:#fff8e1;border:1.5px solid #f0c33d;border-radius:14px;padding:14px 16px;margin-bottom:16px;">'
     + '<div style="font-weight:800;font-size:13px;color:#7a5b00;margin-bottom:10px;">⏳ طلبات قيد المراجعة ('+pending.length+')</div>'
     + pending.map(function(p){
-        const actionLabel = p.action==='add' ? 'إضافة سؤال جديد' : (p.action==='edit' ? 'تعديل سؤال' : 'حذف سؤال');
+        const labels = { add:'إضافة سؤال جديد', edit:'تعديل سؤال', delete:'حذف سؤال', add_article:'إضافة مقال جديد', edit_article:'تعديل مقال', delete_article:'حذف مقال' };
+        const actionLabel = labels[p.action] || p.action;
         let bodyHtml = '';
         if(p.action === 'delete'){
           const ov = loadAdminOverrides();
           const it = (ov.knowledgeBankItems||[]).find(function(x){ return x.id===p.itemId; });
           bodyHtml = '<div style="font-size:12.5px;color:#5b6685;">السؤال: '+kbEsc(it?it.question:'(محذوف مسبقا)')+'</div>';
+        } else if(p.action === 'delete_article'){
+          const ov = loadAdminOverrides();
+          const a = (ov.knowledgeBankArticles||[]).find(function(x){ return x.id===p.itemId; });
+          bodyHtml = '<div style="font-size:12.5px;color:#5b6685;">المقال: '+kbEsc(a?a.title:'(محذوف مسبقا)')+'</div>';
+        } else if(p.action === 'add_article' || p.action === 'edit_article'){
+          bodyHtml = '<div style="font-size:12.5px;color:#5b6685;">'+kbEsc(p.payload.title)+'</div>';
         } else {
           bodyHtml = '<div style="font-size:12.5px;color:#5b6685;">'+kbEsc(p.payload.question)+'</div>';
         }
@@ -7988,6 +8073,124 @@ function kbExportExcel(id){
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+// ===== مقالات بنك المعرفة: محتوى أطول من سؤال/جواب، بمرفقات متعددة وتاريخ =====
+window.__kbEditingArticleId = null;
+function kbArticleAttachmentsInputHtml(idAttr){
+  return '<div style="margin-bottom:10px;">'
+    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفقات (صور، إكسل، وورد، PDF) — يقدر تختار أكثر من ملف مرة وحدة</label>'
+    + '<input type="file" id="kbArtFiles-'+idAttr+'" multiple accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx" style="font-size:12px;">'
+    + '</div>';
+}
+function kbArticleAttachmentsChips(attachments){
+  if(!attachments || !attachments.length) return '';
+  return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' + attachments.map(function(f){
+    return kbFileChip(f);
+  }).join('') + '</div>';
+}
+function kbRenderArticleForm(editArticle){
+  const a = editArticle || { title:'', body:'' };
+  const idAttr = editArticle ? editArticle.id : 'new';
+  const saveCall = editArticle ? ('kbSaveArticleEdit('+editArticle.id+')') : 'kbAddArticle()';
+  let html = '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);margin-bottom:14px;">'
+    + '<div style="font-weight:800;font-size:13.5px;margin-bottom:10px;color:#16233f;">'+(editArticle?'تعديل المقال':'+ إضافة مقال جديد')+'</div>'
+    + '<input id="kbArtTitle-'+idAttr+'" placeholder="عنوان المقال" value="'+kbEsc(a.title)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;margin-bottom:8px;">'
+    + '<textarea id="kbArtBody-'+idAttr+'" placeholder="نص المقال…" rows="5" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:8px;resize:vertical;">'+kbEsc(a.body)+'</textarea>'
+    + kbArticleAttachmentsInputHtml(idAttr)
+    + (editArticle && editArticle.attachments && editArticle.attachments.length ? '<div style="font-size:11px;color:#0e6a5a;margin-bottom:8px;">المرفقات الحالية ('+editArticle.attachments.length+') — اختيار ملفات جديدة يضيفها لها</div>' : '')
+    + '<div style="display:flex;gap:8px;">'
+    + '<button type="button" onclick="'+saveCall+'" style="background:#0e6a5a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">'+(editArticle?'حفظ التعديل':'+ إضافة المقال')+'</button>'
+    + (editArticle ? '<button type="button" onclick="kbCancelArticleEdit()" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">إلغاء</button>' : '')
+    + '</div></div>';
+  return html;
+}
+function kbRenderArticlesList(articles, canManage){
+  const box = document.getElementById('kbArticlesListBox');
+  if(!box) return;
+  if(!articles.length){ box.innerHTML = '<div style="color:#8a93a6;font-size:12.5px;padding:10px 2px;">لا يوجد أي مقال بعد بهذا القسم.</div>'; return; }
+  box.innerHTML = articles.slice().sort(function(a,b){ return (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt); }).map(function(a){
+    if(window.__kbEditingArticleId === a.id) return kbRenderArticleForm(a);
+    const dateLine = a.updatedAt && a.updatedAt !== a.createdAt
+      ? '📅 أُضيف '+kbFmtDate(a.createdAt)+' — آخر تحديث '+kbFmtDate(a.updatedAt)
+      : '📅 أُضيف '+kbFmtDate(a.createdAt);
+    const mgmtBtns = canManage
+      ? '<button type="button" onclick="kbEditArticle('+a.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
+        + '<button type="button" onclick="kbDeleteArticle('+a.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🗑 حذف</button>'
+      : '';
+    return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
+      + '<div style="font-weight:800;font-size:14.5px;color:#16233f;">📄 '+kbEsc(a.title)+'</div>'
+      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — بواسطة '+kbEsc(a.createdByName):'')+'</div>'
+      + '<div style="font-size:12.5px;color:#3a4350;margin-top:8px;white-space:pre-wrap;line-height:1.7;">'+kbEsc(a.body)+'</div>'
+      + kbArticleAttachmentsChips(a.attachments)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' + mgmtBtns + '</div>'
+      + '</div>';
+  }).join('');
+}
+async function kbAddArticle(){
+  if(!canManageKnowledgeBank()) return;
+  const idAttr = 'new';
+  const title = document.getElementById('kbArtTitle-'+idAttr).value.trim();
+  const body = document.getElementById('kbArtBody-'+idAttr).value.trim();
+  if(!title){ alert('لازم تكتب عنوان المقال'); return; }
+  const fileInput = document.getElementById('kbArtFiles-'+idAttr);
+  const attachments = await kbUploadFiles(fileInput);
+  const me = window.__currentEmployee;
+  const article = { title:title, body:body, attachments:attachments, createdByName: me?me.name:'—' };
+  const sector = window.__kbState.sector, sectionId = window.__kbState.sectionId;
+  if(!canDirectlyApplyKb()){
+    kbSubmitPending('add_article', sector, sectionId, article);
+    renderKnowledgeBank();
+    return;
+  }
+  article.id = kbNextId();
+  article.sector = sector; article.sectionId = sectionId;
+  article.createdAt = Date.now(); article.updatedAt = Date.now();
+  const ov = loadAdminOverrides();
+  ov.knowledgeBankArticles = ov.knowledgeBankArticles || [];
+  ov.knowledgeBankArticles.push(article);
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
+}
+function kbEditArticle(id){ window.__kbEditingArticleId = id; renderKnowledgeBank(); }
+function kbCancelArticleEdit(){ window.__kbEditingArticleId = null; renderKnowledgeBank(); }
+async function kbSaveArticleEdit(id){
+  if(!canManageKnowledgeBank()) return;
+  const ov = loadAdminOverrides();
+  const a = (ov.knowledgeBankArticles||[]).find(function(x){ return x.id===id; });
+  if(!a) return;
+  const title = document.getElementById('kbArtTitle-'+id).value.trim();
+  const body = document.getElementById('kbArtBody-'+id).value.trim();
+  if(!title){ alert('لازم تكتب عنوان المقال'); return; }
+  const fileInput = document.getElementById('kbArtFiles-'+id);
+  const newFiles = await kbUploadFiles(fileInput);
+  const patch = { title:title, body:body, attachments: (a.attachments||[]).concat(newFiles) };
+  if(!canDirectlyApplyKb()){
+    kbSubmitPending('edit_article', a.sector, a.sectionId, patch, id);
+    window.__kbEditingArticleId = null;
+    renderKnowledgeBank();
+    return;
+  }
+  Object.assign(a, patch);
+  a.updatedAt = Date.now();
+  saveAdminOverrides(ov);
+  window.__kbEditingArticleId = null;
+  renderKnowledgeBank();
+}
+function kbDeleteArticle(id){
+  if(!canManageKnowledgeBank()) return;
+  const ov = loadAdminOverrides();
+  const a = (ov.knowledgeBankArticles||[]).find(function(x){ return x.id===id; });
+  if(!a) return;
+  if(!canDirectlyApplyKb()){
+    if(!confirm('راح يرسل هذا طلب حذف المقال للمراجعة. متابعة؟')) return;
+    kbSubmitPending('delete_article', a.sector, a.sectionId, null, id);
+    renderKnowledgeBank();
+    return;
+  }
+  if(!confirm('متأكد تبي تحذف هذا المقال؟')) return;
+  ov.knowledgeBankArticles = (ov.knowledgeBankArticles||[]).filter(function(x){ return x.id!==id; });
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
 }
 // ===== نظام "اختبر نفسك": اختبار موقّت على أسئلة بنك المعرفة =====
 window.__quizState = { view:'sectors', sector:null };
@@ -9394,6 +9597,7 @@ function kbApprovePending(id){
   const p = (ov.knowledgeBankPending||[]).find(x=>x.id===id);
   if(!p) return;
   ov.knowledgeBankItems = ov.knowledgeBankItems || [];
+  ov.knowledgeBankArticles = ov.knowledgeBankArticles || [];
   if(p.action === 'add'){
     ov.knowledgeBankItems.push(Object.assign({}, p.payload, { id: kbNextId(), sector:p.sector, sectionId:p.sectionId }));
   } else if(p.action === 'edit'){
@@ -9401,6 +9605,13 @@ function kbApprovePending(id){
     if(it) Object.assign(it, p.payload);
   } else if(p.action === 'delete'){
     ov.knowledgeBankItems = ov.knowledgeBankItems.filter(x=>x.id!==p.itemId);
+  } else if(p.action === 'add_article'){
+    ov.knowledgeBankArticles.push(Object.assign({}, p.payload, { id: kbNextId(), sector:p.sector, sectionId:p.sectionId, createdAt: Date.now(), updatedAt: Date.now() }));
+  } else if(p.action === 'edit_article'){
+    const a = ov.knowledgeBankArticles.find(x=>x.id===p.itemId);
+    if(a){ Object.assign(a, p.payload); a.updatedAt = Date.now(); }
+  } else if(p.action === 'delete_article'){
+    ov.knowledgeBankArticles = ov.knowledgeBankArticles.filter(x=>x.id!==p.itemId);
   }
   ov.knowledgeBankPending = ov.knowledgeBankPending.filter(x=>x.id!==id);
   saveAdminOverrides(ov);
