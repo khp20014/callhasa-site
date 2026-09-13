@@ -8443,6 +8443,36 @@ function kbRenderArticleBodyHtml(a){
   out += kbEsc(body.slice(lastIndex)).replace(/\n/g,'<br>');
   return out;
 }
+// المرفقات المُزالة أثناء تعديل مقال (بالفهرس داخل مصفوفة attachments الأصلية) — قبل ما يضغط "حفظ التعديل"
+window.__kbArtRemovedExisting = {};
+// يعرض المرفقات المحفوظة فعليا بالمقال (أثناء التعديل) كل وحدة مع زر ✕ لحذفها
+function kbExistingAttachmentsEditHtml(a){
+  const idAttr = a.id;
+  return '<div style="margin-bottom:10px;">'
+    + '<div style="font-size:11px;color:#0e6a5a;margin-bottom:6px;">المرفقات الحالية — اضغط ✕ لحذف أي مرفق، أو اختر/الصق ملفات جديدة لإضافتها لها</div>'
+    + '<div id="kbExistingAtt-'+idAttr+'" style="display:flex;flex-wrap:wrap;gap:10px;">'
+    + a.attachments.map(function(f, i){ return kbExistingAttachmentChip(idAttr, f, i); }).join('')
+    + '</div></div>';
+}
+function kbExistingAttachmentChip(idAttr, f, i){
+  const isImg = /^image\//.test(f.type||'');
+  const inner = isImg
+    ? '<img src="'+f.url+'" style="max-width:90px;max-height:70px;border-radius:7px;border:1px solid #e2e6ea;display:block;">'
+    : '<div style="padding:10px 12px 10px 10px;background:#f4f6f8;border:1px solid #e2e6ea;border-radius:7px;font-size:10.5px;color:#16233f;max-width:120px;word-break:break-all;">📎 '+kbEsc(f.name)+'</div>';
+  return '<div id="kbExistingChip-'+idAttr+'-'+i+'" style="position:relative;display:inline-block;">'
+    + inner
+    + '<span onclick="kbRemoveExistingAttachment(\''+idAttr+'\','+i+')" title="حذف هذا المرفق" style="position:absolute;top:-8px;left:-8px;background:#c0392b;color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3);">✕</span>'
+    + '</div>';
+}
+// يشيل مرفق موجود مسبقا من الواجهة فورا (بدون ما يعيد رسم النموذج كله فيضيع أي تعديل ما انحفظ بعد)،
+// ويسجّل فهرسه عشان kbSaveArticleEdit يشيله فعليا من المقال وقت الحفظ
+function kbRemoveExistingAttachment(articleId, index){
+  if(!confirm('حذف هذا المرفق من المقال؟')) return;
+  window.__kbArtRemovedExisting[articleId] = window.__kbArtRemovedExisting[articleId] || [];
+  window.__kbArtRemovedExisting[articleId].push(index);
+  const chip = document.getElementById('kbExistingChip-'+articleId+'-'+index);
+  if(chip) chip.remove();
+}
 function kbRenderArticleForm(editArticle){
   const a = editArticle || { title:'', body:'' };
   const idAttr = editArticle ? editArticle.id : 'new';
@@ -8452,7 +8482,7 @@ function kbRenderArticleForm(editArticle){
     + '<input id="kbArtTitle-'+idAttr+'" placeholder="عنوان المقال" value="'+kbEsc(a.title)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;margin-bottom:8px;">'
     + '<textarea id="kbArtBody-'+idAttr+'" placeholder="نص المقال… (تقدر تلصق صورة هنا Ctrl+V لتضمينها بمكانها بالضبط داخل النص)" onpaste="kbHandleBodyPaste(event,\''+idAttr+'\')" rows="5" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:8px;resize:vertical;">'+kbEsc(a.body)+'</textarea>'
     + kbArticleAttachmentsInputHtml(idAttr)
-    + (editArticle && editArticle.attachments && editArticle.attachments.length ? '<div style="font-size:11px;color:#0e6a5a;margin-bottom:8px;">المرفقات الحالية ('+editArticle.attachments.length+') — اختيار ملفات جديدة يضيفها لها</div>' : '')
+    + (editArticle && editArticle.attachments && editArticle.attachments.length ? kbExistingAttachmentsEditHtml(editArticle) : '')
     + '<div style="display:flex;gap:8px;">'
     + '<button type="button" onclick="'+saveCall+'" style="background:#0e6a5a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">'+(editArticle?'حفظ التعديل':'+ إضافة المقال')+'</button>'
     + (editArticle ? '<button type="button" onclick="kbCancelArticleEdit()" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 18px;font-weight:800;font-size:13px;cursor:pointer;">إلغاء</button>' : '')
@@ -8507,8 +8537,8 @@ async function kbAddArticle(){
   saveAdminOverrides(ov);
   renderKnowledgeBank();
 }
-function kbEditArticle(id){ kbArtFilesReset(id); window.__kbEditingArticleId = id; renderKnowledgeBank(); }
-function kbCancelArticleEdit(){ kbArtFilesReset(window.__kbEditingArticleId); window.__kbEditingArticleId = null; renderKnowledgeBank(); }
+function kbEditArticle(id){ kbArtFilesReset(id); delete window.__kbArtRemovedExisting[id]; window.__kbEditingArticleId = id; renderKnowledgeBank(); }
+function kbCancelArticleEdit(){ kbArtFilesReset(window.__kbEditingArticleId); delete window.__kbArtRemovedExisting[window.__kbEditingArticleId]; window.__kbEditingArticleId = null; renderKnowledgeBank(); }
 async function kbSaveArticleEdit(id){
   if(!canManageKnowledgeBank()) return;
   const ov = loadAdminOverrides();
@@ -8517,10 +8547,13 @@ async function kbSaveArticleEdit(id){
   const title = document.getElementById('kbArtTitle-'+id).value.trim();
   const body = document.getElementById('kbArtBody-'+id).value.trim();
   if(!title){ alert('لازم تكتب عنوان المقال'); return; }
+  const removedIdx = window.__kbArtRemovedExisting[id] || [];
+  const keptAttachments = (a.attachments||[]).filter(function(_, i){ return removedIdx.indexOf(i)===-1; });
   const fileInput = document.getElementById('kbArtFiles-'+id);
   const newFiles = await kbUploadFiles(fileInput);
   kbArtFilesReset(id);
-  const patch = { title:title, body:body, attachments: (a.attachments||[]).concat(newFiles) };
+  delete window.__kbArtRemovedExisting[id];
+  const patch = { title:title, body:body, attachments: keptAttachments.concat(newFiles) };
   if(!canDirectlyApplyKb()){
     kbSubmitPending('edit_article', a.sector, a.sectionId, patch, id);
     window.__kbEditingArticleId = null;
