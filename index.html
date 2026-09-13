@@ -7542,7 +7542,7 @@ async function kbUploadFile(fileInput){
   const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
   if(!client){ alert('تعذر الاتصال بمخزن الملفات، حاول مرة أخرى.'); return null; }
   const file = fileInput.files[0];
-  const safeName = file.name.replace(/[^a-zA-Z0-9.\u0621-\u064A_-]/g,'_');
+  const extMatch = file.name.match(/\.[a-zA-Z0-9]{1,6}$/); const ext = extMatch ? extMatch[0] : ''; const baseAscii = file.name.slice(0, file.name.length-ext.length).replace(/[^a-zA-Z0-9_-]/g,'_').replace(/_+/g,'_').slice(0,40) || 'file'; const safeName = baseAscii + ext;
   const path = Date.now() + '_' + safeName;
   try{
     const { error } = await client.storage.from('knowledge-bank-files').upload(path, file, { upsert:true });
@@ -7560,7 +7560,7 @@ async function kbUploadFiles(fileInput){
   const failures = [];
   for(let i=0;i<fileInput.files.length;i++){
     const file = fileInput.files[i];
-    const safeName = file.name.replace(/[^a-zA-Z0-9.\u0621-\u064A_-]/g,'_');
+    const extMatch = file.name.match(/\.[a-zA-Z0-9]{1,6}$/); const ext = extMatch ? extMatch[0] : ''; const baseAscii = file.name.slice(0, file.name.length-ext.length).replace(/[^a-zA-Z0-9_-]/g,'_').replace(/_+/g,'_').slice(0,40) || 'file'; const safeName = baseAscii + ext;
     const path = Date.now() + '_' + i + '_' + safeName;
     try{
       const { error } = await client.storage.from('knowledge-bank-files').upload(path, file, { upsert:true });
@@ -8814,12 +8814,12 @@ function quizReviewResult(resultId){
   renderQuiz();
 }
 function quizReviewOptionLine(text, isCorrect, isChosen){
-  let style = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:12.5px;';
+  let style = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;font-size:12.5px;';
   if(isCorrect) style += 'background:#e7f6f1;color:#0e6a5a;font-weight:800;';
   else if(isChosen) style += 'background:#fdecea;color:#c0392b;font-weight:800;';
   else style += 'color:#5b6685;';
-  const mark = isCorrect ? '✔' : (isChosen ? '✕' : '');
-  return '<div style="'+style+'"><span>'+mark+'</span><span>'+kbEsc(quizCleanOptionText(text))+'</span></div>';
+  const tag = isCorrect ? '✔ الإجابة الصحيحة' : (isChosen ? '✕ اخترت هذه' : '');
+  return '<div style="'+style+'"><span>'+kbEsc(quizCleanOptionText(text))+'</span>'+(tag?'<span style="font-size:10.5px;">'+tag+'</span>':'')+'</div>';
 }
 function renderQuizReviewView(root){
   const ov = loadAdminOverrides();
