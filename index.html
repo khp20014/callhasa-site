@@ -7554,20 +7554,22 @@ async function kbUploadFile(fileInput){
 // يرفع عدة ملفات دفعة واحدة (للمقالات: صور/إكسل/PDF/وورد معا) ويرجع مصفوفة
 async function kbUploadFiles(fileInput){
   if(!fileInput || !fileInput.files || !fileInput.files.length) return [];
+  const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+  if(!client){ alert('تعذر الاتصال بمخزن الملفات (لم يتم تحميل مكتبة Supabase). حاول تحديث الصفحة.'); return []; }
   const out = [];
+  const failures = [];
   for(let i=0;i<fileInput.files.length;i++){
-    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
-    if(!client) continue;
     const file = fileInput.files[i];
     const safeName = file.name.replace(/[^a-zA-Z0-9.\u0621-\u064A_-]/g,'_');
     const path = Date.now() + '_' + i + '_' + safeName;
     try{
       const { error } = await client.storage.from('knowledge-bank-files').upload(path, file, { upsert:true });
-      if(error) continue;
+      if(error){ failures.push(file.name+': '+error.message); continue; }
       const { data } = client.storage.from('knowledge-bank-files').getPublicUrl(path);
       out.push({ url: data.publicUrl, name: file.name, type: file.type });
-    }catch(err){}
+    }catch(err){ failures.push(file.name+': '+(err&&err.message?err.message:'خطأ غير معروف')); }
   }
+  if(failures.length){ alert('تعذر رفع بعض الملفات:\n' + failures.join('\n')); }
   return out;
 }
 function kbFmtDate(ts){
@@ -7768,12 +7770,18 @@ function renderKbSectionsView(root){
     html += '<div style="color:#8a93a6;font-size:13px;padding:20px;">لا يوجد أقسام بعد بهذا القطاع.</div>';
   } else {
     html += sections.map(function(sec){
-      const count = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sector===st.sector && it.sectionId===sec.id; }).length;
+      const childCount = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===sec.id; }).length;
+      const articleCount = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sectionId===sec.id; }).length;
+      const qCount = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sectionId===sec.id; }).length;
+      const parts = [];
+      if(childCount) parts.push(childCount+' قسم فرعي');
+      parts.push(articleCount+' مقال');
+      parts.push(qCount+' سؤال');
       const delBtn = canManage ? '<span onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="color:#c0392b;font-size:11.5px;cursor:pointer;">حذف</span>' : '';
       return kbCard(
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
         +'<div style="font-size:14.5px;font-weight:800;color:#16233f;">'+kbEsc(sec.name)+'</div>'+delBtn+'</div>'
-        +'<div style="font-size:11.5px;color:#8a93a6;">'+count+' سؤال</div>',
+        +'<div style="font-size:11.5px;color:#8a93a6;">'+parts.join(' — ')+'</div>',
         "kbGoItems('"+st.sector+"',"+sec.id+")", 'min-width:200px;max-width:260px;'
       );
     }).join('');
@@ -7870,10 +7878,19 @@ function kbRenderChildSections(childSections, canManage){
     html += '<div style="color:#8a93a6;font-size:12.5px;padding:6px 2px;">لا يوجد أقسام فرعية بعد.</div>';
   } else {
     html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + childSections.map(function(sec){
+      const ov = loadAdminOverrides();
+      const childCount = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===sec.id; }).length;
+      const articleCount = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sectionId===sec.id; }).length;
+      const qCount = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sectionId===sec.id; }).length;
+      const parts = [];
+      if(childCount) parts.push(childCount+' قسم فرعي');
+      parts.push(articleCount+' مقال');
+      parts.push(qCount+' سؤال');
       const delBtn = canManage ? '<span onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="color:#c0392b;font-size:11.5px;cursor:pointer;">حذف</span>' : '';
       return kbCard(
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
-        +'<div style="font-size:13.5px;font-weight:800;color:#16233f;">📁 '+kbEsc(sec.name)+'</div>'+delBtn+'</div>',
+        +'<div style="font-size:13.5px;font-weight:800;color:#16233f;">📁 '+kbEsc(sec.name)+'</div>'+delBtn+'</div>'
+        +'<div style="font-size:11px;color:#8a93a6;">'+parts.join(' — ')+'</div>',
         "kbGoItems('"+st.sector+"',"+sec.id+")", 'min-width:180px;max-width:240px;padding:14px 16px;'
       );
     }).join('') + '</div>';
