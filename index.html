@@ -7756,6 +7756,7 @@ function renderKbSectionsView(root){
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
     + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ اختبار المعرفة</button>'
+    + '<button type="button" onclick="goQuizMyResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🧾 نتائجي</button>'
     + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
     + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📋 نتائج اختبار المعرفة</button>' : '')
     + '</div>';
@@ -8569,6 +8570,11 @@ function goQuizResultsFromKb(sector){
   window.__quizReturnSector = sector;
   if(window.__showQuizApp) window.__showQuizApp();
   quizGoResultsList();
+}
+function goQuizMyResultsFromKb(sector){
+  window.__quizReturnSector = sector;
+  if(window.__showQuizApp) window.__showQuizApp();
+  quizGoMyResults();
 }
 // رجوع من أي شاشة داخل اختبار المعرفة إلى نفس قسم بنك المعرفة اللي دخلنا منه
 function quizBackToKb(){
