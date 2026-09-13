@@ -8009,11 +8009,36 @@ function kbParseBulkQA(text){
   });
   return out;
 }
+// يهرب نص لوضعه داخل سلسلة جافاسكربت بين علامتي اقتباس مفردتين ضمن attribute بين علامتي اقتباس مزدوجتين
+function kbJsStr(s){
+  return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+// نافذة معاينة الصورة بحجم كبير وواضح + رابط تحميل مباشر، تفتح لأي شخص (موظف أو مدير) يضغط على صورة مرفقة
+function kbOpenImageLightbox(url, name){
+  kbCloseImageLightbox();
+  const overlay = document.createElement('div');
+  overlay.id = 'kbImgLightbox';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,14,20,.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+  overlay.onclick = function(ev){ if(ev.target === overlay) kbCloseImageLightbox(); };
+  overlay.innerHTML =
+    '<div style="position:absolute;top:14px;right:14px;left:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+      + '<a href="'+url+'" download="'+kbEsc(name||'')+'" target="_blank" rel="noopener" style="background:#0e6a5a;color:#fff;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:800;text-decoration:none;">⬇ تحميل الصورة</a>'
+      + '<span onclick="kbCloseImageLightbox()" style="cursor:pointer;background:rgba(255,255,255,.15);color:#fff;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:800;">✕ إغلاق</span>'
+    + '</div>'
+    + '<img src="'+url+'" style="max-width:100%;max-height:82vh;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);margin-top:46px;">';
+  document.body.appendChild(overlay);
+}
+function kbCloseImageLightbox(){
+  const el = document.getElementById('kbImgLightbox');
+  if(el) el.remove();
+}
 function kbFileChip(file){
   if(!file) return '';
   const isImg = /^image\//.test(file.type||'');
   if(isImg){
-    return '<div style="margin-top:8px;"><img src="'+file.url+'" style="max-width:180px;max-height:140px;border-radius:8px;border:1px solid #e2e6ea;"></div>';
+    return '<div style="margin-top:8px;cursor:zoom-in;display:inline-block;" onclick="kbOpenImageLightbox(\''+kbJsStr(file.url)+'\',\''+kbJsStr(file.name)+'\')" title="اضغط لتكبير الصورة">'
+      + '<img src="'+file.url+'" style="max-width:180px;max-height:140px;border-radius:8px;border:1px solid #e2e6ea;display:block;">'
+      + '</div>';
   }
   return '<a href="'+file.url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:#f4f6f8;border:1px solid #e2e6ea;border-radius:8px;padding:6px 10px;font-size:11.5px;color:#16233f;text-decoration:none;">📎 '+kbEsc(file.name)+'</a>';
 }
@@ -8287,6 +8312,21 @@ function kbArtFilesDedupeAdd(list, f){
   const dup = list.some(function(pf){ return pf.name===f.name && pf.size===f.size && pf.lastModified===f.lastModified; });
   if(!dup) list.push(f);
 }
+// يعطي الملف اسم فريد (يحافظ على امتداد مناسب لنوعه) — يفيد خصوصا بالصور الملصوقة
+// اللي المتصفح يعطيها نفس الاسم العام دائما (مثل image.png)، عشان نربطها بمكانها الصحيح داخل نص المقال
+function kbUniqueFileName(file){
+  const extFromName = (file.name||'').match(/\.[a-zA-Z0-9]{1,6}$/);
+  let ext = extFromName ? extFromName[0] : '';
+  if(!ext && file.type){
+    const m = file.type.match(/\/([a-zA-Z0-9]+)/);
+    if(m) ext = '.' + m[1].replace('jpeg','jpg');
+  }
+  return 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2,8) + (ext || '.png');
+}
+function kbCloneFileWithName(file, newName){
+  try{ return new File([file], newName, { type: file.type, lastModified: file.lastModified }); }
+  catch(err){ return file; }
+}
 // يعيد رسم input.files الفعلي وشرائح الملفات المعروضة اعتمادا على المخزن المؤقت
 function kbArtFilesSync(idAttr){
   const list = kbArtFilesGetStore(idAttr);
@@ -8346,11 +8386,61 @@ function kbHandlePaste(ev, idAttr){
     kbArtFilesSync(idAttr);
   }
 }
+// لصق صورة داخل مربع نص المقال نفسه: نضيفها كمرفق قابل للتحميل (زي أي مرفق)
+// وبنفس الوقت نحط علامة بمكان المؤشر تخلي الصورة تظهر مضمّنة بنص المقال بهذا المكان بالضبط
+function kbHandleBodyPaste(ev, idAttr){
+  const items = ev.clipboardData && ev.clipboardData.items;
+  if(!items) return;
+  let imgFile = null;
+  for(let i=0;i<items.length;i++){
+    if(items[i].kind === 'file' && /^image\//.test(items[i].type)){
+      imgFile = items[i].getAsFile();
+      break;
+    }
+  }
+  if(!imgFile) return; // مافي صورة باللي انلصق، سيب اللصق العادي (نص) يشتغل طبيعي
+  ev.preventDefault();
+  const named = kbCloneFileWithName(imgFile, kbUniqueFileName(imgFile));
+  const list = kbArtFilesGetStore(idAttr);
+  list.push(named);
+  kbArtFilesSync(idAttr);
+  const textarea = ev.target;
+  const marker = '\n[[صورة:' + named.name + ']]\n';
+  const start = textarea.selectionStart != null ? textarea.selectionStart : textarea.value.length;
+  const end = textarea.selectionEnd != null ? textarea.selectionEnd : textarea.value.length;
+  textarea.value = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
+  const newPos = start + marker.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
+  textarea.focus();
+}
 function kbArticleAttachmentsChips(attachments){
   if(!attachments || !attachments.length) return '';
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">' + attachments.map(function(f){
     return kbFileChip(f);
   }).join('') + '</div>';
+}
+// يحوّل نص المقال إلى HTML، ويستبدل أي علامة [[صورة:اسم_الملف]] بصورة مضمّنة فعلية من مرفقات المقال
+// (اللي انحطت عن طريق لصق صورة داخل مربع النص وقت الكتابة)، مع إبقاء باقي النص كما هو
+function kbRenderArticleBodyHtml(a){
+  const body = a.body || '';
+  const attachments = a.attachments || [];
+  const re = /\[\[صورة:([^\]]+)\]\]/g;
+  let lastIndex = 0, out = '', m;
+  while((m = re.exec(body))){
+    out += kbEsc(body.slice(lastIndex, m.index)).replace(/\n/g,'<br>');
+    const name = m[1];
+    const file = attachments.find(function(f){ return f.name===name; });
+    if(file && /^image\//.test(file.type||'')){
+      out += '<div style="margin:10px 0;cursor:zoom-in;max-width:100%;" onclick="kbOpenImageLightbox(\''+kbJsStr(file.url)+'\',\''+kbJsStr(file.name)+'\')" title="اضغط لتكبير الصورة">'
+        + '<img src="'+file.url+'" style="max-width:100%;max-height:360px;border-radius:10px;border:1px solid #e2e6ea;display:block;">'
+        + '</div>';
+    } else {
+      out += '<span style="color:#c0392b;font-size:11px;">🖼 (صورة غير متوفرة)</span>';
+    }
+    lastIndex = re.lastIndex;
+  }
+  out += kbEsc(body.slice(lastIndex)).replace(/\n/g,'<br>');
+  return out;
 }
 function kbRenderArticleForm(editArticle){
   const a = editArticle || { title:'', body:'' };
@@ -8359,7 +8449,7 @@ function kbRenderArticleForm(editArticle){
   let html = '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);margin-bottom:14px;">'
     + '<div style="font-weight:800;font-size:13.5px;margin-bottom:10px;color:#16233f;">'+(editArticle?'تعديل المقال':'+ إضافة مقال جديد')+'</div>'
     + '<input id="kbArtTitle-'+idAttr+'" placeholder="عنوان المقال" value="'+kbEsc(a.title)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;margin-bottom:8px;">'
-    + '<textarea id="kbArtBody-'+idAttr+'" placeholder="نص المقال…" rows="5" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:8px;resize:vertical;">'+kbEsc(a.body)+'</textarea>'
+    + '<textarea id="kbArtBody-'+idAttr+'" placeholder="نص المقال… (تقدر تلصق صورة هنا Ctrl+V لتضمينها بمكانها بالضبط داخل النص)" onpaste="kbHandleBodyPaste(event,\''+idAttr+'\')" rows="5" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:8px;resize:vertical;">'+kbEsc(a.body)+'</textarea>'
     + kbArticleAttachmentsInputHtml(idAttr)
     + (editArticle && editArticle.attachments && editArticle.attachments.length ? '<div style="font-size:11px;color:#0e6a5a;margin-bottom:8px;">المرفقات الحالية ('+editArticle.attachments.length+') — اختيار ملفات جديدة يضيفها لها</div>' : '')
     + '<div style="display:flex;gap:8px;">'
@@ -8384,7 +8474,7 @@ function kbRenderArticlesList(articles, canManage){
     return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
       + '<div style="font-weight:800;font-size:14.5px;color:#16233f;">📄 '+kbEsc(a.title)+'</div>'
       + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — بواسطة '+kbEsc(a.createdByName):'')+'</div>'
-      + '<div style="font-size:12.5px;color:#3a4350;margin-top:8px;white-space:pre-wrap;line-height:1.7;">'+kbEsc(a.body)+'</div>'
+      + '<div style="font-size:12.5px;color:#3a4350;margin-top:8px;line-height:1.7;">'+kbRenderArticleBodyHtml(a)+'</div>'
       + kbArticleAttachmentsChips(a.attachments)
       + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' + mgmtBtns + '</div>'
       + '</div>';
@@ -8497,6 +8587,8 @@ function quizNextId(){
 function quizGoSectors(){ window.__quizState = { view:'sectors', sector:null }; renderQuiz(); }
 function quizGoManage(sector){ window.__quizState = { view:'manage', sector:sector }; window.__quizEditingId = null; renderQuiz(); }
 function quizGoResultsList(){ window.__quizState = { view:'results', sector:null }; renderQuiz(); }
+// نتائج الموظف نفسه فقط (كل موظف يشوف محاولاته هو، بدون صلاحية حذف)
+function quizGoMyResults(){ window.__quizState = { view:'myresults' }; renderQuiz(); }
 function quizStart(sector){
   const ov = loadAdminOverrides();
   const pool = (ov.quizQuestions||[]).filter(function(q){ return q.sector===sector; });
@@ -8515,6 +8607,7 @@ function renderQuiz(){
   if(st.view === 'manage') return renderQuizManageView(root);
   if(st.view === 'run') return renderQuizRunView(root);
   if(st.view === 'results') return renderQuizResultsView(root);
+  if(st.view === 'myresults') return renderQuizMyResultsView(root);
   if(st.view === 'review') return renderQuizReviewView(root);
   return renderQuizSectorsView(root);
 }
@@ -8525,7 +8618,10 @@ function renderQuizSectorsView(root){
   root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
     + '<button type="button" onclick="window.__showAppHub && window.__showAppHub()" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
-    + (canResults ? '<button type="button" onclick="quizGoResultsList()" style="all:unset;cursor:pointer;position:absolute;top:20px;left:20px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">📋 النتائج</button>' : '')
+    + '<div style="position:absolute;top:20px;left:20px;display:flex;gap:8px;flex-wrap:wrap;">'
+    + '<button type="button" onclick="quizGoMyResults()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">🧾 نتائجي</button>'
+    + (canResults ? '<button type="button" onclick="quizGoResultsList()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">📋 كل النتائج</button>' : '')
+    + '</div>'
     + '<div style="text-align:center;color:#fff;">'
     + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">اختبار المعرفة</div>'
     + '<div style="font-size:22px;font-weight:900;">اختر القطاع</div>'
@@ -8882,7 +8978,7 @@ function renderQuizReviewView(root){
   const result = (ov.quizResults||[]).find(function(r){ return r.id===window.__quizState.resultId; });
   if(!result){ quizBackToKb(); return; }
   const sectorInfo = KB_SECTORS.find(function(s){ return s.id===result.sector; });
-  const backAction = window.__quizReviewFromResultsList ? 'quizGoResultsList()' : 'quizBackToKb()';
+  const backAction = window.__quizReviewFromResultsList === 'mine' ? 'quizGoMyResults()' : (window.__quizReviewFromResultsList ? 'quizGoResultsList()' : 'quizBackToKb()');
   let html = kbHeader('مراجعة الاختبار', kbEsc(result.employeeName)+' — '+(sectorInfo?sectorInfo.name:''), backAction)
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;justify-content:space-between;align-items:center;">'
@@ -8998,6 +9094,28 @@ function quizDeleteResult(id){
   ov.quizResults = (ov.quizResults||[]).filter(function(x){ return x.id!==id; });
   saveAdminOverrides(ov);
   renderQuiz();
+}
+
+// ---------- عرض نتائجي أنا (لأي موظف، محاولاته هو فقط، بدون خيار حذف) ----------
+function renderQuizMyResultsView(root){
+  const me = window.__currentEmployee;
+  const ov = loadAdminOverrides();
+  const results = (ov.quizResults||[]).filter(function(r){ return me && String(r.jobNo)===String(me.job_no); })
+    .sort(function(a,b){ return b.takenAt - a.takenAt; });
+  let rows = results.map(function(r){
+    const sectorInfo = KB_SECTORS.find(function(s){ return s.id===r.sector; });
+    const mins = Math.floor(r.durationSeconds/60), secs = r.durationSeconds%60;
+    const dt = new Date(r.takenAt);
+    const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
+    const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=\'mine\';quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
+    return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;">'+(sectorInfo?sectorInfo.name:'')+'</div>'
+      + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+dt.toLocaleDateString('ar-SA')+' — المدة '+mins+'د '+secs+'ث</div></div>'
+      + '<div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+'</div></div>';
+  }).join('');
+  if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما اختبرت لين الحين — ابدأ اختبار المعرفة عشان تظهر نتائجك هنا.</div>';
+  root.innerHTML = kbHeader('نتائجي باختبار المعرفة', results.length+' محاولة', 'quizGoSectors()')
+    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
 }
 
 // ---------- نافذة صلاحيات مشاهدة النتائج ----------
