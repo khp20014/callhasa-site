@@ -7608,7 +7608,7 @@ function renderKnowledgeBank(){
 function kbGoHub(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; if(window.__showAppHub) window.__showAppHub(); }
 function kbGoSectors(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; renderKnowledgeBank(); }
 function kbGoSections(sector){ window.__kbState = { view:'sections', sector:sector, sectionId:null }; renderKnowledgeBank(); }
-function kbGoItems(sector, sectionId){ window.__kbState = { view:'items', sector:sector, sectionId:sectionId }; renderKnowledgeBank(); }
+function kbGoItems(sector, sectionId){ kbArtFilesReset('new'); window.__kbState = { view:'items', sector:sector, sectionId:sectionId }; renderKnowledgeBank(); }
 
 function kbHighlight(text, q){
   const escaped = kbEsc(text);
@@ -7771,12 +7771,11 @@ function renderKbSectionsView(root){
   } else {
     html += sections.map(function(sec){
       const childCount = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===sec.id; }).length;
-      const articleCount = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sectionId===sec.id; }).length;
-      const qCount = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sectionId===sec.id; }).length;
+      const counts = kbRollupCounts(ov, sec.id);
       const parts = [];
       if(childCount) parts.push(childCount+' قسم فرعي');
-      parts.push(articleCount+' مقال');
-      parts.push(qCount+' سؤال');
+      parts.push(counts.articleCount+' مقال');
+      parts.push(counts.qCount+' سؤال');
       const delBtn = canManage ? '<span onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="color:#c0392b;font-size:11.5px;cursor:pointer;">حذف</span>' : '';
       return kbCard(
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
@@ -7811,6 +7810,14 @@ function kbCollectDescendantSectionIds(allSections, rootId){
   }
   return result;
 }
+// يحسب عدد المقالات والأسئلة بقسم معيّن + كل أقسامه الفرعية (على أي عمق)، مو بس المقالات المرتبطة مباشرة به
+function kbRollupCounts(ov, sectionId){
+  const allSections = ov.knowledgeBankSections || [];
+  const ids = [sectionId].concat(kbCollectDescendantSectionIds(allSections, sectionId));
+  const articleCount = (ov.knowledgeBankArticles||[]).filter(function(a){ return ids.indexOf(a.sectionId)!==-1; }).length;
+  const qCount = (ov.knowledgeBankItems||[]).filter(function(it){ return ids.indexOf(it.sectionId)!==-1; }).length;
+  return { articleCount: articleCount, qCount: qCount };
+}
 function kbDeleteSection(id){
   if(!canManageKnowledgeBank()) return;
   if(!confirm('حذف القسم يحذف كل أقسامه الفرعية وأسئلته ومقالاته أيضا. متأكد؟')) return;
@@ -7834,7 +7841,8 @@ function renderKbItemsView(root){
   const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
   const canApprove = typeof canDirectlyApplyKb === 'function' && canDirectlyApplyKb();
   const pending = (ov.knowledgeBankPending||[]).filter(function(p){ return p.sectionId===st.sectionId; });
-  const subtitle = childSections.length+' قسم فرعي — '+articles.length+' مقال — '+items.length+' سؤال';
+  const rollup = kbRollupCounts(ov, st.sectionId);
+  const subtitle = childSections.length+' قسم فرعي — '+rollup.articleCount+' مقال — '+rollup.qCount+' سؤال';
   root.innerHTML = kbHeader(section?section.name:'', subtitle, "kbGoSections('"+st.sector+"')")
     + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div id="kbPendingBox"></div>'
@@ -7880,12 +7888,11 @@ function kbRenderChildSections(childSections, canManage){
     html += '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + childSections.map(function(sec){
       const ov = loadAdminOverrides();
       const childCount = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===sec.id; }).length;
-      const articleCount = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sectionId===sec.id; }).length;
-      const qCount = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sectionId===sec.id; }).length;
+      const counts = kbRollupCounts(ov, sec.id);
       const parts = [];
       if(childCount) parts.push(childCount+' قسم فرعي');
-      parts.push(articleCount+' مقال');
-      parts.push(qCount+' سؤال');
+      parts.push(counts.articleCount+' مقال');
+      parts.push(counts.qCount+' سؤال');
       const delBtn = canManage ? '<span onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="color:#c0392b;font-size:11.5px;cursor:pointer;">حذف</span>' : '';
       return kbCard(
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
@@ -8253,21 +8260,64 @@ function kbExportAllFaqExcel(){
 }
 // ===== مقالات بنك المعرفة: محتوى أطول من سؤال/جواب، بمرفقات متعددة وتاريخ =====
 window.__kbEditingArticleId = null;
+// مخزن مؤقت (بالمتصفح) للملفات المُجهّزة قبل رفعها، لكل حقل مرفقات على حدة.
+// السبب: نافذة اختيار الملفات الأصلية بالمتصفح تستبدل التحديد بالكامل كل مرة تُفتح،
+// فلو ما خزّنّا الملفات القديمة يدويا، اختيار ملف PDF بعد صورة (أو العكس) كان يفقد الصورة.
+window.__kbArtFilesStore = {};
 function kbArticleAttachmentsInputHtml(idAttr){
   return '<div style="margin-bottom:10px;">'
-    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفقات (صور، إكسل، وورد، PDF) — يقدر تختار أكثر من ملف، أو تسحب وتُفلت الملفات هنا، أو تلصق صورة (Ctrl+V) مباشرة</label>'
+    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفقات (صور، إكسل، وورد، PDF) — يقدر تختار أكثر من ملف حتى لو بدفعات منفصلة (تنضاف فوق بعض)، أو تسحب وتُفلت الملفات هنا، أو تلصق صورة (Ctrl+V) مباشرة</label>'
     + '<div id="kbDropZone-'+idAttr+'" ondragover="event.preventDefault();this.style.borderColor=\'#0e6a5a\';this.style.background=\'#e7f6f1\';" ondragleave="this.style.borderColor=\'#e2e6ea\';this.style.background=\'#fafbfc\';" ondrop="kbHandleDrop(event,\''+idAttr+'\')" onpaste="kbHandlePaste(event,\''+idAttr+'\')" tabindex="0" style="border:1.5px dashed #e2e6ea;border-radius:9px;padding:10px;background:#fafbfc;">'
-    + '<input type="file" id="kbArtFiles-'+idAttr+'" multiple accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx" style="font-size:12px;width:100%;">'
+    + '<input type="file" id="kbArtFiles-'+idAttr+'" multiple accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx" onchange="kbArtFilesPicked(this,\''+idAttr+'\')" style="font-size:12px;width:100%;">'
     + '<div style="font-size:10.5px;color:#8a93a6;margin-top:4px;">📎 اسحب الملفات هنا أو الصق صورة بهذا المربع</div>'
+    + '<div id="kbArtFilesStaged-'+idAttr+'" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>'
     + '</div></div>';
 }
-// يدمج ملفات جديدة (من سحب/إفلات أو لصق) مع أي ملفات مختارة أصلا بحقل الرفع
-function kbMergeFilesIntoInput(inputEl, newFiles){
-  if(!inputEl || !newFiles || !newFiles.length) return;
-  const dt = new DataTransfer();
-  if(inputEl.files){ for(let i=0;i<inputEl.files.length;i++) dt.items.add(inputEl.files[i]); }
-  for(let i=0;i<newFiles.length;i++) dt.items.add(newFiles[i]);
-  inputEl.files = dt.files;
+function kbArtFilesGetStore(idAttr){
+  window.__kbArtFilesStore = window.__kbArtFilesStore || {};
+  window.__kbArtFilesStore[idAttr] = window.__kbArtFilesStore[idAttr] || [];
+  return window.__kbArtFilesStore[idAttr];
+}
+// يفرّغ الملفات المُجهّزة لحقل معيّن (بعد الحفظ، أو عند بدء/إلغاء تعديل مقال، أو الدخول لقسم جديد)
+function kbArtFilesReset(idAttr){
+  window.__kbArtFilesStore = window.__kbArtFilesStore || {};
+  window.__kbArtFilesStore[idAttr] = [];
+}
+function kbArtFilesDedupeAdd(list, f){
+  const dup = list.some(function(pf){ return pf.name===f.name && pf.size===f.size && pf.lastModified===f.lastModified; });
+  if(!dup) list.push(f);
+}
+// يعيد رسم input.files الفعلي وشرائح الملفات المعروضة اعتمادا على المخزن المؤقت
+function kbArtFilesSync(idAttr){
+  const list = kbArtFilesGetStore(idAttr);
+  const inputEl = document.getElementById('kbArtFiles-'+idAttr);
+  if(inputEl){
+    const dt = new DataTransfer();
+    list.forEach(function(f){ dt.items.add(f); });
+    inputEl.files = dt.files;
+  }
+  const box = document.getElementById('kbArtFilesStaged-'+idAttr);
+  if(box){
+    box.innerHTML = list.map(function(f, i){
+      return '<span style="display:inline-flex;align-items:center;gap:5px;background:#eef1f3;color:#16233f;border-radius:7px;padding:4px 8px;font-size:11px;">'
+        + kbEsc(f.name)
+        + '<span onclick="kbArtFileRemove(\''+idAttr+'\','+i+')" style="cursor:pointer;color:#c0392b;font-weight:800;" title="إزالة">✕</span>'
+        + '</span>';
+    }).join('');
+  }
+}
+function kbArtFileRemove(idAttr, index){
+  const list = kbArtFilesGetStore(idAttr);
+  list.splice(index, 1);
+  kbArtFilesSync(idAttr);
+}
+// عند الاختيار من نافذة الملفات الأصلية: المتصفح يستبدل التحديد بالكامل بدل ما يضيفه،
+// فهذي الدالة تضيف الملفات المختارة حديثا فوق أي ملفات مجهّزة سابقا بدل ما تفقدها
+function kbArtFilesPicked(inputEl, idAttr){
+  const list = kbArtFilesGetStore(idAttr);
+  const picked = inputEl.files ? Array.prototype.slice.call(inputEl.files) : [];
+  picked.forEach(function(f){ kbArtFilesDedupeAdd(list, f); });
+  kbArtFilesSync(idAttr);
 }
 function kbHandleDrop(ev, idAttr){
   ev.preventDefault();
@@ -8275,7 +8325,9 @@ function kbHandleDrop(ev, idAttr){
   if(zone){ zone.style.borderColor = '#e2e6ea'; zone.style.background = '#fafbfc'; }
   const files = ev.dataTransfer && ev.dataTransfer.files;
   if(!files || !files.length) return;
-  kbMergeFilesIntoInput(document.getElementById('kbArtFiles-'+idAttr), files);
+  const list = kbArtFilesGetStore(idAttr);
+  Array.prototype.slice.call(files).forEach(function(f){ kbArtFilesDedupeAdd(list, f); });
+  kbArtFilesSync(idAttr);
 }
 function kbHandlePaste(ev, idAttr){
   const items = ev.clipboardData && ev.clipboardData.items;
@@ -8289,7 +8341,9 @@ function kbHandlePaste(ev, idAttr){
   }
   if(files.length){
     ev.preventDefault();
-    kbMergeFilesIntoInput(document.getElementById('kbArtFiles-'+idAttr), files);
+    const list = kbArtFilesGetStore(idAttr);
+    files.forEach(function(f){ kbArtFilesDedupeAdd(list, f); });
+    kbArtFilesSync(idAttr);
   }
 }
 function kbArticleAttachmentsChips(attachments){
@@ -8344,6 +8398,7 @@ async function kbAddArticle(){
   if(!title){ alert('لازم تكتب عنوان المقال'); return; }
   const fileInput = document.getElementById('kbArtFiles-'+idAttr);
   const attachments = await kbUploadFiles(fileInput);
+  kbArtFilesReset(idAttr);
   const me = window.__currentEmployee;
   const article = { title:title, body:body, attachments:attachments, createdByName: me?me.name:'—' };
   const sector = window.__kbState.sector, sectionId = window.__kbState.sectionId;
@@ -8361,8 +8416,8 @@ async function kbAddArticle(){
   saveAdminOverrides(ov);
   renderKnowledgeBank();
 }
-function kbEditArticle(id){ window.__kbEditingArticleId = id; renderKnowledgeBank(); }
-function kbCancelArticleEdit(){ window.__kbEditingArticleId = null; renderKnowledgeBank(); }
+function kbEditArticle(id){ kbArtFilesReset(id); window.__kbEditingArticleId = id; renderKnowledgeBank(); }
+function kbCancelArticleEdit(){ kbArtFilesReset(window.__kbEditingArticleId); window.__kbEditingArticleId = null; renderKnowledgeBank(); }
 async function kbSaveArticleEdit(id){
   if(!canManageKnowledgeBank()) return;
   const ov = loadAdminOverrides();
@@ -8373,6 +8428,7 @@ async function kbSaveArticleEdit(id){
   if(!title){ alert('لازم تكتب عنوان المقال'); return; }
   const fileInput = document.getElementById('kbArtFiles-'+id);
   const newFiles = await kbUploadFiles(fileInput);
+  kbArtFilesReset(id);
   const patch = { title:title, body:body, attachments: (a.attachments||[]).concat(newFiles) };
   if(!canDirectlyApplyKb()){
     kbSubmitPending('edit_article', a.sector, a.sectionId, patch, id);
