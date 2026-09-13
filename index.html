@@ -1259,13 +1259,13 @@
 
   <!-- DIRECTORY / SEARCH -->
   <section class="panel dir-panel" id="directorySection">
-    <button type="button" id="secHeadContactReasonsLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
-      <span class="idx">01</span><h2 style="margin:0;">مسارات أسباب الاتصال لقطاع العمل</h2><span class="sub">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين — اضغط للفتح</span>
-    </button>
     <button type="button" id="secHeadKnowledgeBankLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
-      <span class="idx">+</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق، واختبار المعرفة على كل قطاع — اضغط للفتح</span>
+      <span class="idx">01</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق، واختبار المعرفة على كل قطاع — اضغط للفتح</span>
     </button>
-    <div class="sec-head sec-c-navy reveal-sec" id="directorySecHead"><span class="idx">02</span><h2 id="directoryTitle">نظام البحث عن بيانات الموظفين</h2><button id="bulkExportBtn" type="button" class="dir-export-btn" title="تصدير بيانات الموظفين" style="display:none;"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تصدير بيانات الموظفين</button><button type="button" class="owner-edit-btn owner-only" data-owner-edit><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة / <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6 7l1 13a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> حذف موظف</button></div>
+    <button type="button" id="secHeadContactReasonsLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
+      <span class="idx">02</span><h2 style="margin:0;">مسارات أسباب الاتصال لقطاع العمل</h2><span class="sub">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين — اضغط للفتح</span>
+    </button>
+    <div class="sec-head sec-c-navy reveal-sec" id="directorySecHead"><span class="idx">03</span><h2 id="directoryTitle">نظام البحث عن بيانات الموظفين</h2><button id="bulkExportBtn" type="button" class="dir-export-btn" title="تصدير بيانات الموظفين" style="display:none;"><svg class="ico" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 4v5h8V4"/><path d="M7 21v-7h10v7"/></svg> تصدير بيانات الموظفين</button><button type="button" class="owner-edit-btn owner-only" data-owner-edit><svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg> إضافة / <svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6 7l1 13a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg> حذف موظف</button></div>
     <div class="term" id="dirSearchTerm">
       <span class="caret">⌕</span>
       <input id="searchInput" type="text" placeholder="ابحث باسم الموظف، الرقم الوظيفي، رقم الهوية، القطاع، المشرف أو المدير المباشر…">
@@ -1314,11 +1314,11 @@
   <!-- ANALYTICS -->
   <section class="grid-2" id="analyticsSection">
     <div class="panel">
-      <div class="sec-head sec-c-gold reveal-sec"><span class="idx">03</span><h2>التوزيع حسب القطاع</h2><span class="sub">عدد الموظفين لكل قطاع - اضغط لعرض التفاصيل</span><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="sector"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
+      <div class="sec-head sec-c-gold reveal-sec"><span class="idx">04</span><h2>التوزيع حسب القطاع</h2><span class="sub">عدد الموظفين لكل قطاع - اضغط لعرض التفاصيل</span><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="sector"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
       <div id="sectorBars"></div>
     </div>
     <div class="panel">
-      <div class="sec-head sec-c-coral reveal-sec"><span class="idx">04</span><h2>التوزيع حسب الجنس</h2><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="gender"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
+      <div class="sec-head sec-c-coral reveal-sec"><span class="idx">05</span><h2>التوزيع حسب الجنس</h2><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="gender"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
       <div class="donut-wrap">
         <div class="donut" id="genderDonut">
           <div class="center"><b id="genderTotal">56</b><span>إجمالي الموظفين</span></div>
@@ -1330,20 +1330,20 @@
 
   <!-- ADDITIONAL INDICATORS -->
   <section class="panel" id="indicatorsSection">
-    <div class="sec-head sec-c-blue reveal-sec"><span class="idx">05</span><h2>مؤشرات إضافية</h2><span class="sub">متوسط الخدمة، كفاءة الأجهزة، والتقاعد - اضغط لعرض التفاصيل</span><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="indicators"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
+    <div class="sec-head sec-c-blue reveal-sec"><span class="idx">06</span><h2>مؤشرات إضافية</h2><span class="sub">متوسط الخدمة، كفاءة الأجهزة، والتقاعد - اضغط لعرض التفاصيل</span><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="indicators"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
     <div class="badge-grid" id="badgeGrid"></div>
   </section>
 
   <!-- HEADSETS -->
   <section class="panel" id="headsetSection">
-    <div class="sec-head sec-c-purple reveal-sec"><span class="idx">06</span><h2>سجل سماعات الرأس</h2><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="headset"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
+    <div class="sec-head sec-c-purple reveal-sec"><span class="idx">07</span><h2>سجل سماعات الرأس</h2><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="headset"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
 
     <div class="chip-row" id="chipRow"></div>
   </section>
 
   <!-- PERMISSIONS -->
   <section class="panel" id="permissionsSection">
-    <div class="sec-head sec-c-pink reveal-sec"><span class="idx">07</span><h2>الصلاحيات الممنوحة</h2><span class="sub">نسبة الموظفين الحاصلين على كل صلاحية - اضغط لعرض التفاصيل</span><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="permissions"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
+    <div class="sec-head sec-c-pink reveal-sec"><span class="idx">08</span><h2>الصلاحيات الممنوحة</h2><span class="sub">نسبة الموظفين الحاصلين على كل صلاحية - اضغط لعرض التفاصيل</span><button type="button" class="owner-edit-btn owner-only" data-owner-edit-section="permissions"><svg class="ico" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> تعديل / إضافة / حذف</button></div>
     <div id="permBars"></div>
   </section>
 
@@ -7925,12 +7925,21 @@ function kbRenderItemForm(editItem){
     correctOpts += '<option value="'+i+'" '+(it.correct_index===i?'selected':'')+'>الإجابة الصحيحة: الخيار '+(i+1)+'</option>';
   }
   const saveCall = editItem ? ('kbSaveEdit('+editItem.id+')') : 'kbAddItem()';
+  const bulkOption = editItem ? '' : '<option value="bulk">لصق دفعة أسئلة مرة واحدة</option>';
+  const bulkWrap = editItem ? '' : (
+    '<div id="kbBulkWrap-'+idAttr+'" style="display:none;margin-bottom:8px;">'
+    + '<div style="font-size:11px;color:#5b6685;margin-bottom:6px;line-height:1.7;">الصق الأسئلة والأجوبة كلها دفعة وحدة، كل سؤال يبدأ بـ "س:" والجواب بعده بـ "ج:"، وافصل بين كل سؤال والثاني بسطر فاضي. مثال:<br>'
+    + 'س: ما هي مدة صلاحية الرخصة؟<br>ج: سنة واحدة.<br><br>س: لمن تُقدَّم الرخصة؟<br>ج: للسعودي والخليجي.</div>'
+    + '<textarea id="kbBulkText-'+idAttr+'" placeholder="س: ...&#10;ج: ...&#10;&#10;س: ...&#10;ج: ..." rows="8" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;resize:vertical;"></textarea>'
+    + '</div>'
+  );
   return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);margin-bottom:4px;">'
     + '<div style="font-weight:800;font-size:13.5px;margin-bottom:10px;color:#16233f;">'+(editItem?'تعديل السؤال':'+ إضافة سؤال جديد')+'</div>'
     + '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
     + '<select id="kbType-'+idAttr+'" onchange="kbToggleTypeFields(\''+idAttr+'\')" style="width:150px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
     + '<option value="text" '+(it.q_type==='text'?'selected':'')+'>نصي</option>'
     + '<option value="mcq" '+(it.q_type==='mcq'?'selected':'')+'>اختيار من متعدد</option>'
+    + bulkOption
     + '</select>'
     + '<input id="kbQuestion-'+idAttr+'" placeholder="نص السؤال" value="'+kbEsc(it.question)+'" style="flex:1;min-width:180px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
     + '</div>'
@@ -7941,7 +7950,8 @@ function kbRenderItemForm(editItem){
     + mcqInputs
     + '<select id="kbCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'+correctOpts+'</select>'
     + '</div>'
-    + '<div style="margin-bottom:10px;">'
+    + bulkWrap
+    + '<div id="kbFileFieldWrap-'+idAttr+'" style="margin-bottom:10px;">'
     + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفق (صورة / إكسل / PDF) — اختياري</label>'
     + '<input type="file" id="kbFile-'+idAttr+'" accept="image/*,.pdf,.xlsx,.xls,.csv" style="font-size:12px;">'
     + (it.file ? '<div style="font-size:11.5px;color:#0e6a5a;margin-top:4px;">مرفق حالي: '+kbEsc(it.file.name)+'</div>' : '')
@@ -7955,6 +7965,25 @@ function kbToggleTypeFields(idAttr){
   const type = document.getElementById('kbType-'+idAttr).value;
   document.getElementById('kbTextWrap-'+idAttr).style.display = type==='text' ? 'block' : 'none';
   document.getElementById('kbMcqWrap-'+idAttr).style.display = type==='mcq' ? 'grid' : 'none';
+  const bulkWrap = document.getElementById('kbBulkWrap-'+idAttr);
+  if(bulkWrap) bulkWrap.style.display = type==='bulk' ? 'block' : 'none';
+  const questionInput = document.getElementById('kbQuestion-'+idAttr);
+  const fileFieldWrap = document.getElementById('kbFileFieldWrap-'+idAttr);
+  if(questionInput) questionInput.style.display = type==='bulk' ? 'none' : 'block';
+  if(fileFieldWrap) fileFieldWrap.style.display = type==='bulk' ? 'none' : 'block';
+}
+// يحلّل نصا فيه عدة أسئلة وأجوبة بصيغة "س: ... / ج: ..." مفصولة بسطر فاضي
+function kbParseBulkQA(text){
+  const blocks = String(text||'').split(/\n\s*\n+/);
+  const out = [];
+  blocks.forEach(function(block){
+    const qMatch = block.match(/(?:^|\n)\s*(?:س|سؤال)\s*[:：]\s*([^\n]+)/);
+    const aMatch = block.match(/(?:^|\n)\s*(?:ج|جواب|الجواب)\s*[:：]\s*([\s\S]+?)\s*$/);
+    if(qMatch && aMatch){
+      out.push({ question: qMatch[1].trim(), answer_text: aMatch[1].trim() });
+    }
+  });
+  return out;
 }
 function kbFileChip(file){
   if(!file) return '';
@@ -8013,6 +8042,29 @@ async function kbAddItem(){
   if(!canManageKnowledgeBank()) return;
   const idAttr = 'new';
   const type = document.getElementById('kbType-'+idAttr).value;
+  if(type === 'bulk'){
+    const bulkText = document.getElementById('kbBulkText-'+idAttr).value;
+    const pairs = kbParseBulkQA(bulkText);
+    if(!pairs.length){ alert('ما قدرت ألقى ولا زوج سؤال/جواب صحيح. تأكد إن كل سؤال يبدأ بـ "س:" والجواب بعده بـ "ج:".'); return; }
+    const sector = window.__kbState.sector, sectionId = window.__kbState.sectionId;
+    const directApply = canDirectlyApplyKb();
+    const ov = loadAdminOverrides();
+    ov.knowledgeBankItems = ov.knowledgeBankItems || [];
+    ov.knowledgeBankPending = ov.knowledgeBankPending || [];
+    let nextId = kbNextId();
+    pairs.forEach(function(p){
+      if(directApply){
+        ov.knowledgeBankItems.push({ id: nextId++, sector:sector, sectionId:sectionId, q_type:'text', question:p.question, answer_text:p.answer_text });
+      } else {
+        const me = window.__currentEmployee;
+        ov.knowledgeBankPending.push({ id: nextId++, action:'add', sector:sector, sectionId:sectionId, itemId:null, payload:{ q_type:'text', question:p.question, answer_text:p.answer_text }, submittedBy: me?me.job_no:null, submittedByName: me?me.name:'—', submittedAt: Date.now() });
+      }
+    });
+    saveAdminOverrides(ov);
+    alert(directApply ? ('تمت إضافة '+pairs.length+' سؤال ✅') : ('تم إرسال '+pairs.length+' سؤال للمراجعة ✅'));
+    renderKnowledgeBank();
+    return;
+  }
   const question = document.getElementById('kbQuestion-'+idAttr).value.trim();
   if(!question){ alert('لازم تكتب نص السؤال'); return; }
   const item = { q_type: type, question: question };
@@ -8186,9 +8238,42 @@ function kbExportAllFaqExcel(){
 window.__kbEditingArticleId = null;
 function kbArticleAttachmentsInputHtml(idAttr){
   return '<div style="margin-bottom:10px;">'
-    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفقات (صور، إكسل، وورد، PDF) — يقدر تختار أكثر من ملف مرة وحدة</label>'
-    + '<input type="file" id="kbArtFiles-'+idAttr+'" multiple accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx" style="font-size:12px;">'
-    + '</div>';
+    + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:4px;">مرفقات (صور، إكسل، وورد، PDF) — يقدر تختار أكثر من ملف، أو تسحب وتُفلت الملفات هنا، أو تلصق صورة (Ctrl+V) مباشرة</label>'
+    + '<div id="kbDropZone-'+idAttr+'" ondragover="event.preventDefault();this.style.borderColor=\'#0e6a5a\';this.style.background=\'#e7f6f1\';" ondragleave="this.style.borderColor=\'#e2e6ea\';this.style.background=\'#fafbfc\';" ondrop="kbHandleDrop(event,\''+idAttr+'\')" onpaste="kbHandlePaste(event,\''+idAttr+'\')" tabindex="0" style="border:1.5px dashed #e2e6ea;border-radius:9px;padding:10px;background:#fafbfc;">'
+    + '<input type="file" id="kbArtFiles-'+idAttr+'" multiple accept="image/*,.pdf,.xlsx,.xls,.csv,.doc,.docx" style="font-size:12px;width:100%;">'
+    + '<div style="font-size:10.5px;color:#8a93a6;margin-top:4px;">📎 اسحب الملفات هنا أو الصق صورة بهذا المربع</div>'
+    + '</div></div>';
+}
+// يدمج ملفات جديدة (من سحب/إفلات أو لصق) مع أي ملفات مختارة أصلا بحقل الرفع
+function kbMergeFilesIntoInput(inputEl, newFiles){
+  if(!inputEl || !newFiles || !newFiles.length) return;
+  const dt = new DataTransfer();
+  if(inputEl.files){ for(let i=0;i<inputEl.files.length;i++) dt.items.add(inputEl.files[i]); }
+  for(let i=0;i<newFiles.length;i++) dt.items.add(newFiles[i]);
+  inputEl.files = dt.files;
+}
+function kbHandleDrop(ev, idAttr){
+  ev.preventDefault();
+  const zone = document.getElementById('kbDropZone-'+idAttr);
+  if(zone){ zone.style.borderColor = '#e2e6ea'; zone.style.background = '#fafbfc'; }
+  const files = ev.dataTransfer && ev.dataTransfer.files;
+  if(!files || !files.length) return;
+  kbMergeFilesIntoInput(document.getElementById('kbArtFiles-'+idAttr), files);
+}
+function kbHandlePaste(ev, idAttr){
+  const items = ev.clipboardData && ev.clipboardData.items;
+  if(!items) return;
+  const files = [];
+  for(let i=0;i<items.length;i++){
+    if(items[i].kind === 'file'){
+      const f = items[i].getAsFile();
+      if(f) files.push(f);
+    }
+  }
+  if(files.length){
+    ev.preventDefault();
+    kbMergeFilesIntoInput(document.getElementById('kbArtFiles-'+idAttr), files);
+  }
 }
 function kbArticleAttachmentsChips(attachments){
   if(!attachments || !attachments.length) return '';
