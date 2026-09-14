@@ -2196,8 +2196,15 @@ function loadAdminOverrides(){
     // عناصر بنك المعرفة نفسها (أسئلة/أجوبة) — تُخزَّن هنا وتُزامَن سحابيا
     // بنفس آلية باقي إعدادات المالك، فتظهر لكل الموظفين فور الحفظ.
     ov.knowledgeBankItems = ov.knowledgeBankItems || [];
+    // مفضلة كل موظف من مقالات بنك المعرفة — خريطة {رقم_وظيفي: [رقم_مقال, ...]}
+    ov.kbFavorites = ov.kbFavorites || {};
+    // تقييم فائدة كل مقال (👍/👎) — خريطة {رقم_مقال: {yes:[أرقام وظيفية], no:[أرقام وظيفية]}}
+    ov.kbArticleVotes = ov.kbArticleVotes || {};
+    // عمليات بحث ببنك المعرفة رجّعت صفر نتائج — يفيد المالك يعرف أي معلومة ناقصة.
+    // كل عنصر: {query, sector, jobNo, name, at}. يحتفظ بآخر 200 فقط.
+    ov.kbSearchMisses = ov.kbSearchMisses || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankApprovers:[], knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10} }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankApprovers:[], knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -7596,6 +7603,98 @@ function kbHeader(title, subtitle, onBack){
     +(subtitle ? '<div style="font-size:12px;opacity:.75;margin-top:2px;">'+kbEsc(subtitle)+'</div>' : '')
     +'</div></div></div>';
 }
+// رسالة عابرة صغيرة أسفل الشاشة (تأكيد نسخ، إلخ) — تختفي لحالها بعد ثانيتين
+function kbToast(msg){
+  const old = document.getElementById('kbToastEl');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'kbToastEl';
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#16233f;color:#fff;padding:10px 18px;border-radius:10px;font-size:12.5px;font-weight:700;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.3);';
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2200);
+}
+// ---------- مفضلة المقالات (لكل موظف حسب رقمه الوظيفي) ----------
+function kbIsFavorite(articleId){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  const ov = loadAdminOverrides();
+  return ((ov.kbFavorites||{})[me.job_no]||[]).indexOf(articleId) !== -1;
+}
+function kbToggleFavorite(articleId){
+  const me = window.__currentEmployee;
+  if(!me) return;
+  const ov = loadAdminOverrides();
+  ov.kbFavorites = ov.kbFavorites || {};
+  const list = ov.kbFavorites[me.job_no] = ov.kbFavorites[me.job_no] || [];
+  const idx = list.indexOf(articleId);
+  if(idx === -1) list.push(articleId); else list.splice(idx,1);
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
+}
+// ---------- تقييم فائدة المقال (👍/👎) — صوت واحد لكل موظف، قابل للتبديل ----------
+function kbMyArticleVote(articleId){
+  const me = window.__currentEmployee;
+  if(!me) return null;
+  const ov = loadAdminOverrides();
+  const v = (ov.kbArticleVotes||{})[articleId] || { yes:[], no:[] };
+  if(v.yes.indexOf(me.job_no)!==-1) return 'yes';
+  if(v.no.indexOf(me.job_no)!==-1) return 'no';
+  return null;
+}
+function kbArticleVoteCounts(articleId){
+  const ov = loadAdminOverrides();
+  const v = (ov.kbArticleVotes||{})[articleId] || { yes:[], no:[] };
+  return { yes: v.yes.length, no: v.no.length };
+}
+function kbVoteArticle(articleId, val){
+  const me = window.__currentEmployee;
+  if(!me) return;
+  const current = kbMyArticleVote(articleId);
+  const ov = loadAdminOverrides();
+  ov.kbArticleVotes = ov.kbArticleVotes || {};
+  const v = ov.kbArticleVotes[articleId] = ov.kbArticleVotes[articleId] || { yes:[], no:[] };
+  v.yes = v.yes.filter(function(jn){ return jn!==me.job_no; });
+  v.no = v.no.filter(function(jn){ return jn!==me.job_no; });
+  if(current !== val){
+    if(val==='yes') v.yes.push(me.job_no); else if(val==='no') v.no.push(me.job_no);
+  }
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
+}
+// ---------- نسخ نص المقال (بدون علامات الصور المضمّنة) ----------
+function kbArticlePlainText(a){
+  return (a.body||'').replace(/\[\[صورة:[^\]]+\]\]/g,'').trim();
+}
+function kbCopyFallback(text){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    kbToast('✅ اتنسخ نص المقال');
+  }catch(err){ alert('تعذر النسخ — انسخه يدويا'); }
+}
+function kbCopyArticleText(articleId){
+  const ov = loadAdminOverrides();
+  const a = (ov.knowledgeBankArticles||[]).find(function(x){ return x.id===articleId; });
+  if(!a) return;
+  const plain = kbArticlePlainText(a);
+  const text = a.title + (plain ? '\n\n'+plain : '');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ kbToast('✅ اتنسخ نص المقال'); }).catch(function(){ kbCopyFallback(text); });
+  } else {
+    kbCopyFallback(text);
+  }
+}
+// ---------- طي/عرض نص المقال الطويل ----------
+function kbToggleArticleBody(id, btn){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const collapsed = el.style.maxHeight && el.style.maxHeight !== 'none';
+  if(collapsed){ el.style.maxHeight = 'none'; el.style.overflow = 'visible'; btn.textContent = 'إخفاء ⌃'; }
+  else { el.style.maxHeight = '96px'; el.style.overflow = 'hidden'; btn.textContent = 'عرض المزيد ⌄'; }
+}
 
 function renderKnowledgeBank(){
   const root = document.getElementById('kbRoot');
@@ -7603,8 +7702,12 @@ function renderKnowledgeBank(){
   const st = window.__kbState;
   if(st.view === 'sections') return renderKbSectionsView(root);
   if(st.view === 'items') return renderKbItemsView(root);
+  if(st.view === 'favorites') return renderKbFavoritesView(root);
+  if(st.view === 'searchmisses') return renderKbSearchMissesView(root);
   return renderKbSectorsView(root);
 }
+function kbGoFavorites(sector){ window.__kbState = { view:'favorites', sector:sector }; renderKnowledgeBank(); }
+function kbGoSearchMisses(sector){ window.__kbState = { view:'searchmisses', sector:sector }; renderKnowledgeBank(); }
 function kbGoHub(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; if(window.__showAppHub) window.__showAppHub(); }
 function kbGoSectors(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; renderKnowledgeBank(); }
 function kbGoSections(sector){ window.__kbState = { view:'sections', sector:sector, sectionId:null }; renderKnowledgeBank(); }
@@ -7617,9 +7720,20 @@ function kbHighlight(text, q){
   if(idx === -1) return escaped;
   return escaped.slice(0,idx) + '<b style="color:#0e6a5a;">' + escaped.slice(idx, idx+q.length) + '</b>' + escaped.slice(idx+q.length);
 }
+// يوحّد أشكال الحروف العربية المختلفة (همزات الألف، الياء/الألف المقصورة، التاء
+// المربوطة/الهاء، التشكيل) عشان البحث يلقى النتيجة حتى لو الكتابة مو مطابقة
+// حرفيا (زي "مؤسسة" و"مؤسسه"، أو "التأمينات" و"التامينات")
+function kbNormalizeArabic(s){
+  return String(s||'')
+    .replace(/[أإآا]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ة/g,'ه')
+    .replace(/[ًٌٍَُِّْـ]/g,'')
+    .toLowerCase();
+}
 function kbSearchAll(query, scopedSector){
   const ov = loadAdminOverrides();
-  const q = (query||'').trim().toLowerCase();
+  const q = kbNormalizeArabic((query||'').trim());
   if(!q) return [];
   const items = ov.knowledgeBankItems || [];
   const articles = ov.knowledgeBankArticles || [];
@@ -7631,8 +7745,8 @@ function kbSearchAll(query, scopedSector){
     const sec = sections.find(function(s){ return s.id===it.sectionId; });
     if(!sec) return; // عنصر يتيم من قسم محذوف سابقا — لا يُعرض ولا يُبحث فيه
     const secName = sec.name;
-    const qLower = (it.question||'').toLowerCase();
-    const hay = [it.question, it.answer_text||'', (it.options||[]).join(' '), secName].join(' ').toLowerCase();
+    const qLower = kbNormalizeArabic(it.question||'');
+    const hay = kbNormalizeArabic([it.question, it.answer_text||'', (it.options||[]).join(' '), secName].join(' '));
     const pos = hay.indexOf(q);
     if(pos !== -1){
       matchedSectionIds.add(it.sectionId);
@@ -7647,8 +7761,8 @@ function kbSearchAll(query, scopedSector){
     const sec = sections.find(function(s){ return s.id===a.sectionId; });
     if(!sec) return; // مقال يتيم من قسم محذوف سابقا
     const secName = sec.name;
-    const titleLower = (a.title||'').toLowerCase();
-    const hay = [a.title, a.body||'', secName].join(' ').toLowerCase();
+    const titleLower = kbNormalizeArabic(a.title||'');
+    const hay = kbNormalizeArabic([a.title, a.body||'', secName].join(' '));
     if(hay.indexOf(q) !== -1){
       matchedSectionIds.add(a.sectionId);
       const sectorInfo = KB_SECTORS.find(function(s){ return s.id===a.sector; });
@@ -7660,7 +7774,7 @@ function kbSearchAll(query, scopedSector){
   sections.forEach(function(sec){
     if(scopedSector && sec.sector !== scopedSector) return;
     if(matchedSectionIds.has(sec.id)) return;
-    if(sec.name.toLowerCase().indexOf(q) === -1) return;
+    if(kbNormalizeArabic(sec.name).indexOf(q) === -1) return;
     const sectorInfo = KB_SECTORS.find(function(s){ return s.id===sec.sector; });
     results.push({ kind:'section', sector:sec.sector, sectionId:sec.id, sectionName:sec.name, sectorName: sectorInfo?sectorInfo.name:'', score:3 });
   });
@@ -7698,6 +7812,24 @@ function kbRenderSearchResults(boxId, results, query){
 function kbSearchGo(sector, sectionId, itemId){
   window.__kbHighlightId = itemId;
   kbGoItems(sector, sectionId);
+}
+// يبحث ويعرض النتائج، وإذا رجعت صفر نتائج (بعد وقفة قصيرة عن الكتابة) يسجّلها
+// كـ"بحث بدون نتيجة" يقدر المالك يراجعها لاحقا ويعرف أي معلومة ناقصة
+window.__kbSearchMissTimer = null;
+function kbSectorSearchHandler(value, sector){
+  const results = kbSearchAll(value, sector);
+  kbRenderSearchResults('kbSectorSearchResults', results, value);
+  clearTimeout(window.__kbSearchMissTimer);
+  const q = (value||'').trim();
+  if(q.length < 2 || results.length) return;
+  window.__kbSearchMissTimer = setTimeout(function(){
+    const ov = loadAdminOverrides();
+    const me = window.__currentEmployee;
+    ov.kbSearchMisses = ov.kbSearchMisses || [];
+    ov.kbSearchMisses.push({ query:q, sector:sector, jobNo: me?me.job_no:'', name: me?me.name:'', at: Date.now() });
+    while(ov.kbSearchMisses.length > 200) ov.kbSearchMisses.shift();
+    saveAdminOverrides(ov);
+  }, 900);
 }
 
 function kbSectorIcon(id){
@@ -7751,15 +7883,18 @@ function renderKbSectionsView(root){
     + '<button type="button" onclick="kbForceSync(this)" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">🔄 تحديث</button>'
     + '</div>'
     + '<div style="position:relative;margin-bottom:16px;">'
-    + '<input id="kbSectorSearch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="kb-sector-search-nofill" oninput="kbRenderSearchResults(\'kbSectorSearchResults\', kbSearchAll(this.value, \''+st.sector+'\'), this.value)" placeholder="🔍 ابحث هنا…" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e6ea;font-size:13.5px;font-family:inherit;">'
+    + '<input id="kbSectorSearch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="kb-sector-search-nofill" oninput="kbSectorSearchHandler(this.value,\''+st.sector+'\')" placeholder="🔍 ابحث هنا…" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e6ea;font-size:13.5px;font-family:inherit;">'
     + '<div id="kbSectorSearchResults" style="display:none;position:absolute;top:48px;right:0;left:0;background:#fff;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.18);max-height:280px;overflow:auto;z-index:5;"></div>'
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
     + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ اختبار المعرفة</button>'
     + '<button type="button" onclick="goQuizMyResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🧾 نتائجي</button>'
+    + '<button type="button" onclick="kbGoFavorites(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #f0c33d;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⭐ مفضلتي</button>'
     + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
     + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📋 نتائج اختبار المعرفة</button>' : '')
-    + '</div>';
+    + (canManage ? '<button type="button" onclick="kbGoSearchMisses(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #8a93a6;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🔍 بحث بدون نتيجة</button>' : '')
+    + '</div>'
+    + kbRecentUpdatesStripHtml(st.sector);
   if(canManage){
     html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;gap:8px;">'
       + '<input id="kbNewSectionName" placeholder="اسم القسم الجديد" style="flex:1;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;">'
@@ -7787,6 +7922,55 @@ function renderKbSectionsView(root){
     }).join('');
   }
   html += '</div></div>';
+  root.innerHTML = html;
+}
+// ---------- مفضلتي: كل المقالات اللي فضّلها الموظف الحالي بهذا القطاع ----------
+function renderKbFavoritesView(root){
+  const st = window.__kbState;
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
+  const me = window.__currentEmployee;
+  const ov = loadAdminOverrides();
+  const favIds = (me && (ov.kbFavorites||{})[me.job_no]) || [];
+  const sections = ov.knowledgeBankSections || [];
+  const arts = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sector===st.sector && favIds.indexOf(a.id)!==-1; });
+  let html = kbHeader('⭐ مفضلتي', sectorInfo?sectorInfo.name:'', "kbGoSections('"+st.sector+"')")
+    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">';
+  if(!arts.length){
+    html += '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما ضفت أي مقال للمفضلة بعد — اضغط ☆ بجانب أي مقال تحبه ترجع له بسرعة.</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:12px;">' + arts.map(function(a){
+      const sec = sections.find(function(s){ return s.id===a.sectionId; });
+      return '<button type="button" onclick="kbGoItems(\''+st.sector+'\','+a.sectionId+')" style="all:unset;cursor:pointer;box-sizing:border-box;display:block;background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
+        + '<div style="font-weight:800;font-size:13.5px;color:#16233f;">📄 '+kbEsc(a.title)+'</div>'
+        + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+(sec?kbEsc(sec.name):'')+'</div>'
+        + '</button>';
+    }).join('') + '</div>';
+  }
+  html += '</div>';
+  root.innerHTML = html;
+}
+// ---------- عمليات بحث برجعت صفر نتائج (للمالك/المعتمدين فقط) ----------
+function renderKbSearchMissesView(root){
+  const st = window.__kbState;
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
+  if(!canManageKnowledgeBank()){ kbGoSections(st.sector); return; }
+  const ov = loadAdminOverrides();
+  const misses = (ov.kbSearchMisses||[]).filter(function(m){ return m.sector===st.sector; }).slice().reverse();
+  let html = kbHeader('🔍 بحث بدون نتيجة', sectorInfo?sectorInfo.name:'', "kbGoSections('"+st.sector+"')")
+    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="font-size:11.5px;color:#5b6685;margin-bottom:14px;">عبارات بحث كتبها موظفون بهذا القطاع وما لقت أي نتيجة — تفيدك تعرف أي معلومة ناقصة ببنك المعرفة.</div>';
+  if(!misses.length){
+    html += '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي عمليات بحث بدون نتيجة مسجّلة لين الحين.</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:8px;">' + misses.map(function(m){
+      const dt = new Date(m.at);
+      return '<div style="background:#fff;border-radius:12px;padding:10px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
+        + '<div><div style="font-weight:800;font-size:13px;color:#16233f;">"'+kbEsc(m.query)+'"</div>'
+        + '<div style="font-size:10.5px;color:#8a93a6;margin-top:2px;">'+(m.name?kbEsc(m.name)+' — ':'')+dt.toLocaleDateString('ar-SA')+'</div></div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+  html += '</div>';
   root.innerHTML = html;
 }
 function kbAddSection(parentSectionId){
@@ -7818,6 +8002,25 @@ function kbRollupCounts(ov, sectionId){
   const articleCount = (ov.knowledgeBankArticles||[]).filter(function(a){ return ids.indexOf(a.sectionId)!==-1; }).length;
   const qCount = (ov.knowledgeBankItems||[]).filter(function(it){ return ids.indexOf(it.sectionId)!==-1; }).length;
   return { articleCount: articleCount, qCount: qCount };
+}
+// آخر 5 مقالات اتحدّثت بكل القطاع (كل الأقسام)، تفيد الموظف يشوف أهم تحديث بسرعة من صفحة القطاع
+function kbRecentUpdatesStripHtml(sector){
+  const ov = loadAdminOverrides();
+  const arts = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sector===sector; })
+    .slice().sort(function(a,b){ return (b.updatedAt||b.createdAt)-(a.updatedAt||a.createdAt); }).slice(0,5);
+  if(!arts.length) return '';
+  const sections = ov.knowledgeBankSections || [];
+  const cards = arts.map(function(a){
+    const sec = sections.find(function(s){ return s.id===a.sectionId; });
+    return '<button type="button" onclick="kbGoItems(\''+sector+'\','+a.sectionId+')" style="all:unset;cursor:pointer;box-sizing:border-box;flex:0 0 auto;background:#fff;border-radius:10px;padding:9px 12px;box-shadow:0 4px 12px rgba(15,46,61,.06);min-width:150px;max-width:200px;">'
+      + '<div style="font-size:12px;font-weight:800;color:#16233f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📄 '+kbEsc(a.title)+'</div>'
+      + '<div style="font-size:9.5px;color:#8a93a6;margin-top:3px;">'+(sec?kbEsc(sec.name):'')+' — '+kbFmtDate(a.updatedAt||a.createdAt)+'</div>'
+      + '</button>';
+  }).join('');
+  return '<div style="margin-bottom:16px;">'
+    + '<div style="font-size:11.5px;font-weight:800;color:#16233f;margin-bottom:8px;">🆕 الأحدث تحديثًا</div>'
+    + '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">'+cards+'</div>'
+    + '</div>';
 }
 function kbDeleteSection(id){
   if(!canManageKnowledgeBank()) return;
@@ -8493,21 +8696,39 @@ function kbRenderArticlesList(articles, canManage){
   const box = document.getElementById('kbArticlesListBox');
   if(!box) return;
   if(!articles.length){ box.innerHTML = '<div style="color:#8a93a6;font-size:12.5px;padding:10px 2px;">لا يوجد أي مقال بعد بهذا القسم.</div>'; return; }
+  const now = Date.now();
   box.innerHTML = articles.slice().sort(function(a,b){ return (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt); }).map(function(a){
     if(window.__kbEditingArticleId === a.id) return kbRenderArticleForm(a);
+    const isNewBadge = a.updatedAt && (now - a.updatedAt) < 7*24*60*60*1000;
     const dateLine = a.updatedAt && a.updatedAt !== a.createdAt
-      ? '📅 أُضيف '+kbFmtDate(a.createdAt)+' — آخر تحديث '+kbFmtDate(a.updatedAt)
+      ? '📅 أُضيف '+kbFmtDate(a.createdAt)+' — آخر تحديث '+kbFmtDate(a.updatedAt)+(a.updatedByName?' بواسطة '+kbEsc(a.updatedByName):'')
       : '📅 أُضيف '+kbFmtDate(a.createdAt);
     const mgmtBtns = canManage
       ? '<button type="button" onclick="kbEditArticle('+a.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
         + '<button type="button" onclick="kbDeleteArticle('+a.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🗑 حذف</button>'
       : '';
+    const isFav = kbIsFavorite(a.id);
+    const favBtn = '<button type="button" onclick="kbToggleFavorite('+a.id+')" title="'+(isFav?'إزالة من المفضلة':'إضافة للمفضلة')+'" style="all:unset;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">'+(isFav?'⭐':'☆')+'</button>';
+    const copyBtn = '<button type="button" onclick="kbCopyArticleText('+a.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">📋 نسخ</button>';
+    const myVote = kbMyArticleVote(a.id);
+    const counts = kbArticleVoteCounts(a.id);
+    const voteBtns = '<div style="display:flex;align-items:center;gap:4px;margin-inline-start:auto;">'
+      + '<button type="button" onclick="kbVoteArticle('+a.id+',\'yes\')" title="مفيد" style="background:'+(myVote==='yes'?'rgba(14,106,90,.12)':'transparent')+';border:none;border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer;color:#0e6a5a;font-weight:700;">👍 '+counts.yes+'</button>'
+      + '<button type="button" onclick="kbVoteArticle('+a.id+',\'no\')" title="غير مفيد" style="background:'+(myVote==='no'?'rgba(192,57,43,.1)':'transparent')+';border:none;border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer;color:#c0392b;font-weight:700;">👎 '+counts.no+'</button>'
+      + '</div>';
+    const bodyId = 'kbArtBodyView-'+a.id;
+    const isLong = kbArticlePlainText(a).length > 220;
+    const bodyHtml = '<div id="'+bodyId+'" style="font-size:12.5px;color:#3a4350;margin-top:8px;line-height:1.7;'+(isLong?'max-height:96px;overflow:hidden;':'')+'">'+kbRenderArticleBodyHtml(a)+'</div>'
+      + (isLong ? '<button type="button" onclick="kbToggleArticleBody(\''+bodyId+'\',this)" style="all:unset;cursor:pointer;color:#0e6a5a;font-size:11px;font-weight:800;padding:4px 0;display:inline-block;">عرض المزيد ⌄</button>' : '');
     return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
-      + '<div style="font-weight:800;font-size:14.5px;color:#16233f;">📄 '+kbEsc(a.title)+'</div>'
-      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — بواسطة '+kbEsc(a.createdByName):'')+'</div>'
-      + '<div style="font-size:12.5px;color:#3a4350;margin-top:8px;line-height:1.7;">'+kbRenderArticleBodyHtml(a)+'</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+      + '<div style="font-weight:800;font-size:14.5px;color:#16233f;">📄 '+kbEsc(a.title)+(isNewBadge?' <span style="background:#0e6a5a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;vertical-align:middle;">🆕 محدث</span>':'')+'</div>'
+      + favBtn
+      + '</div>'
+      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — أضافه '+kbEsc(a.createdByName):'')+'</div>'
+      + bodyHtml
       + kbArticleAttachmentsChips(a.attachments)
-      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' + mgmtBtns + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">' + mgmtBtns + copyBtn + voteBtns + '</div>'
       + '</div>';
   }).join('');
 }
@@ -8553,7 +8774,8 @@ async function kbSaveArticleEdit(id){
   const newFiles = await kbUploadFiles(fileInput);
   kbArtFilesReset(id);
   delete window.__kbArtRemovedExisting[id];
-  const patch = { title:title, body:body, attachments: keptAttachments.concat(newFiles) };
+  const meEdit = window.__currentEmployee;
+  const patch = { title:title, body:body, attachments: keptAttachments.concat(newFiles), updatedByName: meEdit?meEdit.name:'—' };
   if(!canDirectlyApplyKb()){
     kbSubmitPending('edit_article', a.sector, a.sectionId, patch, id);
     window.__kbEditingArticleId = null;
