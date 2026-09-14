@@ -22,6 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root{
@@ -1651,13 +1652,18 @@
     <div class="modal-box" style="max-width:520px;">
       <button class="modal-close" id="closeKnowledgeBankPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg> صلاحيات بنك المعرفة</h3>
-      <div class="modal-sub">كل الموظفين يقدرون يشوفون بنك المعرفة. "المضيف" يضيف/يعدّل لكن يحتاج اعتماد المالك أو معتمد. "المعتمد" تعديلاته فورية، ويقدر يعتمد طلبات المضيفين.</div>
+      <div class="modal-sub">كل الموظفين يقدرون يشوفون بنك المعرفة بكل القطاعات. تفويضك هنا مقصور على القطاع اللي تحدده — يقدر الموظف يكون مفوّضا بقطاع وغير مفوّض بقطاع ثاني. "المضيف" يضيف/يعدّل لكن يحتاج اعتماد المالك أو معتمد بنفس القطاع. "المعتمد" تعديلاته فورية بنفس القطاع، ويقدر يعتمد طلبات المضيفين فيه.</div>
       <div style="margin-top:14px;">
-        <div style="margin-bottom:8px;">
-          <label style="font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;">الدور عند المنح:</label>
-          <select id="knowledgeBankPermsRoleSelect" style="width:100%;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <select id="knowledgeBankPermsRoleSelect" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
             <option value="editor">مضيف — يضيف/يعدّل ويحتاج اعتماد</option>
             <option value="approver">معتمد — إضافة مباشرة + يعتمد طلبات الآخرين</option>
+          </select>
+          <select id="knowledgeBankPermsKbSectorSelect" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+            <option value="work">1) قطاع العمل</option>
+            <option value="dev">2) قطاع التنمية الاجتماعية</option>
+            <option value="library">3) مكتبة المعرفة</option>
+            <option value="quality">4) الجودة</option>
           </select>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:8px;">
@@ -1665,7 +1671,7 @@
           <select id="knowledgeBankPermsEmpSelect" style="flex:1.4;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;" disabled><option value="">ثم اختر الموظف…</option></select>
           <button type="button" id="knowledgeBankPermsQuickAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;" disabled>منح الصلاحية</button>
         </div>
-        <div style="font-size:10.5px;color:var(--muted);margin:-2px 0 8px;">أو ابحث بالاسم/الرقم الوظيفي مباشرة:</div>
+        <div style="font-size:10.5px;color:var(--muted);margin:-2px 0 8px;">أو ابحث بالاسم/الرقم الوظيفي مباشرة (يمنحه الدور والقطاع المحددين بالأعلى):</div>
         <div style="display:flex;gap:6px;">
           <input list="knowledgeBankPermsEmpOptions" id="knowledgeBankPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
           <datalist id="knowledgeBankPermsEmpOptions"></datalist>
@@ -2164,13 +2170,31 @@ function loadAdminOverrides(){
     // يشوف زر الدخول لا في شريط الأزرار العلوي ولا في رأس القسم 01.
     ov.contactReasonsViewers = ov.contactReasonsViewers || [];
     // من يحق له إضافة/تعديل/حذف عناصر "بنك المعرفة" (غير المالك الذي يملك
-    // هذه الصلاحية دائما): قائمة أرقام وظيفية يفوّضها المالك يدويا من زر
-    // "صلاحيات بنك المعرفة". الاطلاع على بنك المعرفة نفسه متاح لكل الموظفين.
-    ov.knowledgeBankEditors = ov.knowledgeBankEditors || [];
-    // معتمدون: يضيفون/يعدّلون/يحذفون مباشرة بدون مراجعة، ويقدرون يعتمدون أو
-    // يرفضون طلبات المضيفين (ov.knowledgeBankEditors) العاديين. المالك دائما
-    // معتمد تلقائيا بالإضافة لمن يظهر بهذي القائمة تحديدا.
-    ov.knowledgeBankApprovers = ov.knowledgeBankApprovers || [];
+    // هذه الصلاحية دائما بكل القطاعات): خريطة {قطاع: [أرقام وظيفية]} — كل شخص
+    // يُفوَّض بقطاع واحد أو أكثر بالتحديد (عمل/تنمية/مكتبة معرفة/جودة)، مو كل
+    // القطاعات تلقائيا. يفوّضهم المالك يدويا من زر "صلاحيات بنك المعرفة".
+    // الاطلاع على بنك المعرفة نفسه (القراءة فقط) متاح لكل الموظفين بكل القطاعات.
+    (function(){
+      const kbSectorIds = KB_SECTORS.map(function(s){ return s.id; });
+      // ترقية بيانات قديمة: كانت القائمتين مصفوفة مسطّحة (صلاحية بكل القطاعات
+      // دفعة وحدة) — نحولها لخريطة بنفس الصلاحية بكل قطاع حتى ما يفقد أحد وصوله فجأة
+      if(Array.isArray(ov.knowledgeBankEditors)){
+        const legacy = ov.knowledgeBankEditors;
+        ov.knowledgeBankEditors = {};
+        kbSectorIds.forEach(function(sc){ ov.knowledgeBankEditors[sc] = legacy.slice(); });
+      }
+      if(Array.isArray(ov.knowledgeBankApprovers)){
+        const legacy = ov.knowledgeBankApprovers;
+        ov.knowledgeBankApprovers = {};
+        kbSectorIds.forEach(function(sc){ ov.knowledgeBankApprovers[sc] = legacy.slice(); });
+      }
+      ov.knowledgeBankEditors = ov.knowledgeBankEditors || {};
+      ov.knowledgeBankApprovers = ov.knowledgeBankApprovers || {};
+      kbSectorIds.forEach(function(sc){
+        ov.knowledgeBankEditors[sc] = ov.knowledgeBankEditors[sc] || [];
+        ov.knowledgeBankApprovers[sc] = ov.knowledgeBankApprovers[sc] || [];
+      });
+    })();
     // طلبات إضافة/تعديل/حذف مقدَّمة من مضيف عادي (غير معتمد) بانتظار مراجعة
     // المالك أو أحد المعتمدين: {id, action, sector, sectionId, itemId?, payload?, submittedBy, submittedByName, submittedAt}
     ov.knowledgeBankPending = ov.knowledgeBankPending || [];
@@ -2204,7 +2228,7 @@ function loadAdminOverrides(){
     // كل عنصر: {query, sector, jobNo, name, at}. يحتفظ بآخر 200 فقط.
     ov.kbSearchMisses = ov.kbSearchMisses || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:[], knowledgeBankApprovers:[], knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -7386,33 +7410,34 @@ function renderKnowledgeBankPermsList(){
   const holder = document.getElementById('knowledgeBankPermsList');
   if(!holder) return;
   const ov = loadAdminOverrides();
-  const editors = ov.knowledgeBankEditors || [];
-  const approvers = ov.knowledgeBankApprovers || [];
-  if(!editors.length && !approvers.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — الإدارة مقصورة عليك أنت فقط.</div>'; return; }
-  const rows = [].concat(
-    approvers.map(jobNo=>({ jobNo, role:'معتمد' })),
-    editors.map(jobNo=>({ jobNo, role:'مضيف' }))
-  );
+  const editorsMap = ov.knowledgeBankEditors || {};
+  const approversMap = ov.knowledgeBankApprovers || {};
+  const rows = [];
+  KB_SECTORS.forEach(function(sec){
+    (approversMap[sec.id]||[]).forEach(jobNo=> rows.push({ jobNo, role:'معتمد', sector:sec.id, sectorName:sec.name }));
+    (editorsMap[sec.id]||[]).forEach(jobNo=> rows.push({ jobNo, role:'مضيف', sector:sec.id, sectorName:sec.name }));
+  });
+  if(!rows.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — الإدارة مقصورة عليك أنت فقط.</div>'; return; }
   holder.innerHTML = rows.map(r=>{
     const emp = EMPLOYEES.find(x=>x.job_no===r.jobNo);
     const nm = emp ? emp.name : r.jobNo;
     const roleColor = r.role==='معتمد' ? 'var(--teal,#0e6a5a)' : 'var(--muted)';
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">
-        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— ${r.jobNo}</span> <span style="color:${roleColor};font-weight:800;">(${r.role})</span></span>
-        <div style="display:flex;gap:6px;">
-          <button type="button" class="act-btn kb-editor-toggle" data-jobno="${r.jobNo}" data-role="${r.role==='معتمد'?'editor':'approver'}" style="background:var(--field-strong,#eef1f3);color:var(--navy,#16233f);">${r.role==='معتمد'?'تخفيض لمضيف':'ترقية لمعتمد'}</button>
-          <button type="button" class="act-btn kb-editor-revoke" data-jobno="${r.jobNo}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);gap:8px;">
+        <span style="font-size:12px;font-weight:700;">${nm} <span style="color:var(--muted);font-weight:500;">— ${r.jobNo}</span> <span style="color:${roleColor};font-weight:800;">(${r.role})</span> <span style="color:var(--muted);font-size:10.5px;">— ${r.sectorName}</span></span>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button type="button" class="act-btn kb-editor-toggle" data-jobno="${r.jobNo}" data-sector="${r.sector}" data-role="${r.role==='معتمد'?'editor':'approver'}" style="background:var(--field-strong,#eef1f3);color:var(--navy,#16233f);">${r.role==='معتمد'?'تخفيض لمضيف':'ترقية لمعتمد'}</button>
+          <button type="button" class="act-btn kb-editor-revoke" data-jobno="${r.jobNo}" data-sector="${r.sector}" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>
         </div>
       </div>`;
   }).join('');
   holder.querySelectorAll('.kb-editor-revoke').forEach(b=> b.addEventListener('click', ()=>{
-    revokeKnowledgeBankEditor(b.getAttribute('data-jobno'));
+    revokeKnowledgeBankEditor(b.getAttribute('data-jobno'), b.getAttribute('data-sector'));
     renderKnowledgeBankPermsList();
     if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
     flashKnowledgeBankSaveStatus();
   }));
   holder.querySelectorAll('.kb-editor-toggle').forEach(b=> b.addEventListener('click', ()=>{
-    grantKnowledgeBankEditor(b.getAttribute('data-jobno'), b.getAttribute('data-role'));
+    grantKnowledgeBankEditor(b.getAttribute('data-jobno'), b.getAttribute('data-role'), b.getAttribute('data-sector'));
     renderKnowledgeBankPermsList();
     if(typeof refreshKnowledgeBankAccessUI === 'function') refreshKnowledgeBankAccessUI();
     flashKnowledgeBankSaveStatus();
@@ -7432,7 +7457,8 @@ function flashKnowledgeBankSaveStatus(){
   const addBtn = document.getElementById('knowledgeBankPermsAddBtn');
   const searchInput = document.getElementById('knowledgeBankPermsAddSearch');
   const optionsList = document.getElementById('knowledgeBankPermsEmpOptions');
-  const sectorSelect = document.getElementById('knowledgeBankPermsSectorSelect');
+  const sectorSelect = document.getElementById('knowledgeBankPermsSectorSelect'); // فلترة القسم التنظيمي للموظف (مو قطاع بنك المعرفة)
+  const kbSectorSelect = document.getElementById('knowledgeBankPermsKbSectorSelect'); // قطاع بنك المعرفة اللي بيُمنح الوصول له تحديدا
   const empSelect = document.getElementById('knowledgeBankPermsEmpSelect');
   const quickAddBtn = document.getElementById('knowledgeBankPermsQuickAddBtn');
   const roleSelect = document.getElementById('knowledgeBankPermsRoleSelect');
@@ -7448,11 +7474,12 @@ function flashKnowledgeBankSaveStatus(){
   function populateEmpsForSector(sector){
     if(!empSelect) return;
     const ov = loadAdminOverrides();
-    const already = new Set([].concat(ov.knowledgeBankEditors||[], ov.knowledgeBankApprovers||[]).map(String));
+    const kbSc = kbSectorSelect ? kbSectorSelect.value : 'work';
+    const already = new Set([].concat((ov.knowledgeBankEditors||{})[kbSc]||[], (ov.knowledgeBankApprovers||{})[kbSc]||[]).map(String));
     const list = eligibleEmployees().filter(e=> (e.sector||'').trim() === sector);
     if(!list.length){ empSelect.innerHTML = '<option value="">لا يوجد موظفون بهذا القطاع</option>'; empSelect.disabled = true; quickAddBtn.disabled = true; return; }
     empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>' + list.map(e=>{
-      const tag = already.has(String(e.job_no)) ? ' (مفوَّض حاليا)' : (e.supervisor ? ` — مشرفه: ${e.supervisor}` : '');
+      const tag = already.has(String(e.job_no)) ? ' (مفوَّض حاليا بهذا القطاع)' : (e.supervisor ? ` — مشرفه: ${e.supervisor}` : '');
       return `<option value="${e.job_no}">${e.name}${tag}</option>`;
     }).join('');
     empSelect.disabled = false;
@@ -7461,11 +7488,14 @@ function flashKnowledgeBankSaveStatus(){
     if(sectorSelect.value){ populateEmpsForSector(sectorSelect.value); }
     else { empSelect.innerHTML = '<option value="">ثم اختر الموظف…</option>'; empSelect.disabled = true; quickAddBtn.disabled = true; }
   });
+  if(kbSectorSelect) kbSectorSelect.addEventListener('change', ()=>{
+    if(sectorSelect && sectorSelect.value) populateEmpsForSector(sectorSelect.value);
+  });
   if(empSelect) empSelect.addEventListener('change', ()=>{ quickAddBtn.disabled = !empSelect.value; });
   if(quickAddBtn) quickAddBtn.addEventListener('click', ()=>{
     const jobNo = empSelect.value;
     if(!jobNo) return;
-    grantKnowledgeBankEditor(jobNo, roleSelect ? roleSelect.value : 'editor');
+    grantKnowledgeBankEditor(jobNo, roleSelect ? roleSelect.value : 'editor', kbSectorSelect ? kbSectorSelect.value : 'work');
     renderKnowledgeBankPermsList();
     populateEmpsForSector(sectorSelect.value);
     flashKnowledgeBankSaveStatus();
@@ -7504,7 +7534,7 @@ function flashKnowledgeBankSaveStatus(){
       alert('المالك يطّلع دائما، لا حاجة لتفويضه.');
       return;
     }
-    grantKnowledgeBankEditor(jobNo, roleSelect ? roleSelect.value : 'editor');
+    grantKnowledgeBankEditor(jobNo, roleSelect ? roleSelect.value : 'editor', kbSectorSelect ? kbSectorSelect.value : 'work');
     searchInput.value = '';
     renderKnowledgeBankPermsList();
     flashKnowledgeBankSaveStatus();
@@ -7662,9 +7692,27 @@ function kbVoteArticle(articleId, val){
   saveAdminOverrides(ov);
   renderKnowledgeBank();
 }
-// ---------- نسخ نص المقال (بدون علامات الصور المضمّنة) ----------
+// ---------- نسخ نص المقال (بدون وسوم HTML ولا علامات الصور المضمّنة) ----------
 function kbArticlePlainText(a){
+  if(a && a.bodyFormat === 'html'){
+    try{
+      const tmp = document.createElement('div');
+      tmp.innerHTML = a.body || '';
+      return (tmp.textContent || tmp.innerText || '').trim();
+    }catch(err){ return ''; }
+  }
   return (a.body||'').replace(/\[\[صورة:[^\]]+\]\]/g,'').trim();
+}
+// يضيف رابط قابل للنقر لأي رابط ظاهر داخل نص عادي (مو HTML جاهز أصلا) — يفيد
+// المقالات القديمة اللي روابطها انكتبت كنص عادي وما كانت تشتغل بالنقر
+function kbLinkifyText(escapedHtml){
+  return escapedHtml.replace(/((https?:\/\/|www\.)[^\s<]+)/gi, function(m){
+    let trail = '';
+    const trailMatch = m.match(/[).,!?؟،]+$/);
+    if(trailMatch){ trail = trailMatch[0]; m = m.slice(0, m.length - trail.length); }
+    let href = /^https?:\/\//i.test(m) ? m : ('https://' + m);
+    return '<a href="'+href+'" target="_blank" rel="noopener" style="color:#0e6a5a;text-decoration:underline;">'+m+'</a>'+trail;
+  });
 }
 function kbCopyFallback(text){
   try{
@@ -7762,7 +7810,11 @@ function kbSearchAll(query, scopedSector){
     if(!sec) return; // مقال يتيم من قسم محذوف سابقا
     const secName = sec.name;
     const titleLower = kbNormalizeArabic(a.title||'');
-    const hay = kbNormalizeArabic([a.title, a.body||'', secName].join(' '));
+    // البحث ما يقدر "يقرأ" محتوى الصور نفسها، لكن نضيف أسماء الملفات المرفقة
+    // للفهرسة — فلو صورة اسمها وصفي (مثل "نموذج-طلب-اجازة.png") تنلقى بالبحث
+    const attNames = (a.attachments||[]).map(function(f){ return f.name||''; }).join(' ');
+    const plainBody = a.bodyFormat === 'html' ? kbArticlePlainText(a) : (a.body||'');
+    const hay = kbNormalizeArabic([a.title, plainBody, secName, attNames].join(' '));
     if(hay.indexOf(q) !== -1){
       matchedSectionIds.add(a.sectionId);
       const sectorInfo = KB_SECTORS.find(function(s){ return s.id===a.sector; });
@@ -7876,7 +7928,7 @@ function renderKbSectionsView(root){
   const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
   const ov = loadAdminOverrides();
   const sections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.sector===st.sector && !s.parentSectionId; });
-  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
+  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank(st.sector);
   let html = kbHeader(sectorInfo?sectorInfo.name:'', 'الأقسام المتاحة', 'kbGoSectors()')
     + '<div style="max-width:900px;margin:0 auto 40px;padding:24px 18px 0;">'
     + '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'
@@ -7953,7 +8005,7 @@ function renderKbFavoritesView(root){
 function renderKbSearchMissesView(root){
   const st = window.__kbState;
   const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
-  if(!canManageKnowledgeBank()){ kbGoSections(st.sector); return; }
+  if(!canManageKnowledgeBank(st.sector)){ kbGoSections(st.sector); return; }
   const ov = loadAdminOverrides();
   const misses = (ov.kbSearchMisses||[]).filter(function(m){ return m.sector===st.sector; }).slice().reverse();
   let html = kbHeader('🔍 بحث بدون نتيجة', sectorInfo?sectorInfo.name:'', "kbGoSections('"+st.sector+"')")
@@ -7974,7 +8026,7 @@ function renderKbSearchMissesView(root){
   root.innerHTML = html;
 }
 function kbAddSection(parentSectionId){
-  if(!canManageKnowledgeBank()) return;
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
   const inputId = parentSectionId ? ('kbNewSubSectionName-'+parentSectionId) : 'kbNewSectionName';
   const nameInput = document.getElementById(inputId);
   const name = (nameInput.value||'').trim();
@@ -8023,7 +8075,7 @@ function kbRecentUpdatesStripHtml(sector){
     + '</div>';
 }
 function kbDeleteSection(id){
-  if(!canManageKnowledgeBank()) return;
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
   if(!confirm('حذف القسم يحذف كل أقسامه الفرعية وأسئلته ومقالاته أيضا. متأكد؟')) return;
   const ov = loadAdminOverrides();
   const allSections = ov.knowledgeBankSections || [];
@@ -8042,8 +8094,8 @@ function renderKbItemsView(root){
   const childSections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===st.sectionId; });
   const items = (ov.knowledgeBankItems||[]).filter(function(it){ return it.sector===st.sector && it.sectionId===st.sectionId; });
   const articles = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sector===st.sector && a.sectionId===st.sectionId; });
-  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank();
-  const canApprove = typeof canDirectlyApplyKb === 'function' && canDirectlyApplyKb();
+  const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank(st.sector);
+  const canApprove = typeof canDirectlyApplyKb === 'function' && canDirectlyApplyKb(st.sector);
   const pending = (ov.knowledgeBankPending||[]).filter(function(p){ return p.sectionId===st.sectionId; });
   const rollup = kbRollupCounts(ov, st.sectionId);
   const subtitle = childSections.length+' قسم فرعي — '+rollup.articleCount+' مقال — '+rollup.qCount+' سؤال';
@@ -8292,7 +8344,7 @@ function kbRenderItemsList(items, canManage){
   }
 }
 async function kbAddItem(){
-  if(!canManageKnowledgeBank()) return;
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
   const idAttr = 'new';
   const type = document.getElementById('kbType-'+idAttr).value;
   if(type === 'bulk'){
@@ -8300,7 +8352,7 @@ async function kbAddItem(){
     const pairs = kbParseBulkQA(bulkText);
     if(!pairs.length){ alert('ما قدرت ألقى ولا زوج سؤال/جواب صحيح. تأكد إن كل سؤال يبدأ بـ "س:" والجواب بعده بـ "ج:".'); return; }
     const sector = window.__kbState.sector, sectionId = window.__kbState.sectionId;
-    const directApply = canDirectlyApplyKb();
+    const directApply = canDirectlyApplyKb(sector);
     const ov = loadAdminOverrides();
     ov.knowledgeBankItems = ov.knowledgeBankItems || [];
     ov.knowledgeBankPending = ov.knowledgeBankPending || [];
@@ -8337,7 +8389,7 @@ async function kbAddItem(){
     if(uploaded) item.file = uploaded;
   }
   const sector = window.__kbState.sector, sectionId = window.__kbState.sectionId;
-  if(!canDirectlyApplyKb()){
+  if(!canDirectlyApplyKb(sector)){
     kbSubmitPending('add', sector, sectionId, item);
     renderKnowledgeBank();
     return;
@@ -8353,7 +8405,7 @@ async function kbAddItem(){
 function kbEditItem(id){ window.__kbEditingId = id; renderKnowledgeBank(); }
 function kbCancelEdit(){ window.__kbEditingId = null; renderKnowledgeBank(); }
 async function kbSaveEdit(id){
-  if(!canManageKnowledgeBank()) return;
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
   const ov = loadAdminOverrides();
   const it = (ov.knowledgeBankItems||[]).find(function(x){ return x.id===id; });
   if(!it) return;
@@ -8376,7 +8428,7 @@ async function kbSaveEdit(id){
     const uploaded = await kbUploadFile(fileInput);
     if(uploaded) patch.file = uploaded;
   }
-  if(!canDirectlyApplyKb()){
+  if(!canDirectlyApplyKb(it.sector)){
     kbSubmitPending('edit', it.sector, it.sectionId, patch, id);
     window.__kbEditingId = null;
     renderKnowledgeBank();
@@ -8388,11 +8440,11 @@ async function kbSaveEdit(id){
   renderKnowledgeBank();
 }
 function kbDeleteItem(id){
-  if(!canManageKnowledgeBank()) return;
   const ov = loadAdminOverrides();
   const it = (ov.knowledgeBankItems||[]).find(function(x){ return x.id===id; });
   if(!it) return;
-  if(!canDirectlyApplyKb()){
+  if(!canManageKnowledgeBank(it.sector)) return;
+  if(!canDirectlyApplyKb(it.sector)){
     if(!confirm('راح يرسل هذا طلب حذف للمراجعة. متابعة؟')) return;
     kbSubmitPending('delete', it.sector, it.sectionId, null, id);
     renderKnowledgeBank();
@@ -8590,32 +8642,38 @@ function kbHandlePaste(ev, idAttr){
     kbArtFilesSync(idAttr);
   }
 }
-// لصق صورة داخل مربع نص المقال نفسه: نضيفها كمرفق قابل للتحميل (زي أي مرفق)
-// وبنفس الوقت نحط علامة بمكان المؤشر تخلي الصورة تظهر مضمّنة بنص المقال بهذا المكان بالضبط
+// لصق داخل مربع نص المقال نفسه (مربع قابل للتحرير الغني الآن، مو textarea عادي):
+// 1) صورة بالحافظة → تُضاف كمرفق قابل للتحميل + تُدرج مباشرة بمكانها كصورة حقيقية
+// 2) جدول/نص منسّق (زي نسخ من إكسل أو وورد) → يلصق بنفس تنسيقه (حدود، ألوان، خلايا) بعد تعقيمه أمنيا
+// 3) نص عادي بدون تنسيق → يترك للمتصفح يلصقه بشكل طبيعي
 function kbHandleBodyPaste(ev, idAttr){
-  const items = ev.clipboardData && ev.clipboardData.items;
-  if(!items) return;
-  let imgFile = null;
+  const cd = ev.clipboardData;
+  if(!cd) return;
+  const items = cd.items || [];
   for(let i=0;i<items.length;i++){
     if(items[i].kind === 'file' && /^image\//.test(items[i].type)){
-      imgFile = items[i].getAsFile();
-      break;
+      const f = items[i].getAsFile();
+      if(!f) break;
+      ev.preventDefault();
+      const named = kbCloneFileWithName(f, kbUniqueFileName(f));
+      const list = kbArtFilesGetStore(idAttr);
+      list.push(named);
+      kbArtFilesSync(idAttr);
+      const previewUrl = URL.createObjectURL(named);
+      const imgHtml = '<img src="'+previewUrl+'" data-kb-pending-name="'+kbEsc(named.name)+'" style="max-width:100%;max-height:320px;border-radius:8px;display:block;margin:8px 0;">';
+      document.execCommand('insertHTML', false, imgHtml);
+      return;
     }
   }
-  if(!imgFile) return; // مافي صورة باللي انلصق، سيب اللصق العادي (نص) يشتغل طبيعي
-  ev.preventDefault();
-  const named = kbCloneFileWithName(imgFile, kbUniqueFileName(imgFile));
-  const list = kbArtFilesGetStore(idAttr);
-  list.push(named);
-  kbArtFilesSync(idAttr);
-  const textarea = ev.target;
-  const marker = '\n[[صورة:' + named.name + ']]\n';
-  const start = textarea.selectionStart != null ? textarea.selectionStart : textarea.value.length;
-  const end = textarea.selectionEnd != null ? textarea.selectionEnd : textarea.value.length;
-  textarea.value = textarea.value.slice(0, start) + marker + textarea.value.slice(end);
-  const newPos = start + marker.length;
-  textarea.selectionStart = textarea.selectionEnd = newPos;
-  textarea.focus();
+  const html = cd.getData && cd.getData('text/html');
+  if(html && html.trim()){
+    ev.preventDefault();
+    const clean = (typeof DOMPurify !== 'undefined')
+      ? DOMPurify.sanitize(html, { ADD_ATTR:['style','width','height','colspan','rowspan','align','valign','bgcolor','border'] })
+      : html;
+    document.execCommand('insertHTML', false, clean);
+  }
+  // نص عادي بدون HTML: نسيب اللصق الافتراضي يشتغل عادي
 }
 function kbArticleAttachmentsChips(attachments){
   if(!attachments || !attachments.length) return '';
@@ -8623,15 +8681,33 @@ function kbArticleAttachmentsChips(attachments){
     return kbFileChip(f);
   }).join('') + '</div>';
 }
-// يحوّل نص المقال إلى HTML، ويستبدل أي علامة [[صورة:اسم_الملف]] بصورة مضمّنة فعلية من مرفقات المقال
-// (اللي انحطت عن طريق لصق صورة داخل مربع النص وقت الكتابة)، مع إبقاء باقي النص كما هو
+// يحوّل صور <img> جاهزة داخل HTML المقال لصور قابلة للتكبير بالنقر (نفس نافذة المعاينة الكبيرة)
+function kbMakeImagesZoomable(html){
+  return html.replace(/<img\s+([^>]*?)\/?>/gi, function(full, attrs){
+    const srcMatch = attrs.match(/src\s*=\s*"([^"]*)"/i) || attrs.match(/src\s*=\s*'([^']*)'/i);
+    const src = srcMatch ? srcMatch[1] : '';
+    if(!src) return full;
+    const cleanAttrs = attrs.replace(/\s+on\w+\s*=\s*"[^"]*"/gi,'').replace(/\s+on\w+\s*=\s*'[^']*'/gi,'');
+    return '<img '+cleanAttrs+' onclick="kbOpenImageLightbox(\''+kbJsStr(src)+'\',\'\')" style="cursor:zoom-in;max-width:100%;border-radius:6px;">';
+  });
+}
+// يحوّل نص/HTML المقال للعرض النهائي. مقالات جديدة (bodyFormat:'html') تُعرض كما هي بعد
+// تعقيمها وتفعيل تكبير صورها؛ مقالات قديمة (نص عادي + علامات [[صورة:...]]) تُعرض بنفس
+// الطريقة السابقة، مع تفعيل الروابط النصية العادية تلقائيا كروابط قابلة للنقر.
 function kbRenderArticleBodyHtml(a){
+  if(a.bodyFormat === 'html'){
+    let html = a.body || '';
+    if(typeof DOMPurify !== 'undefined'){
+      html = DOMPurify.sanitize(html, { ADD_ATTR:['style','width','height','colspan','rowspan','align','valign','bgcolor','border'] });
+    }
+    return kbMakeImagesZoomable(html);
+  }
   const body = a.body || '';
   const attachments = a.attachments || [];
   const re = /\[\[صورة:([^\]]+)\]\]/g;
   let lastIndex = 0, out = '', m;
   while((m = re.exec(body))){
-    out += kbEsc(body.slice(lastIndex, m.index)).replace(/\n/g,'<br>');
+    out += kbLinkifyText(kbEsc(body.slice(lastIndex, m.index)).replace(/\n/g,'<br>'));
     const name = m[1];
     const file = attachments.find(function(f){ return f.name===name; });
     if(file && /^image\//.test(file.type||'')){
@@ -8643,7 +8719,7 @@ function kbRenderArticleBodyHtml(a){
     }
     lastIndex = re.lastIndex;
   }
-  out += kbEsc(body.slice(lastIndex)).replace(/\n/g,'<br>');
+  out += kbLinkifyText(kbEsc(body.slice(lastIndex)).replace(/\n/g,'<br>'));
   return out;
 }
 // المرفقات المُزالة أثناء تعديل مقال (بالفهرس داخل مصفوفة attachments الأصلية) — قبل ما يضغط "حفظ التعديل"
@@ -8676,6 +8752,29 @@ function kbRemoveExistingAttachment(articleId, index){
   const chip = document.getElementById('kbExistingChip-'+articleId+'-'+index);
   if(chip) chip.remove();
 }
+// يحوّل جسم المقال (نص قديم بعلامات [[صورة:...]] أو HTML جاهز من مقال محرَّر بالنظام الجديد)
+// لمحتوى يوضع داخل مربع التحرير القابل للتحرير الغني — يفتح الصور المضمّنة كصور حقيقية
+// بمربع التحرير نفسه (وليس بس بالعرض النهائي) حتى تظهر بشكل صحيح أثناء التعديل أيضا
+function kbArticleBodyEditableHtml(a){
+  if(a && a.bodyFormat === 'html'){
+    return (typeof DOMPurify !== 'undefined') ? DOMPurify.sanitize(a.body || '') : (a.body || '');
+  }
+  const body = (a && a.body) || '';
+  const attachments = (a && a.attachments) || [];
+  const re = /\[\[صورة:([^\]]+)\]\]/g;
+  let lastIndex = 0, out = '', m;
+  while((m = re.exec(body))){
+    out += kbEsc(body.slice(lastIndex, m.index)).replace(/\n/g,'<br>');
+    const name = m[1];
+    const file = attachments.find(function(f){ return f.name===name; });
+    if(file && /^image\//.test(file.type||'')){
+      out += '<img src="'+file.url+'" style="max-width:100%;max-height:320px;border-radius:8px;display:block;margin:8px 0;">';
+    }
+    lastIndex = re.lastIndex;
+  }
+  out += kbEsc(body.slice(lastIndex)).replace(/\n/g,'<br>');
+  return out;
+}
 function kbRenderArticleForm(editArticle){
   const a = editArticle || { title:'', body:'' };
   const idAttr = editArticle ? editArticle.id : 'new';
@@ -8683,7 +8782,8 @@ function kbRenderArticleForm(editArticle){
   let html = '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);margin-bottom:14px;">'
     + '<div style="font-weight:800;font-size:13.5px;margin-bottom:10px;color:#16233f;">'+(editArticle?'تعديل المقال':'+ إضافة مقال جديد')+'</div>'
     + '<input id="kbArtTitle-'+idAttr+'" placeholder="عنوان المقال" value="'+kbEsc(a.title)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-weight:700;font-family:inherit;margin-bottom:8px;">'
-    + '<textarea id="kbArtBody-'+idAttr+'" placeholder="نص المقال… (تقدر تلصق صورة هنا Ctrl+V لتضمينها بمكانها بالضبط داخل النص)" onpaste="kbHandleBodyPaste(event,\''+idAttr+'\')" rows="5" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:8px;resize:vertical;">'+kbEsc(a.body)+'</textarea>'
+    + '<div style="font-size:10.5px;color:#8a93a6;margin-bottom:4px;">✍️ تقدر تلصق صورة (Ctrl+V) لتضمينها بمكانها، أو تلصق جدول/نص منسّق من إكسل أو وورد ويحتفظ بتنسيقه (حدوده وألوانه) كما هو</div>'
+    + '<div id="kbArtBody-'+idAttr+'" contenteditable="true" onpaste="kbHandleBodyPaste(event,\''+idAttr+'\')" style="width:100%;box-sizing:border-box;min-height:120px;max-height:440px;overflow:auto;padding:10px 12px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:14.5px;line-height:1.8;font-family:inherit;margin-bottom:8px;background:#fff;color:#151b28;font-weight:500;">'+kbArticleBodyEditableHtml(a)+'</div>'
     + kbArticleAttachmentsInputHtml(idAttr)
     + (editArticle && editArticle.attachments && editArticle.attachments.length ? kbExistingAttachmentsEditHtml(editArticle) : '')
     + '<div style="display:flex;gap:8px;">'
@@ -8718,7 +8818,7 @@ function kbRenderArticlesList(articles, canManage){
       + '</div>';
     const bodyId = 'kbArtBodyView-'+a.id;
     const isLong = kbArticlePlainText(a).length > 220;
-    const bodyHtml = '<div id="'+bodyId+'" style="font-size:12.5px;color:#3a4350;margin-top:8px;line-height:1.7;'+(isLong?'max-height:96px;overflow:hidden;':'')+'">'+kbRenderArticleBodyHtml(a)+'</div>'
+    const bodyHtml = '<div id="'+bodyId+'" style="font-size:14.5px;color:#1a2233;font-weight:500;margin-top:8px;line-height:1.85;'+(isLong?'max-height:96px;overflow:hidden;':'')+'">'+kbRenderArticleBodyHtml(a)+'</div>'
       + (isLong ? '<button type="button" onclick="kbToggleArticleBody(\''+bodyId+'\',this)" style="all:unset;cursor:pointer;color:#0e6a5a;font-size:11px;font-weight:800;padding:4px 0;display:inline-block;">عرض المزيد ⌄</button>' : '');
     return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
@@ -8732,19 +8832,37 @@ function kbRenderArticlesList(articles, canManage){
       + '</div>';
   }).join('');
 }
+// بعد رفع المرفقات فعليا، نستبدل روابط المعاينة المؤقتة (blob:) للصور اللي انلصقت
+// داخل نص المقال بروابطها الحقيقية النهائية، ونعقّم الـHTML قبل ما نخزّنه
+function kbFinalizeArticleBodyHtml(rawHtml, uploadedFiles){
+  const tmp = document.createElement('div');
+  tmp.innerHTML = rawHtml || '';
+  tmp.querySelectorAll('img[data-kb-pending-name]').forEach(function(img){
+    const name = img.getAttribute('data-kb-pending-name');
+    const file = (uploadedFiles||[]).find(function(f){ return f.name === name; });
+    if(file) img.src = file.url;
+    img.removeAttribute('data-kb-pending-name');
+  });
+  let html = tmp.innerHTML;
+  if(typeof DOMPurify !== 'undefined'){
+    html = DOMPurify.sanitize(html, { ADD_ATTR:['style','width','height','colspan','rowspan','align','valign','bgcolor','border'] });
+  }
+  return html;
+}
 async function kbAddArticle(){
-  if(!canManageKnowledgeBank()) return;
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
   const idAttr = 'new';
   const title = document.getElementById('kbArtTitle-'+idAttr).value.trim();
-  const body = document.getElementById('kbArtBody-'+idAttr).value.trim();
+  const bodyEl = document.getElementById('kbArtBody-'+idAttr);
   if(!title){ alert('لازم تكتب عنوان المقال'); return; }
   const fileInput = document.getElementById('kbArtFiles-'+idAttr);
   const attachments = await kbUploadFiles(fileInput);
   kbArtFilesReset(idAttr);
+  const bodyHtml = kbFinalizeArticleBodyHtml(bodyEl ? bodyEl.innerHTML : '', attachments);
   const me = window.__currentEmployee;
-  const article = { title:title, body:body, attachments:attachments, createdByName: me?me.name:'—' };
+  const article = { title:title, body:bodyHtml, bodyFormat:'html', attachments:attachments, createdByName: me?me.name:'—' };
   const sector = window.__kbState.sector, sectionId = window.__kbState.sectionId;
-  if(!canDirectlyApplyKb()){
+  if(!canDirectlyApplyKb(sector)){
     kbSubmitPending('add_article', sector, sectionId, article);
     renderKnowledgeBank();
     return;
@@ -8761,12 +8879,12 @@ async function kbAddArticle(){
 function kbEditArticle(id){ kbArtFilesReset(id); delete window.__kbArtRemovedExisting[id]; window.__kbEditingArticleId = id; renderKnowledgeBank(); }
 function kbCancelArticleEdit(){ kbArtFilesReset(window.__kbEditingArticleId); delete window.__kbArtRemovedExisting[window.__kbEditingArticleId]; window.__kbEditingArticleId = null; renderKnowledgeBank(); }
 async function kbSaveArticleEdit(id){
-  if(!canManageKnowledgeBank()) return;
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
   const ov = loadAdminOverrides();
   const a = (ov.knowledgeBankArticles||[]).find(function(x){ return x.id===id; });
   if(!a) return;
   const title = document.getElementById('kbArtTitle-'+id).value.trim();
-  const body = document.getElementById('kbArtBody-'+id).value.trim();
+  const bodyEl = document.getElementById('kbArtBody-'+id);
   if(!title){ alert('لازم تكتب عنوان المقال'); return; }
   const removedIdx = window.__kbArtRemovedExisting[id] || [];
   const keptAttachments = (a.attachments||[]).filter(function(_, i){ return removedIdx.indexOf(i)===-1; });
@@ -8774,9 +8892,11 @@ async function kbSaveArticleEdit(id){
   const newFiles = await kbUploadFiles(fileInput);
   kbArtFilesReset(id);
   delete window.__kbArtRemovedExisting[id];
+  const allAttachments = keptAttachments.concat(newFiles);
+  const bodyHtml = kbFinalizeArticleBodyHtml(bodyEl ? bodyEl.innerHTML : '', newFiles);
   const meEdit = window.__currentEmployee;
-  const patch = { title:title, body:body, attachments: keptAttachments.concat(newFiles), updatedByName: meEdit?meEdit.name:'—' };
-  if(!canDirectlyApplyKb()){
+  const patch = { title:title, body:bodyHtml, bodyFormat:'html', attachments: allAttachments, updatedByName: meEdit?meEdit.name:'—' };
+  if(!canDirectlyApplyKb(a.sector)){
     kbSubmitPending('edit_article', a.sector, a.sectionId, patch, id);
     window.__kbEditingArticleId = null;
     renderKnowledgeBank();
@@ -8789,11 +8909,11 @@ async function kbSaveArticleEdit(id){
   renderKnowledgeBank();
 }
 function kbDeleteArticle(id){
-  if(!canManageKnowledgeBank()) return;
   const ov = loadAdminOverrides();
   const a = (ov.knowledgeBankArticles||[]).find(function(x){ return x.id===id; });
   if(!a) return;
-  if(!canDirectlyApplyKb()){
+  if(!canManageKnowledgeBank(a.sector)) return;
+  if(!canDirectlyApplyKb(a.sector)){
     if(!confirm('راح يرسل هذا طلب حذف المقال للمراجعة. متابعة؟')) return;
     kbSubmitPending('delete_article', a.sector, a.sectionId, null, id);
     renderKnowledgeBank();
@@ -10314,40 +10434,61 @@ function canViewKnowledgeBank(){
 // فوّضه المالك يدويا عبر ov.knowledgeBankEditors.
 // canManageKnowledgeBank: عنده أي وصول إداري (مضيف أو معتمد) — يظهر له نموذج
 // الإضافة وأزرار التعديل/الحذف، لكن ليس بالضرورة يطبَّق فورا (راجع الدالة التالية).
-function canManageKnowledgeBank(){
+// من يحق له إضافة/تعديل/حذف عناصر بنك المعرفة: المالك دائما بكل قطاع، أو أي
+// موظف فوّضه المالك يدويا لقطاع (أو أكثر) محدد عبر ov.knowledgeBankEditors.
+// مرّر اسم القطاع (work/dev/library/quality) للتحقق منه تحديدا؛ بدون تمرير
+// قطاع تتحقق الدالة هل عنده وصول لأي قطاع كان (تُستخدم لعرض عناصر واجهة عامة).
+// canManageKnowledgeBank: عنده أي وصول إداري (مضيف أو معتمد) بهذا القطاع —
+// يظهر له نموذج الإضافة وأزرار التعديل/الحذف، لكن ليس بالضرورة يطبَّق فورا
+// (راجع الدالة التالية).
+function canManageKnowledgeBank(sector){
   const me = window.__currentEmployee;
   if(!me) return false;
   if(isTrueOwner()) return true;
   const ov = loadAdminOverrides();
-  return (ov.knowledgeBankEditors||[]).map(String).includes(String(me.job_no))
-      || (ov.knowledgeBankApprovers||[]).map(String).includes(String(me.job_no));
+  const sectors = sector ? [sector] : KB_SECTORS.map(function(s){ return s.id; });
+  return sectors.some(function(sc){
+    return ((ov.knowledgeBankEditors||{})[sc]||[]).map(String).includes(String(me.job_no))
+        || ((ov.knowledgeBankApprovers||{})[sc]||[]).map(String).includes(String(me.job_no));
+  });
 }
-// canDirectlyApplyKb: مالك أو معتمد — تعديلاته تُطبَّق فورا بدون مراجعة،
-// ويقدر يعتمد أو يرفض طلبات المضيفين العاديين.
-function canDirectlyApplyKb(){
+// canDirectlyApplyKb: مالك أو معتمد بهذا القطاع تحديدا — تعديلاته تُطبَّق
+// فورا بدون مراجعة، ويقدر يعتمد أو يرفض طلبات المضيفين لنفس القطاع.
+function canDirectlyApplyKb(sector){
   const me = window.__currentEmployee;
   if(!me) return false;
   if(isTrueOwner()) return true;
   const ov = loadAdminOverrides();
-  return (ov.knowledgeBankApprovers||[]).map(String).includes(String(me.job_no));
+  const sectors = sector ? [sector] : KB_SECTORS.map(function(s){ return s.id; });
+  return sectors.some(function(sc){
+    return ((ov.knowledgeBankApprovers||{})[sc]||[]).map(String).includes(String(me.job_no));
+  });
 }
-function grantKnowledgeBankEditor(jobNo, role){
+function grantKnowledgeBankEditor(jobNo, role, sector){
   if(!isTrueOwner()) return;
+  if(!sector) return;
   const ov = loadAdminOverrides();
-  ov.knowledgeBankEditors = ov.knowledgeBankEditors || [];
-  ov.knowledgeBankApprovers = ov.knowledgeBankApprovers || [];
-  // نشيله من القائمتين أول (تحسبا لتغيير دوره) ثم نضيفه للقائمة الصحيحة
-  ov.knowledgeBankEditors = ov.knowledgeBankEditors.filter(j=>String(j)!==String(jobNo));
-  ov.knowledgeBankApprovers = ov.knowledgeBankApprovers.filter(j=>String(j)!==String(jobNo));
-  if(role === 'approver') ov.knowledgeBankApprovers.push(jobNo);
-  else ov.knowledgeBankEditors.push(jobNo);
+  ov.knowledgeBankEditors = ov.knowledgeBankEditors || {};
+  ov.knowledgeBankApprovers = ov.knowledgeBankApprovers || {};
+  ov.knowledgeBankEditors[sector] = ov.knowledgeBankEditors[sector] || [];
+  ov.knowledgeBankApprovers[sector] = ov.knowledgeBankApprovers[sector] || [];
+  // نشيله من القائمتين أول (تحسبا لتغيير دوره بنفس القطاع) ثم نضيفه للقائمة الصحيحة
+  ov.knowledgeBankEditors[sector] = ov.knowledgeBankEditors[sector].filter(j=>String(j)!==String(jobNo));
+  ov.knowledgeBankApprovers[sector] = ov.knowledgeBankApprovers[sector].filter(j=>String(j)!==String(jobNo));
+  if(role === 'approver') ov.knowledgeBankApprovers[sector].push(jobNo);
+  else ov.knowledgeBankEditors[sector].push(jobNo);
   saveAdminOverrides(ov);
 }
-function revokeKnowledgeBankEditor(jobNo){
+function revokeKnowledgeBankEditor(jobNo, sector){
   if(!isTrueOwner()) return;
   const ov = loadAdminOverrides();
-  ov.knowledgeBankEditors = (ov.knowledgeBankEditors||[]).filter(j=>String(j)!==String(jobNo));
-  ov.knowledgeBankApprovers = (ov.knowledgeBankApprovers||[]).filter(j=>String(j)!==String(jobNo));
+  ov.knowledgeBankEditors = ov.knowledgeBankEditors || {};
+  ov.knowledgeBankApprovers = ov.knowledgeBankApprovers || {};
+  const sectors = sector ? [sector] : KB_SECTORS.map(function(s){ return s.id; });
+  sectors.forEach(function(sc){
+    ov.knowledgeBankEditors[sc] = (ov.knowledgeBankEditors[sc]||[]).filter(j=>String(j)!==String(jobNo));
+    ov.knowledgeBankApprovers[sc] = (ov.knowledgeBankApprovers[sc]||[]).filter(j=>String(j)!==String(jobNo));
+  });
   saveAdminOverrides(ov);
 }
 // ---------- طلبات قيد المراجعة (لمضيف عادي غير معتمد) ----------
@@ -10365,10 +10506,12 @@ function kbSubmitPending(action, sector, sectionId, payload, itemId){
   alert('تم إرسال طلبك للمراجعة ✅ — بينحفظ فور موافقة المالك أو أحد المعتمدين.');
 }
 function kbApprovePending(id){
-  if(!canDirectlyApplyKb()) return;
-  const ov = loadAdminOverrides();
-  const p = (ov.knowledgeBankPending||[]).find(x=>x.id===id);
-  if(!p) return;
+  const ov0 = loadAdminOverrides();
+  const p0 = (ov0.knowledgeBankPending||[]).find(x=>x.id===id);
+  if(!p0) return;
+  if(!canDirectlyApplyKb(p0.sector)) return;
+  const ov = ov0;
+  const p = p0;
   ov.knowledgeBankItems = ov.knowledgeBankItems || [];
   ov.knowledgeBankArticles = ov.knowledgeBankArticles || [];
   if(p.action === 'add'){
@@ -10391,9 +10534,11 @@ function kbApprovePending(id){
   renderKnowledgeBank();
 }
 function kbRejectPending(id){
-  if(!canDirectlyApplyKb()) return;
-  if(!confirm('رفض هذا الطلب نهائيا؟')) return;
   const ov = loadAdminOverrides();
+  const p = (ov.knowledgeBankPending||[]).find(x=>x.id===id);
+  if(!p) return;
+  if(!canDirectlyApplyKb(p.sector)) return;
+  if(!confirm('رفض هذا الطلب نهائيا؟')) return;
   ov.knowledgeBankPending = (ov.knowledgeBankPending||[]).filter(x=>x.id!==id);
   saveAdminOverrides(ov);
   renderKnowledgeBank();
