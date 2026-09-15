@@ -7642,7 +7642,8 @@ function kbRenderSectionRows(sections, ov, canManage, sectorId, opts){
     if(childCount) metaParts.push(childCount+' قسم فرعي');
     metaParts.push(counts.articleCount+' مقال');
     metaParts.push(counts.qCount+' سؤال');
-    if(sec.createdByName) metaParts.push('أضافه '+kbEsc(sec.createdByName));
+    if(sec.createdByName) metaParts.push('أضافه '+kbEsc(kbNormalizeAuthorName(sec.createdByName)));
+    if(sec.updatedAt) metaParts.push('آخر تحديث '+kbFmtDate(sec.updatedAt)+' بواسطة '+kbEsc(kbNormalizeAuthorName(sec.updatedByName))+' (رقم '+sec.orderNum+')');
     const mgmtBtns = canManage
       ? '<button type="button" title="إعادة تسمية" onclick="event.stopPropagation();kbRenameSection('+sec.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:15px;padding:4px 6px;border-radius:6px;">✎</button>'
         + '<button type="button" title="حذف" onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:15px;padding:4px 6px;border-radius:6px;">🗑</button>'
@@ -8083,8 +8084,17 @@ function kbEditSectionOrder(id){
   const num = parseInt(String(val).trim(), 10);
   if(isNaN(num)){ alert('اكتب رقم صحيح'); return; }
   sec.orderNum = num;
+  const meSec = window.__currentEmployee;
+  sec.updatedByName = meSec?(meSec.username||meSec.name):'—';
+  sec.updatedAt = Date.now();
   saveAdminOverrides(ov);
   renderKnowledgeBank();
+}
+// يحوّل أي اسم موظف كامل مخزَّن مسبقًا (قبل اعتماد اليوزر) إلى اسم المستخدم المطابق له في قاعدة الموظفين
+function kbNormalizeAuthorName(name){
+  if(!name) return name;
+  const emp = (typeof EMPLOYEES !== 'undefined' ? EMPLOYEES : []).find(function(e){ return e.name === name || e.name_en === name; });
+  return (emp && emp.username) ? emp.username : name;
 }
 // يضمن أن كل قسم بنفس المستوى له رقم ترتيب؛ يعبّي الناقص تلقائيًا ويرتبها تصاعديًا
 function kbEnsureSectionOrder(sections, ov){
@@ -8242,7 +8252,7 @@ function kbRenderPendingBox(pending){
           bodyHtml = '<div style="font-size:12.5px;color:#5b6685;">'+kbEsc(p.payload.question)+'</div>';
         }
         return '<div style="background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
-          + '<div style="font-size:11px;font-weight:800;color:#b8860b;">'+actionLabel+' — مقدَّم من '+kbEsc(p.submittedByName)+'</div>'
+          + '<div style="font-size:11px;font-weight:800;color:#b8860b;">'+actionLabel+' — مقدَّم من '+kbEsc(kbNormalizeAuthorName(p.submittedByName))+'</div>'
           + bodyHtml
           + '<div style="display:flex;gap:8px;margin-top:8px;">'
           + '<button type="button" onclick="kbApprovePending('+p.id+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">✔ اعتماد</button>'
@@ -8860,7 +8870,7 @@ function kbRenderArticlesList(articles, canManage){
     if(canManage && window.__kbEditingArticleId === a.id) return kbRenderArticleForm(a);
     const isNewBadge = a.updatedAt && (now - a.updatedAt) < 7*24*60*60*1000;
     const dateLine = a.updatedAt && a.updatedAt !== a.createdAt
-      ? '📅 أُضيف '+kbFmtDate(a.createdAt)+' — آخر تحديث '+kbFmtDate(a.updatedAt)+(a.updatedByName?' بواسطة '+kbEsc(a.updatedByName):'')
+      ? '📅 أُضيف '+kbFmtDate(a.createdAt)+' — آخر تحديث '+kbFmtDate(a.updatedAt)+(a.updatedByName?' بواسطة '+kbEsc(kbNormalizeAuthorName(a.updatedByName)):'')
       : '📅 أُضيف '+kbFmtDate(a.createdAt);
     const mgmtBtns = canManage
       ? '<button type="button" onclick="kbEditArticle('+a.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
@@ -8882,7 +8892,7 @@ function kbRenderArticlesList(articles, canManage){
       + '<div style="font-weight:800;font-size:17px;color:#16233f;">📄 '+kbEsc(a.title)+(isNewBadge?' <span style="background:#0e6a5a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;vertical-align:middle;">🆕 محدث</span>':'')+'</div>'
       + favBtn
       + '</div>'
-      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — أضافه '+kbEsc(a.createdByName):'')+'</div>'
+      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — أضافه '+kbEsc(kbNormalizeAuthorName(a.createdByName)):'')+'</div>'
       + bodyHtml
       + kbArticleAttachmentsChips(a.attachments)
       + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">' + mgmtBtns + copyBtn + voteBtns + '</div>'
