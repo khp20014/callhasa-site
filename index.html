@@ -40,6 +40,12 @@
     --field:#f4f6fb; --track:#eef1f8;
     --radius:13px;
   }
+  /* بنك المعرفة: عرض متجاوب لمحتوى المقالات (جداول/صور) بدون تجاوز حدود الصفحة */
+  .kb-article-body{ overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; box-sizing:border-box; }
+  .kb-article-body table{ width:100% !important; max-width:100%; border-collapse:collapse; table-layout:fixed; }
+  .kb-article-body td, .kb-article-body th{ word-break:break-word; overflow-wrap:break-word; padding:6px 8px; border:1px solid #dfe3e8; }
+  .kb-article-body img{ max-width:100% !important; height:auto !important; }
+  .kb-article-body *{ max-width:100%; box-sizing:border-box; }
   html[data-theme="dark"]{
     --ink:#0b0f1a; --panel:#141a2a; --panel-2:#161d30;
     --hair:#2a3350; --hair-soft:#232b45;
@@ -68,7 +74,7 @@
   .theme-toggle:hover{background:rgba(255,255,255,.16);}
   .theme-toggle svg{width:17px;height:17px;pointer-events:none;}
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0;overflow-x:hidden;}
   body{
     background:
       radial-gradient(1100px 600px at 85% -10%, rgba(21,147,136,.08), transparent 60%),
@@ -7622,30 +7628,32 @@ function kbCard(html, onclick, extraStyle){
 function kbRenderSectionRows(sections, ov, canManage, sectorId, opts){
   opts = opts || {};
   if(!sections.length){
-    return '<div style="color:#8a93a6;font-size:12.5px;padding:16px 2px;">'+(opts.emptyText||'لا يوجد أقسام بعد.')+'</div>';
+    return '<div style="color:#8a93a6;font-size:13px;padding:16px 2px;">'+(opts.emptyText||'لا يوجد أقسام بعد.')+'</div>';
   }
+  kbEnsureSectionOrder(sections, ov);
   const rows = sections.map(function(sec, idx){
     const childCount = (ov.knowledgeBankSections||[]).filter(function(s){ return s.parentSectionId===sec.id; }).length;
     const counts = kbRollupCounts(ov, sec.id);
-    const total = counts.articleCount + counts.qCount;
     const metaParts = [];
     if(childCount) metaParts.push(childCount+' قسم فرعي');
     metaParts.push(counts.articleCount+' مقال');
     metaParts.push(counts.qCount+' سؤال');
     if(sec.createdByName) metaParts.push('أضافه '+kbEsc(sec.createdByName));
     const mgmtBtns = canManage
-      ? '<button type="button" title="إعادة تسمية" onclick="event.stopPropagation();kbRenameSection('+sec.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:14px;padding:4px 6px;border-radius:6px;">✎</button>'
-        + '<button type="button" title="حذف" onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:14px;padding:4px 6px;border-radius:6px;">🗑</button>'
+      ? '<button type="button" title="إعادة تسمية" onclick="event.stopPropagation();kbRenameSection('+sec.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:15px;padding:4px 6px;border-radius:6px;">✎</button>'
+        + '<button type="button" title="حذف" onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:15px;padding:4px 6px;border-radius:6px;">🗑</button>'
       : '';
     const borderStyle = idx < sections.length-1 ? 'border-bottom:1px solid #eef1f4;' : '';
-    return '<div role="button" tabindex="0" onclick="kbGoItems(\''+sectorId+'\','+sec.id+')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;'+borderStyle+'transition:background .15s;" onmouseover="this.style.background=\'#f7f9fb\'" onmouseout="this.style.background=\'transparent\'">'
-      + '<div style="flex:0 0 auto;position:relative;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;font-weight:800;font-size:12.5px;display:flex;align-items:center;justify-content:center;">'
-        + total
+    const badgeClick = canManage ? "event.stopPropagation();kbEditSectionOrder("+sec.id+")" : '';
+    const badgeTitle = canManage ? ' title="اضغط لتعديل رقم الترتيب"' : '';
+    return '<div role="button" tabindex="0" onclick="kbGoItems(\''+sectorId+'\','+sec.id+')" style="display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;'+borderStyle+'transition:background .15s;" onmouseover="this.style.background=\'#f7f9fb\'" onmouseout="this.style.background=\'transparent\'">'
+      + '<div'+badgeTitle+' onclick="'+badgeClick+'" style="flex:0 0 auto;position:relative;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;'+(canManage?'cursor:pointer;':'')+'">'
+        + sec.orderNum
         + (childCount ? '<span style="position:absolute;bottom:-3px;left:-3px;background:#f0c33d;color:#5c4400;border-radius:50%;width:15px;height:15px;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">+</span>' : '')
       + '</div>'
       + '<div style="flex:1 1 auto;min-width:0;text-align:right;">'
-        + '<div style="font-size:14px;font-weight:800;color:#16233f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+kbEsc(sec.name)+'</div>'
-        + '<div style="font-size:10.5px;color:#8a93a6;margin-top:2px;">'+metaParts.join(' — ')+'</div>'
+        + '<div style="font-size:16px;font-weight:800;color:#16233f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+kbEsc(sec.name)+'</div>'
+        + '<div style="font-size:11.5px;color:#8a93a6;margin-top:2px;">'+metaParts.join(' — ')+'</div>'
       + '</div>'
       + (mgmtBtns ? '<div style="flex:0 0 auto;display:flex;align-items:center;gap:2px;">'+mgmtBtns+'</div>' : '')
       + '<div style="flex:0 0 auto;color:#c3c9d3;font-size:15px;">‹</div>'
@@ -7982,7 +7990,7 @@ function renderKbSectionsView(root){
     + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📋 نتائج اختبار المعرفة</button>' : '')
     + (canManage ? '<button type="button" onclick="kbGoSearchMisses(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #8a93a6;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🔍 بحث بدون نتيجة</button>' : '')
     + '</div>'
-    + kbRecentUpdatesStripHtml(st.sector);
+    + '';
   if(canManage){
     html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;gap:8px;">'
       + '<input id="kbNewSectionName" placeholder="اسم القسم الجديد" style="flex:1;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;">'
@@ -8052,10 +8060,38 @@ function kbAddSection(parentSectionId){
   const ov = loadAdminOverrides();
   ov.knowledgeBankSections = ov.knowledgeBankSections || [];
   const meSec = window.__currentEmployee;
-  ov.knowledgeBankSections.push({ id: kbNextId(), sector: window.__kbState.sector, name: name, parentSectionId: parentSectionId||null, createdByName: meSec?(meSec.username||meSec.name):'—', createdAt: Date.now() });
+  const siblings = ov.knowledgeBankSections.filter(function(s){ return s.sector===window.__kbState.sector && (s.parentSectionId||null)===(parentSectionId||null); });
+  let nextOrder = 1;
+  siblings.forEach(function(s){ if(typeof s.orderNum === 'number' && s.orderNum >= nextOrder) nextOrder = s.orderNum + 1; });
+  ov.knowledgeBankSections.push({ id: kbNextId(), sector: window.__kbState.sector, name: name, parentSectionId: parentSectionId||null, orderNum: nextOrder, createdByName: meSec?(meSec.username||meSec.name):'—', createdAt: Date.now() });
   saveAdminOverrides(ov);
   if(nameInput) nameInput.value = '';
   renderKnowledgeBank();
+}
+// ---------- تعديل رقم ترتيب القسم يدويًا (رئيسي أو فرعي) ----------
+function kbEditSectionOrder(id){
+  if(!canManageKnowledgeBank(window.__kbState.sector)) return;
+  const ov = loadAdminOverrides();
+  const sec = (ov.knowledgeBankSections||[]).find(function(s){ return s.id===id; });
+  if(!sec) return;
+  const val = prompt('رقم ترتيب القسم:', sec.orderNum!=null?String(sec.orderNum):'');
+  if(val == null) return;
+  const num = parseInt(String(val).trim(), 10);
+  if(isNaN(num)){ alert('اكتب رقم صحيح'); return; }
+  sec.orderNum = num;
+  saveAdminOverrides(ov);
+  renderKnowledgeBank();
+}
+// يضمن أن كل قسم بنفس المستوى له رقم ترتيب؛ يعبّي الناقص تلقائيًا ويرتبها تصاعديًا
+function kbEnsureSectionOrder(sections, ov){
+  let changed = false;
+  let maxOrder = 0;
+  sections.forEach(function(s){ if(typeof s.orderNum === 'number' && s.orderNum > maxOrder) maxOrder = s.orderNum; });
+  sections.forEach(function(s){
+    if(typeof s.orderNum !== 'number'){ maxOrder += 1; s.orderNum = maxOrder; changed = true; }
+  });
+  if(changed) saveAdminOverrides(ov);
+  sections.sort(function(a,b){ return (a.orderNum||0)-(b.orderNum||0); });
 }
 // ---------- إعادة تسمية قسم (رئيسي أو فرعي) ----------
 function kbRenameSection(id){
@@ -8325,18 +8361,18 @@ function kbRenderItemsList(items, canManage){
     if(canManage && window.__kbEditingId === it.id) return kbRenderItemForm(it);
     let answerHtml;
     if(it.q_type === 'mcq'){
-      answerHtml = '<div style="font-size:12px;color:#5b6685;margin-top:6px;">' + (it.options||[]).map(function(o,i){
+      answerHtml = '<div style="font-size:13.5px;color:#5b6685;margin-top:6px;">' + (it.options||[]).map(function(o,i){
         return i===it.correct_index ? '<b style="color:#0e6a5a;">✔ '+kbEsc(o)+'</b>' : kbEsc(o);
       }).join(' &nbsp;|&nbsp; ') + '</div>';
     } else {
-      answerHtml = '<div style="font-size:12px;color:#5b6685;margin-top:6px;"><b>الإجابة:</b> '+kbEsc(it.answer_text||'')+'</div>';
+      answerHtml = '<div style="font-size:13.5px;color:#5b6685;margin-top:6px;"><b>الإجابة:</b> '+kbEsc(it.answer_text||'')+'</div>';
     }
     const mgmtBtns = canManage
       ? '<button type="button" onclick="kbEditItem('+it.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
         + '<button type="button" onclick="kbDeleteItem('+it.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🗑 حذف</button>'
       : '';
     return '<div id="kbItemCard-'+it.id+'" style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);transition:box-shadow .3s, background .3s;">'
-      + '<div style="font-weight:800;font-size:14px;color:#16233f;">'+kbEsc(it.question)+'</div>'
+      + '<div style="font-weight:800;font-size:16px;color:#16233f;">'+kbEsc(it.question)+'</div>'
       + answerHtml + kbFileChip(it.file)
       + (mgmtBtns ? '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'+mgmtBtns+'</div>' : '')
       + '</div>';
@@ -8836,10 +8872,10 @@ function kbRenderArticlesList(articles, canManage){
       + '<button type="button" onclick="kbVoteArticle('+a.id+',\'no\')" title="غير مفيد" style="background:'+(myVote==='no'?'rgba(192,57,43,.1)':'transparent')+';border:none;border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer;color:#c0392b;font-weight:700;">👎 '+counts.no+'</button>'
       + '</div>';
     const bodyId = 'kbArtBodyView-'+a.id;
-    const bodyHtml = '<div id="'+bodyId+'" style="font-size:14.5px;color:#1a2233;font-weight:500;margin-top:8px;line-height:1.85;">'+kbRenderArticleBodyHtml(a)+'</div>';
+    const bodyHtml = '<div id="'+bodyId+'" class="kb-article-body" style="font-size:16px;color:#1a2233;font-weight:500;margin-top:8px;line-height:1.9;">'+kbRenderArticleBodyHtml(a)+'</div>';
     return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
-      + '<div style="font-weight:800;font-size:14.5px;color:#16233f;">📄 '+kbEsc(a.title)+(isNewBadge?' <span style="background:#0e6a5a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;vertical-align:middle;">🆕 محدث</span>':'')+'</div>'
+      + '<div style="font-weight:800;font-size:17px;color:#16233f;">📄 '+kbEsc(a.title)+(isNewBadge?' <span style="background:#0e6a5a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;vertical-align:middle;">🆕 محدث</span>':'')+'</div>'
       + favBtn
       + '</div>'
       + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — أضافه '+kbEsc(a.createdByName):'')+'</div>'
