@@ -2237,8 +2237,10 @@ function loadAdminOverrides(){
     // عمليات بحث ببنك المعرفة رجّعت صفر نتائج — يفيد المالك يعرف أي معلومة ناقصة.
     // كل عنصر: {query, sector, jobNo, name, at}. يحتفظ بآخر 200 فقط.
     ov.kbSearchMisses = ov.kbSearchMisses || [];
+    // اختبارات مجدولة بموعد محدد (وقت بداية/نهاية، عدد مشاركين مسموح، عدد أسئلة، وقت لكل سؤال)
+    ov.scheduledExams = ov.scheduledExams || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -7623,6 +7625,11 @@ function kbFmtDate(ts){
   if(!ts) return '';
   try{ return new Date(ts).toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' }); }catch(err){ return ''; }
 }
+// يعرض التاريخ + الوقت معًا (يستخدم في سجل الإضافة/التحديث بحيث تظهر الساعة بالضبط)
+function kbFmtDateTime(ts){
+  if(!ts) return '';
+  try{ return new Date(ts).toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }); }catch(err){ return ''; }
+}
 
 function kbCard(html, onclick, extraStyle){
   return '<button type="button" onclick="'+onclick+'" style="all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:8px;text-align:right;box-shadow:0 6px 18px rgba(15,46,61,.10);border:1px solid #e7ecef;'+(extraStyle||'')+'">'+html+'</button>';
@@ -7642,8 +7649,12 @@ function kbRenderSectionRows(sections, ov, canManage, sectorId, opts){
     if(childCount) metaParts.push(childCount+' قسم فرعي');
     metaParts.push(counts.articleCount+' مقال');
     metaParts.push(counts.qCount+' سؤال');
-    if(sec.createdByName) metaParts.push('أضافه '+kbEsc(kbNormalizeAuthorName(sec.createdByName)));
-    if(sec.updatedAt) metaParts.push('آخر تحديث '+kbFmtDate(sec.updatedAt)+' بواسطة '+kbEsc(kbNormalizeAuthorName(sec.updatedByName))+' (رقم '+sec.orderNum+')');
+    if(sec.createdByName) metaParts.push('أضافه '+kbEsc(kbNormalizeAuthorName(sec.createdByName))+' — '+kbFmtDateTime(sec.createdAt));
+    if(sec.updatedAt){
+      const secUpdater = kbNormalizeAuthorName(sec.updatedByName);
+      const secSameActor = secUpdater === kbNormalizeAuthorName(sec.createdByName);
+      metaParts.push('آخر تحديث '+kbFmtDateTime(sec.updatedAt)+(secSameActor?'':(' بواسطة '+kbEsc(secUpdater)))+' (رقم '+sec.orderNum+')');
+    }
     const mgmtBtns = canManage
       ? '<button type="button" title="إعادة تسمية" onclick="event.stopPropagation();kbRenameSection('+sec.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:15px;padding:4px 6px;border-radius:6px;">✎</button>'
         + '<button type="button" title="حذف" onclick="event.stopPropagation();kbDeleteSection('+sec.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:15px;padding:4px 6px;border-radius:6px;">🗑</button>'
@@ -7989,6 +8000,7 @@ function renderKbSectionsView(root){
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
     + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ اختبار المعرفة</button>'
+    + '<button type="button" onclick="goSchedExamFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📅 اختبار مجدول</button>'
     + '<button type="button" onclick="goQuizMyResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🧾 نتائجي</button>'
     + '<button type="button" onclick="kbGoFavorites(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #f0c33d;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⭐ مفضلتي</button>'
     + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
@@ -8252,7 +8264,7 @@ function kbRenderPendingBox(pending){
           bodyHtml = '<div style="font-size:12.5px;color:#5b6685;">'+kbEsc(p.payload.question)+'</div>';
         }
         return '<div style="background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;">'
-          + '<div style="font-size:11px;font-weight:800;color:#b8860b;">'+actionLabel+' — مقدَّم من '+kbEsc(kbNormalizeAuthorName(p.submittedByName))+'</div>'
+          + '<div style="font-size:11px;font-weight:800;color:#b8860b;">'+actionLabel+' — مقدَّم من '+kbEsc(kbNormalizeAuthorName(p.submittedByName))+' — '+kbFmtDateTime(p.submittedAt)+'</div>'
           + bodyHtml
           + '<div style="display:flex;gap:8px;margin-top:8px;">'
           + '<button type="button" onclick="kbApprovePending('+p.id+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">✔ اعتماد</button>'
@@ -8869,9 +8881,12 @@ function kbRenderArticlesList(articles, canManage){
   box.innerHTML = articles.slice().sort(function(a,b){ return (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt); }).map(function(a){
     if(canManage && window.__kbEditingArticleId === a.id) return kbRenderArticleForm(a);
     const isNewBadge = a.updatedAt && (now - a.updatedAt) < 7*24*60*60*1000;
-    const dateLine = a.updatedAt && a.updatedAt !== a.createdAt
-      ? '📅 أُضيف '+kbFmtDate(a.createdAt)+' — آخر تحديث '+kbFmtDate(a.updatedAt)+(a.updatedByName?' بواسطة '+kbEsc(kbNormalizeAuthorName(a.updatedByName)):'')
-      : '📅 أُضيف '+kbFmtDate(a.createdAt);
+    const creatorLine = 'أضافه '+kbEsc(kbNormalizeAuthorName(a.createdByName||'—'))+' — '+kbFmtDateTime(a.createdAt);
+    const updaterName = kbNormalizeAuthorName(a.updatedByName);
+    const wasUpdated = a.updatedAt && a.updatedAt !== a.createdAt;
+    const sameActor = wasUpdated && updaterName === kbNormalizeAuthorName(a.createdByName);
+    const dateLine = '📅 '+creatorLine
+      + (wasUpdated ? (' — آخر تحديث '+kbFmtDateTime(a.updatedAt)+(sameActor?'':(' بواسطة '+kbEsc(updaterName)))) : '');
     const mgmtBtns = canManage
       ? '<button type="button" onclick="kbEditArticle('+a.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">✎ تعديل</button>'
         + '<button type="button" onclick="kbDeleteArticle('+a.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🗑 حذف</button>'
@@ -8892,7 +8907,7 @@ function kbRenderArticlesList(articles, canManage){
       + '<div style="font-weight:800;font-size:17px;color:#16233f;">📄 '+kbEsc(a.title)+(isNewBadge?' <span style="background:#0e6a5a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;vertical-align:middle;">🆕 محدث</span>':'')+'</div>'
       + favBtn
       + '</div>'
-      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+(a.createdByName?' — أضافه '+kbEsc(kbNormalizeAuthorName(a.createdByName)):'')+'</div>'
+      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:3px;">'+dateLine+'</div>'
       + bodyHtml
       + kbArticleAttachmentsChips(a.attachments)
       + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">' + mgmtBtns + copyBtn + voteBtns + '</div>'
@@ -9018,6 +9033,13 @@ function goQuizMyResultsFromKb(sector){
   if(window.__showQuizApp) window.__showQuizApp();
   quizGoMyResults();
 }
+function goSchedExamFromKb(sector){
+  window.__quizReturnSector = sector;
+  if(window.__showQuizApp) window.__showQuizApp();
+  window.__schedExamState = { view:'list', sector:sector };
+  window.__quizState = { view:'sched', sector:sector };
+  renderQuiz();
+}
 // رجوع من أي شاشة داخل اختبار المعرفة إلى نفس قسم بنك المعرفة اللي دخلنا منه
 function quizBackToKb(){
   const sector = window.__quizReturnSector;
@@ -9037,6 +9059,247 @@ function quizGoManage(sector){ window.__quizState = { view:'manage', sector:sect
 function quizGoResultsList(){ window.__quizState = { view:'results', sector:null }; renderQuiz(); }
 // نتائج الموظف نفسه فقط (كل موظف يشوف محاولاته هو، بدون صلاحية حذف)
 function quizGoMyResults(){ window.__quizState = { view:'myresults' }; renderQuiz(); }
+// ================= اختبار مجدول (وقت بداية/نهاية محدد، مشاركون محددون) =================
+window.__schedExamState = { view:'list', sector:null };
+window.__schedExamEditingId = null;
+function schedExamNextId(){
+  const ov = loadAdminOverrides();
+  const all = [].concat(ov.quizQuestions||[], ov.quizResults||[], ov.scheduledExams||[]);
+  return all.reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
+}
+function schedExamStatus(exam){
+  const now = Date.now();
+  if(now < exam.startAt) return 'upcoming';
+  if(now > exam.endAt) return 'ended';
+  return 'active';
+}
+function schedExamMyResult(examId){
+  const me = window.__currentEmployee;
+  if(!me) return null;
+  const ov = loadAdminOverrides();
+  return (ov.quizResults||[]).find(function(r){ return r.examId===examId && String(r.jobNo)===String(me.job_no); }) || null;
+}
+function schedExamIsAllowed(exam){
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  if(isTrueOwner()) return true;
+  return (exam.allowedJobNos||[]).map(String).includes(String(me.job_no));
+}
+function renderSchedExam(root){
+  const st = window.__schedExamState;
+  if(st.view === 'create' || st.view === 'edit') return renderSchedExamFormView(root);
+  return renderSchedExamListView(root);
+}
+function schedExamGoCreate(){
+  if(!canManageQuiz()) return;
+  window.__schedExamEditingId = null;
+  window.__schedExamState.view = 'create';
+  renderQuiz();
+}
+function schedExamGoEdit(id){
+  if(!canManageQuiz()) return;
+  window.__schedExamEditingId = id;
+  window.__schedExamState.view = 'edit';
+  renderQuiz();
+}
+function schedExamCancelForm(){
+  window.__schedExamState.view = 'list';
+  window.__schedExamEditingId = null;
+  renderQuiz();
+}
+function schedExamGoList(sector){
+  window.__schedExamState = { view:'list', sector:sector };
+  renderQuiz();
+}
+// ---------- عرض قائمة الاختبارات المجدولة ----------
+function renderSchedExamListView(root){
+  const st = window.__schedExamState;
+  const ov = loadAdminOverrides();
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
+  const canManage = canManageQuiz();
+  const me = window.__currentEmployee;
+  const now = Date.now();
+  const all = (ov.scheduledExams||[]).filter(function(e){ return e.sector===st.sector; })
+    .sort(function(a,b){ return a.startAt-b.startAt; });
+  const visible = canManage ? all : all.filter(schedExamIsAllowed);
+  let html = kbHeader('📅 الاختبارات المجدولة', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
+    + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">';
+  if(canManage){
+    html += '<button type="button" onclick="schedExamGoCreate()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:16px;">+ جدولة اختبار جديد</button>';
+  }
+  if(!visible.length){
+    html += '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;background:#fff;border-radius:14px;">لا يوجد اختبارات مجدولة '+(canManage?'بعد':'متاحة لك حاليا')+' بهذا القطاع.</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:12px;">' + visible.map(function(exam){
+      const status = schedExamStatus(exam);
+      const statusInfo = status==='active' ? {label:'🟢 جارٍ الآن', color:'#0e6a5a'} : status==='upcoming' ? {label:'🕓 قادم', color:'#c9720a'} : {label:'⏹ منتهي', color:'#8a93a6'};
+      const myResult = schedExamMyResult(exam.id);
+      let actionBtn;
+      if(!schedExamIsAllowed(exam) && !canManage){
+        actionBtn = '<span style="font-size:11.5px;color:#8a93a6;">غير مسموح لك بهذا الاختبار</span>';
+      } else if(myResult){
+        actionBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=false;quizReviewResult('+myResult.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">📋 مراجعة نتيجتي ('+myResult.percent+'/100)</button>';
+      } else if(status === 'active'){
+        actionBtn = '<button type="button" onclick="schedExamStart('+exam.id+')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🚀 دخول الاختبار</button>';
+      } else if(status === 'upcoming'){
+        actionBtn = '<span style="font-size:11.5px;color:#c9720a;font-weight:700;">يبدأ '+kbFmtDateTime(exam.startAt)+'</span>';
+      } else {
+        actionBtn = '<span style="font-size:11.5px;color:#8a93a6;">انتهى الوقت المحدد</span>';
+      }
+      const mgmtBtns = canManage
+        ? '<button type="button" onclick="schedExamGoEdit('+exam.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:14px;padding:4px 6px;">✎</button>'
+          + '<button type="button" onclick="schedExamDelete('+exam.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:14px;padding:4px 6px;">🗑</button>'
+        : '';
+      return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">'
+        + '<div style="min-width:200px;">'
+        + '<div style="font-weight:800;font-size:15px;color:#16233f;">'+kbEsc(exam.title||'اختبار مجدول')+' <span style="font-size:11px;font-weight:800;color:'+statusInfo.color+';">'+statusInfo.label+'</span></div>'
+        + '<div style="font-size:11.5px;color:#8a93a6;margin-top:4px;">من '+kbFmtDateTime(exam.startAt)+' إلى '+kbFmtDateTime(exam.endAt)+'</div>'
+        + '<div style="font-size:11.5px;color:#8a93a6;margin-top:2px;">'+exam.questionCount+' سؤال — '+exam.secondsPerQuestion+' ثانية لكل سؤال — '+(exam.allowedJobNos||[]).length+' مشارك مسموح'+(canManage?(' — أنشأه '+kbEsc(kbNormalizeAuthorName(exam.createdByName))):'')+'</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;">'+actionBtn+mgmtBtns+'</div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+  html += '</div>';
+  root.innerHTML = html;
+}
+function schedExamDelete(id){
+  if(!canManageQuiz()) return;
+  if(!confirm('متأكد تبي تحذف هذا الاختبار المجدول؟')) return;
+  const ov = loadAdminOverrides();
+  ov.scheduledExams = (ov.scheduledExams||[]).filter(function(e){ return e.id!==id; });
+  saveAdminOverrides(ov);
+  renderQuiz();
+}
+// ---------- قائمة اختيار الموظفين المسموح لهم بالدخول (بحث + تحديد الكل) ----------
+function schedExamEmployeeCheckboxesHtml(selectedJobNos){
+  const selected = (selectedJobNos||[]).map(String);
+  return (typeof EMPLOYEES !== 'undefined' ? EMPLOYEES : []).map(function(e){
+    const checked = selected.includes(String(e.job_no)) ? 'checked' : '';
+    return '<label data-sched-emp-name="'+kbEsc(e.name)+'" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:12.5px;cursor:pointer;">'
+      + '<input type="checkbox" value="'+e.job_no+'" class="schedEmpChk" '+checked+' style="width:15px;height:15px;">'
+      + '<span>'+kbEsc(e.name)+'</span>'
+      + '</label>';
+  }).join('');
+}
+function schedExamFilterEmployees(){
+  const q = (document.getElementById('schedEmpSearch').value||'').trim();
+  const labels = document.querySelectorAll('#schedEmpList label');
+  labels.forEach(function(lb){
+    const name = lb.getAttribute('data-sched-emp-name')||'';
+    lb.style.display = (!q || name.indexOf(q) !== -1) ? 'flex' : 'none';
+  });
+}
+function schedExamToggleSelectAllVisible(check){
+  const labels = document.querySelectorAll('#schedEmpList label');
+  labels.forEach(function(lb){
+    if(lb.style.display === 'none') return;
+    const chk = lb.querySelector('input');
+    if(chk) chk.checked = check;
+  });
+}
+// ---------- نموذج إنشاء/تعديل اختبار مجدول ----------
+function renderSchedExamFormView(root){
+  const st = window.__schedExamState;
+  const ov = loadAdminOverrides();
+  const editExam = window.__schedExamEditingId ? (ov.scheduledExams||[]).find(function(e){ return e.id===window.__schedExamEditingId; }) : null;
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
+  const now = new Date();
+  const pad = function(n){ return String(n).length<2 ? '0'+n : n; };
+  const defDate = editExam ? new Date(editExam.startAt) : now;
+  const dateVal = editExam ? (defDate.getFullYear()+'-'+pad(defDate.getMonth()+1)+'-'+pad(defDate.getDate())) : (now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate()));
+  const startTimeVal = editExam ? pad(new Date(editExam.startAt).getHours())+':'+pad(new Date(editExam.startAt).getMinutes()) : '10:00';
+  const endTimeVal = editExam ? pad(new Date(editExam.endAt).getHours())+':'+pad(new Date(editExam.endAt).getMinutes()) : '10:30';
+  let html = kbHeader(editExam?'تعديل اختبار مجدول':'+ جدولة اختبار جديد', sectorInfo?sectorInfo.name:'', 'schedExamCancelForm()')
+    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="background:#fff;border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;flex-direction:column;gap:12px;">'
+    + '<div><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عنوان الاختبار</label>'
+    + '<input id="schedTitle" value="'+kbEsc(editExam?editExam.title:'')+'" placeholder="مثال: اختبار دوري — قطاع العمل" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+    + '<div style="flex:1;min-width:140px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">تاريخ الاختبار</label>'
+    + '<input type="date" id="schedDate" value="'+dateVal+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="flex:1;min-width:120px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">وقت البداية</label>'
+    + '<input type="time" id="schedStartTime" value="'+startTimeVal+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="flex:1;min-width:120px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">وقت النهاية</label>'
+    + '<input type="time" id="schedEndTime" value="'+endTimeVal+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عدد الأسئلة</label>'
+    + '<input type="number" min="1" id="schedQCount" value="'+(editExam?editExam.questionCount:10)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">الوقت المخصص لكل سؤال (ثانية)</label>'
+    + '<input type="number" min="5" id="schedQSecs" value="'+(editExam?editExam.secondsPerQuestion:30)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '</div>'
+    + '<div style="font-size:11.5px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب عشوائيًا من بنك أسئلة هذا القطاع.</div>'
+    + '<div>'
+    + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">الموظفون المسموح لهم بدخول هذا الاختبار</label>'
+    + '<input id="schedEmpSearch" oninput="schedExamFilterEmployees()" placeholder="🔍 ابحث باسم الموظف…" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:6px;">'
+    + '<div style="display:flex;gap:8px;margin-bottom:6px;">'
+    + '<button type="button" onclick="schedExamToggleSelectAllVisible(true)" style="background:#eef1f3;color:#16233f;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">تحديد الكل الظاهر</button>'
+    + '<button type="button" onclick="schedExamToggleSelectAllVisible(false)" style="background:#eef1f3;color:#16233f;border:none;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">إلغاء تحديد الكل</button>'
+    + '</div>'
+    + '<div id="schedEmpList" style="max-height:260px;overflow:auto;border:1.5px solid #e2e6ea;border-radius:10px;padding:6px;">'+schedExamEmployeeCheckboxesHtml(editExam?editExam.allowedJobNos:[])+'</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:10px;margin-top:6px;">'
+    + '<button type="button" onclick="schedExamSave()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:13.5px;cursor:pointer;">'+(editExam?'حفظ التعديل':'+ جدولة الاختبار')+'</button>'
+    + '<button type="button" onclick="schedExamCancelForm()" style="background:#eef1f3;color:#16233f;border:none;border-radius:10px;padding:11px 22px;font-weight:800;font-size:13.5px;cursor:pointer;">إلغاء</button>'
+    + '</div>'
+    + '</div></div>';
+  root.innerHTML = html;
+}
+function schedExamSave(){
+  if(!canManageQuiz()) return;
+  const st = window.__schedExamState;
+  const title = (document.getElementById('schedTitle').value||'').trim() || 'اختبار مجدول';
+  const dateStr = document.getElementById('schedDate').value;
+  const startTimeStr = document.getElementById('schedStartTime').value;
+  const endTimeStr = document.getElementById('schedEndTime').value;
+  if(!dateStr || !startTimeStr || !endTimeStr){ alert('لازم تحدد التاريخ ووقت البداية والنهاية'); return; }
+  const startAt = new Date(dateStr+'T'+startTimeStr+':00').getTime();
+  const endAt = new Date(dateStr+'T'+endTimeStr+':00').getTime();
+  if(isNaN(startAt) || isNaN(endAt) || endAt <= startAt){ alert('وقت النهاية لازم يكون بعد وقت البداية'); return; }
+  const questionCount = parseInt(document.getElementById('schedQCount').value, 10) || 10;
+  const secondsPerQuestion = parseInt(document.getElementById('schedQSecs').value, 10) || 30;
+  const allowedJobNos = Array.from(document.querySelectorAll('#schedEmpList input.schedEmpChk:checked')).map(function(chk){ return chk.value; });
+  if(!allowedJobNos.length){ alert('لازم تحدد موظف واحد على الأقل مسموح له بالاختبار'); return; }
+  const ov = loadAdminOverrides();
+  ov.scheduledExams = ov.scheduledExams || [];
+  const me = window.__currentEmployee;
+  if(window.__schedExamEditingId){
+    const exam = ov.scheduledExams.find(function(e){ return e.id===window.__schedExamEditingId; });
+    if(exam){
+      exam.title=title; exam.startAt=startAt; exam.endAt=endAt; exam.questionCount=questionCount;
+      exam.secondsPerQuestion=secondsPerQuestion; exam.allowedJobNos=allowedJobNos;
+      exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
+    }
+  } else {
+    ov.scheduledExams.push({
+      id: schedExamNextId(), sector: st.sector, title: title, startAt: startAt, endAt: endAt,
+      questionCount: questionCount, secondsPerQuestion: secondsPerQuestion, allowedJobNos: allowedJobNos,
+      createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
+    });
+  }
+  saveAdminOverrides(ov);
+  window.__schedExamEditingId = null;
+  window.__schedExamState.view = 'list';
+  renderQuiz();
+}
+// ---------- دخول الاختبار المجدول وتشغيله (بيستخدم نفس محرك اختبار المعرفة) ----------
+function schedExamStart(id){
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===id; });
+  if(!exam){ alert('هذا الاختبار غير موجود.'); return; }
+  if(schedExamStatus(exam) !== 'active'){ alert('هذا الاختبار غير متاح الآن — تحقق من وقت البداية والنهاية.'); return; }
+  if(!schedExamIsAllowed(exam)){ alert('غير مسموح لك بدخول هذا الاختبار.'); return; }
+  if(schedExamMyResult(exam.id)){ alert('سبق ودخلت هذا الاختبار.'); return; }
+  const pool = (ov.quizQuestions||[]).filter(function(q){ return q.sector===exam.sector; });
+  if(!pool.length){ alert('لا يوجد أسئلة اختبار بهذا القطاع بعد.'); return; }
+  const count = Math.min(exam.questionCount||10, pool.length);
+  const shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
+  window.__quizRun = { sector:exam.sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), qStartedAt:Date.now(), timerHandle:null, remaining:exam.secondsPerQuestion||30, secondsPerQuestion: exam.secondsPerQuestion||30, examId: exam.id };
+  window.__quizState = { view:'run', sector:exam.sector };
+  renderQuiz();
+}
+
 function quizStart(sector){
   const ov = loadAdminOverrides();
   const pool = (ov.quizQuestions||[]).filter(function(q){ return q.sector===sector; });
@@ -9057,6 +9320,7 @@ function renderQuiz(){
   if(st.view === 'results') return renderQuizResultsView(root);
   if(st.view === 'myresults') return renderQuizMyResultsView(root);
   if(st.view === 'review') return renderQuizReviewView(root);
+  if(st.view === 'sched') return renderSchedExam(root);
   return renderQuizSectorsView(root);
 }
 
@@ -9286,7 +9550,7 @@ function renderQuizRunView(root){
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
     + '<button type="button" onclick="quizExitConfirm()" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:#8a93a6;"><svg viewBox="0 0 24 24" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg> إنهاء والخروج</button>'
     + '<div style="font-size:12.5px;font-weight:800;color:#16233f;">سؤال '+(run.idx+1)+' من '+total+'</div>'
-    + '<div id="quizTimerBadge" style="font-size:13px;font-weight:900;color:#0e6a5a;background:#fff;border-radius:20px;padding:6px 14px;box-shadow:0 4px 10px rgba(15,46,61,.08);">'+(already?'✓ مجاب':'⏱ 30')+'</div>'
+    + '<div id="quizTimerBadge" style="font-size:13px;font-weight:900;color:#0e6a5a;background:#fff;border-radius:20px;padding:6px 14px;box-shadow:0 4px 10px rgba(15,46,61,.08);">'+(already?'✓ مجاب':'⏱ '+(run.secondsPerQuestion||30))+'</div>'
     + '</div>'
     + '<div style="height:6px;background:#e2e6ea;border-radius:3px;overflow:hidden;margin-bottom:20px;"><div style="width:'+Math.round((run.idx)/total*100)+'%;height:100%;background:#0e6a5a;"></div></div>'
     + '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 22px rgba(15,46,61,.08);">'
@@ -9312,10 +9576,11 @@ function quizOptionBtn(i, label, q, already){
 function quizStartTimer(){
   quizClearTimer();
   const run = window.__quizRun;
-  run.remaining = 30;
+  const secs = run.secondsPerQuestion || 30;
+  run.remaining = secs;
   run.qStartedAt = Date.now();
   const badge = document.getElementById('quizTimerBadge');
-  if(badge){ badge.textContent = '⏱ 30'; badge.style.color = '#0e6a5a'; badge.style.background = '#fff'; }
+  if(badge){ badge.textContent = '⏱ ' + secs; badge.style.color = '#0e6a5a'; badge.style.background = '#fff'; }
   run.timerHandle = setInterval(function(){
     run.remaining -= 1;
     const b = document.getElementById('quizTimerBadge');
@@ -9384,7 +9649,8 @@ function quizFinish(){
     id: quizNextId(), jobNo: me?me.job_no:null, employeeName: me?me.name:'—',
     nationalId: me?me.national_id:'', email: me?me.email:'', mobile: me?me.mobile:'',
     sector: run.sector, score:score, total:total, percent:percent,
-    durationSeconds:durationSeconds, takenAt: Date.now(), detail: detail
+    durationSeconds:durationSeconds, takenAt: Date.now(), detail: detail,
+    examId: run.examId || null
   };
   ov.quizResults.push(result);
   saveAdminOverrides(ov);
