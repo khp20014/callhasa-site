@@ -46,7 +46,7 @@
   }
   /* بنك المعرفة: عرض متجاوب لمحتوى المقالات (جداول/صور) بدون تجاوز حدود الصفحة */
   .kb-article-body{ overflow-x:auto; -webkit-overflow-scrolling:touch; width:100%; box-sizing:border-box; }
-  .kb-article-body table{ width:100% !important; max-width:100%; border-collapse:collapse; table-layout:fixed; }
+  .kb-article-body table{ width:100%; max-width:100%; border-collapse:collapse; table-layout:auto; }
   .kb-article-body td, .kb-article-body th{ word-break:break-word; overflow-wrap:break-word; padding:6px 8px; border:1px solid #dfe3e8; }
   .kb-article-body img{ max-width:100% !important; height:auto !important; }
   .kb-article-body *{ max-width:100%; box-sizing:border-box; }
@@ -7667,7 +7667,7 @@ function kbRenderSectionRows(sections, ov, canManage, sectorId, opts){
 }
 function kbHeader(title, subtitle, onBack){
   return '<div style="background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);padding:22px 18px 40px;color:#fff;">'
-    +'<div style="max-width:900px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+    +'<div style="max-width:1500px;margin:0 auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
     +'<button type="button" onclick="'+onBack+'" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;border-radius:10px;background:rgba(255,255,255,.14);padding:8px 12px;flex-shrink:0;">'
     +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>'
     +'<span style="font-size:12px;font-weight:800;color:#fff;">رجوع للصفحة السابقة</span>'
@@ -7978,7 +7978,7 @@ function renderKbSectionsView(root){
   const sections = (ov.knowledgeBankSections||[]).filter(function(s){ return s.sector===st.sector && !s.parentSectionId; });
   const canManage = typeof canManageKnowledgeBank === 'function' && canManageKnowledgeBank(st.sector);
   let html = kbHeader(sectorInfo?sectorInfo.name:'', 'الأقسام المتاحة', 'kbGoSectors()')
-    + '<div style="max-width:900px;margin:0 auto 40px;padding:24px 18px 0;">'
+    + '<div style="max-width:1500px;margin:0 auto 40px;padding:24px 18px 0;">'
     + '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'
     + '<button type="button" onclick="kbForceSync(this)" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">🔄 تحديث</button>'
     + '</div>'
@@ -8016,7 +8016,7 @@ function renderKbFavoritesView(root){
   const sections = ov.knowledgeBankSections || [];
   const arts = (ov.knowledgeBankArticles||[]).filter(function(a){ return a.sector===st.sector && favIds.indexOf(a.id)!==-1; });
   let html = kbHeader('⭐ مفضلتي', sectorInfo?sectorInfo.name:'', "kbGoSections('"+st.sector+"')")
-    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">';
+    + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">';
   if(!arts.length){
     html += '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما ضفت أي مقال للمفضلة بعد — اضغط ☆ بجانب أي مقال تحبه ترجع له بسرعة.</div>';
   } else {
@@ -8039,7 +8039,7 @@ function renderKbSearchMissesView(root){
   const ov = loadAdminOverrides();
   const misses = (ov.kbSearchMisses||[]).filter(function(m){ return m.sector===st.sector; }).slice().reverse();
   let html = kbHeader('🔍 بحث بدون نتيجة', sectorInfo?sectorInfo.name:'', "kbGoSections('"+st.sector+"')")
-    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="font-size:11.5px;color:#5b6685;margin-bottom:14px;">عبارات بحث كتبها موظفون بهذا القطاع وما لقت أي نتيجة — تفيدك تعرف أي معلومة ناقصة ببنك المعرفة.</div>';
   if(!misses.length){
     html += '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي عمليات بحث بدون نتيجة مسجّلة لين الحين.</div>';
@@ -8177,7 +8177,7 @@ function renderKbItemsView(root){
   const rollup = kbRollupCounts(ov, st.sectionId);
   const subtitle = childSections.length+' قسم فرعي — '+rollup.articleCount+' مقال — '+rollup.qCount+' سؤال';
   root.innerHTML = kbHeader(section?section.name:'', subtitle, "kbGoSections('"+st.sector+"')")
-    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div id="kbPendingBox"></div>'
     + '<div style="font-size:12.5px;font-weight:800;color:#16233f;margin:4px 0 8px;">📁 أقسام فرعية</div>'
     + '<div id="kbChildSectionsBox" style="margin-bottom:20px;"></div>'
@@ -9087,7 +9087,7 @@ function renderQuizManageView(root){
   const questions = (ov.quizQuestions||[]).filter(function(q){ return q.sector===st.sector; });
   const countVal = (ov.quizQuestionCount||{})[st.sector] || 10;
   let html = kbHeader('إدارة أسئلة الاختبار', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
-    + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;align-items:center;gap:10px;">'
     + '<label style="font-size:12.5px;font-weight:700;color:#16233f;">عدد أسئلة الاختبار الواحد:</label>'
     + '<input type="number" min="1" id="quizCountInput" value="'+countVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
