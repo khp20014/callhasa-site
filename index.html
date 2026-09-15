@@ -1271,7 +1271,7 @@
   <!-- DIRECTORY / SEARCH -->
   <section class="panel dir-panel" id="directorySection">
     <button type="button" id="secHeadKnowledgeBankLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
-      <span class="idx">01</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق، واختبار المعرفة على كل قطاع — اضغط للفتح</span>
+      <span class="idx">01</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق، اختبار تدريبي مفتوح لكل قطاع، واختبار رسمي مجدول بموافقة الإدارة — اضغط للفتح</span>
     </button>
     <button type="button" id="secHeadContactReasonsLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
       <span class="idx">02</span><h2 style="margin:0;">مسارات أسباب الاتصال لقطاع العمل</h2><span class="sub">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين — اضغط للفتح</span>
@@ -2239,8 +2239,13 @@ function loadAdminOverrides(){
     ov.kbSearchMisses = ov.kbSearchMisses || [];
     // اختبارات مجدولة بموعد محدد (وقت بداية/نهاية، عدد مشاركين مسموح، عدد أسئلة، وقت لكل سؤال)
     ov.scheduledExams = ov.scheduledExams || [];
+    // بنك أسئلة سري خاص بالاختبارات المجدولة فقط — منفصل تماما عن ov.quizQuestions
+    // (بنك "اختبر نفسك" المفتوح للتدريب). لا يظهر هذا البنك أبدا للموظفين، ولا يُستخدم
+    // إلا عند تشغيل اختبار مجدول (schedExamStart)، عشان الأسئلة تضل سرية وما تنكشف
+    // من كثر ما الموظف يتدرب على "اختبر نفسك".
+    ov.examQuestions = ov.examQuestions || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], examQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -7999,12 +8004,12 @@ function renderKbSectionsView(root){
     + '<div id="kbSectorSearchResults" style="display:none;position:absolute;top:48px;right:0;left:0;background:#fff;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.18);max-height:280px;overflow:auto;z-index:5;"></div>'
     + '</div>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
-    + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ اختبار المعرفة</button>'
+    + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ الاختبار التدريبي</button>'
     + '<button type="button" onclick="goSchedExamFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📅 اختبار مجدول</button>'
     + '<button type="button" onclick="goQuizMyResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🧾 نتائجي</button>'
     + '<button type="button" onclick="kbGoFavorites(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #f0c33d;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⭐ مفضلتي</button>'
     + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
-    + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📋 نتائج اختبار المعرفة</button>' : '')
+    + (canViewQuizResults() ? '<button type="button" onclick="goQuizResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📋 كل نتائج الاختبارات</button>' : '')
     + (canManage ? '<button type="button" onclick="kbGoSearchMisses(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #8a93a6;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🔍 بحث بدون نتيجة</button>' : '')
     + '</div>'
     + '';
@@ -9051,11 +9056,18 @@ function quizBackToKb(){
 
 function quizNextId(){
   const ov = loadAdminOverrides();
-  const all = [].concat(ov.quizQuestions||[], ov.quizResults||[]);
+  const all = [].concat(ov.quizQuestions||[], ov.examQuestions||[], ov.quizResults||[], ov.scheduledExams||[]);
   return all.reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
 }
 function quizGoSectors(){ window.__quizState = { view:'sectors', sector:null }; renderQuiz(); }
-function quizGoManage(sector){ window.__quizState = { view:'manage', sector:sector }; window.__quizEditingId = null; renderQuiz(); }
+// bank: 'practice' (بنك "اختبر نفسك" المفتوح، الافتراضي) أو 'exam' (بنك سري خاص بالاختبارات المجدولة فقط)
+function quizGoManage(sector, bank){ window.__quizState = { view:'manage', sector:sector, bank: bank||'practice' }; window.__quizEditingId = null; renderQuiz(); }
+// رجوع من إدارة بنك أسئلة الاختبار المجدول (السري) إلى قائمة الاختبارات المجدولة لنفس القطاع
+function quizBackToSchedList(sector){
+  window.__quizState = { view:'sched', sector: sector };
+  window.__schedExamState = { view:'list', sector: sector };
+  renderQuiz();
+}
 function quizGoResultsList(){ window.__quizState = { view:'results', sector:null }; renderQuiz(); }
 // نتائج الموظف نفسه فقط (كل موظف يشوف محاولاته هو، بدون صلاحية حذف)
 function quizGoMyResults(){ window.__quizState = { view:'myresults' }; renderQuiz(); }
@@ -9064,7 +9076,7 @@ window.__schedExamState = { view:'list', sector:null };
 window.__schedExamEditingId = null;
 function schedExamNextId(){
   const ov = loadAdminOverrides();
-  const all = [].concat(ov.quizQuestions||[], ov.quizResults||[], ov.scheduledExams||[]);
+  const all = [].concat(ov.quizQuestions||[], ov.examQuestions||[], ov.quizResults||[], ov.scheduledExams||[]);
   return all.reduce((m,it)=> Math.max(m, it.id||0), 0) + 1;
 }
 function schedExamStatus(exam){
@@ -9122,10 +9134,14 @@ function renderSchedExamListView(root){
   const all = (ov.scheduledExams||[]).filter(function(e){ return e.sector===st.sector; })
     .sort(function(a,b){ return a.startAt-b.startAt; });
   const visible = canManage ? all : all.filter(schedExamIsAllowed);
-  let html = kbHeader('📅 الاختبارات المجدولة', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
+  let html = kbHeader('📅 الاختبارات الرسمية المجدولة', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
     + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">';
   if(canManage){
-    html += '<button type="button" onclick="schedExamGoCreate()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:16px;">+ جدولة اختبار جديد</button>';
+    html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">'
+      + '<button type="button" onclick="schedExamGoCreate()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;">+ جدولة اختبار رسمي جديد</button>'
+      + '<button type="button" onclick="quizGoManage(\''+st.sector+'\',\'exam\')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;">🔒 إدارة أسئلة الاختبار المجدول (سرية)</button>'
+      + '</div>'
+      + '<div style="background:#fdecea;color:#c0392b;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;font-weight:700;">⚠ بنك أسئلة الاختبار المجدول منفصل تماما عن بنك "اختبر نفسك" — أضف الأسئلة من الزر الغامق حصرا، ولا تستخدم بنك "اختبر نفسك" للاختبار المجدول عشان ما تنكشف الأسئلة للموظفين.</div>';
   }
   if(!visible.length){
     html += '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;background:#fff;border-radius:14px;">لا يوجد اختبارات مجدولة '+(canManage?'بعد':'متاحة لك حاليا')+' بهذا القطاع.</div>';
@@ -9210,7 +9226,7 @@ function renderSchedExamFormView(root){
   const dateVal = editExam ? (defDate.getFullYear()+'-'+pad(defDate.getMonth()+1)+'-'+pad(defDate.getDate())) : (now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate()));
   const startTimeVal = editExam ? pad(new Date(editExam.startAt).getHours())+':'+pad(new Date(editExam.startAt).getMinutes()) : '10:00';
   const endTimeVal = editExam ? pad(new Date(editExam.endAt).getHours())+':'+pad(new Date(editExam.endAt).getMinutes()) : '10:30';
-  let html = kbHeader(editExam?'تعديل اختبار مجدول':'+ جدولة اختبار جديد', sectorInfo?sectorInfo.name:'', 'schedExamCancelForm()')
+  let html = kbHeader(editExam?'تعديل اختبار رسمي مجدول':'+ جدولة اختبار رسمي جديد', sectorInfo?sectorInfo.name:'', 'schedExamCancelForm()')
     + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="background:#fff;border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;flex-direction:column;gap:12px;">'
     + '<div><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عنوان الاختبار</label>'
@@ -9291,8 +9307,8 @@ function schedExamStart(id){
   if(schedExamStatus(exam) !== 'active'){ alert('هذا الاختبار غير متاح الآن — تحقق من وقت البداية والنهاية.'); return; }
   if(!schedExamIsAllowed(exam)){ alert('غير مسموح لك بدخول هذا الاختبار.'); return; }
   if(schedExamMyResult(exam.id)){ alert('سبق ودخلت هذا الاختبار.'); return; }
-  const pool = (ov.quizQuestions||[]).filter(function(q){ return q.sector===exam.sector; });
-  if(!pool.length){ alert('لا يوجد أسئلة اختبار بهذا القطاع بعد.'); return; }
+  const pool = (ov.examQuestions||[]).filter(function(q){ return q.sector===exam.sector; });
+  if(!pool.length){ alert('لا يوجد أسئلة بعد في بنك أسئلة الاختبار المجدول لهذا القطاع — أضفها أولا من "🔒 إدارة أسئلة الاختبار المجدول".'); return; }
   const count = Math.min(exam.questionCount||10, pool.length);
   const shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
   window.__quizRun = { sector:exam.sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), qStartedAt:Date.now(), timerHandle:null, remaining:exam.secondsPerQuestion||30, secondsPerQuestion: exam.secondsPerQuestion||30, examId: exam.id };
@@ -9335,7 +9351,7 @@ function renderQuizSectorsView(root){
     + (canResults ? '<button type="button" onclick="quizGoResultsList()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">📋 كل النتائج</button>' : '')
     + '</div>'
     + '<div style="text-align:center;color:#fff;">'
-    + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">اختبار المعرفة</div>'
+    + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">اختبار تدريبي</div>'
     + '<div style="font-size:22px;font-weight:900;">اختر القطاع</div>'
     + '<div style="font-size:12.5px;opacity:.7;margin-top:6px;">اختبار قصير موقّت — نتيجتك تُحفظ باسمك بالنظام</div>'
     + '</div>'
@@ -9357,16 +9373,22 @@ function renderQuizSectorsView(root){
 function renderQuizManageView(root){
   const st = window.__quizState;
   const ov = loadAdminOverrides();
+  const bank = st.bank || 'practice';
+  const bankKey = bank === 'exam' ? 'examQuestions' : 'quizQuestions';
   const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.sector; });
-  const questions = (ov.quizQuestions||[]).filter(function(q){ return q.sector===st.sector; });
+  const questions = (ov[bankKey]||[]).filter(function(q){ return q.sector===st.sector; });
   const countVal = (ov.quizQuestionCount||{})[st.sector] || 10;
-  let html = kbHeader('إدارة أسئلة الاختبار', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
+  const backAction = bank === 'exam' ? ("quizBackToSchedList('"+st.sector+"')") : 'quizBackToKb()';
+  const titleText = bank === 'exam' ? '🔒 إدارة أسئلة الاختبار الرسمي المجدول' : '🎯 إدارة أسئلة الاختبار التدريبي';
+  let html = kbHeader(titleText, sectorInfo?sectorInfo.name:'', backAction)
     + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">'
-    + '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;align-items:center;gap:10px;">'
-    + '<label style="font-size:12.5px;font-weight:700;color:#16233f;">عدد أسئلة الاختبار الواحد:</label>'
-    + '<input type="number" min="1" id="quizCountInput" value="'+countVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
-    + '<button type="button" onclick="quizSaveCount()" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;">حفظ</button>'
-    + '</div>'
+    + (bank === 'exam'
+        ? '<div style="background:#fdecea;color:#c0392b;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;font-weight:700;">⚠ هذا بنك أسئلة سري خاص بالاختبار الرسمي المجدول فقط — منفصل تماما عن بنك "الاختبار التدريبي"، ولا يظهر ولا يُتاح الاطلاع عليه للموظفين إطلاقا، ولا يُستخدم إلا وقت تشغيل الاختبار الرسمي نفسه.</div>'
+        : '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;align-items:center;gap:10px;">'
+          + '<label style="font-size:12.5px;font-weight:700;color:#16233f;">عدد أسئلة الاختبار الواحد:</label>'
+          + '<input type="number" min="1" id="quizCountInput" value="'+countVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
+          + '<button type="button" onclick="quizSaveCount()" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;">حفظ</button>'
+          + '</div>')
     + '<div id="quizFormBox"></div>'
     + '<div id="quizQuestionsListBox" style="display:flex;flex-direction:column;gap:12px;margin-top:14px;"></div>'
     + '</div>';
@@ -9463,6 +9485,8 @@ function quizRenderQuestionsList(questions){
 function quizAddQuestion(){
   if(!canManageQuiz()) return;
   const idAttr = 'new';
+  const bank = (window.__quizState && window.__quizState.bank) || 'practice';
+  const bankKey = bank === 'exam' ? 'examQuestions' : 'quizQuestions';
   const type = document.getElementById('quizType-'+idAttr).value;
   const question = document.getElementById('quizQuestion-'+idAttr).value.trim();
   if(!question){ alert('لازم تكتب نص السؤال'); return; }
@@ -9479,8 +9503,8 @@ function quizAddQuestion(){
   const srcItem = document.getElementById('quizSrcItem-'+idAttr).value;
   if(srcSection && srcItem){ q.sourceSectionId = parseInt(srcSection,10); q.sourceItemId = parseInt(srcItem,10); }
   const ov = loadAdminOverrides();
-  ov.quizQuestions = ov.quizQuestions || [];
-  ov.quizQuestions.push(q);
+  ov[bankKey] = ov[bankKey] || [];
+  ov[bankKey].push(q);
   saveAdminOverrides(ov);
   renderQuiz();
 }
@@ -9488,8 +9512,10 @@ function quizEditQuestion(id){ window.__quizEditingId = id; renderQuiz(); }
 function quizCancelEdit(){ window.__quizEditingId = null; renderQuiz(); }
 function quizSaveEdit(id){
   if(!canManageQuiz()) return;
+  const bank = (window.__quizState && window.__quizState.bank) || 'practice';
+  const bankKey = bank === 'exam' ? 'examQuestions' : 'quizQuestions';
   const ov = loadAdminOverrides();
-  const q = (ov.quizQuestions||[]).find(function(x){ return x.id===id; });
+  const q = (ov[bankKey]||[]).find(function(x){ return x.id===id; });
   if(!q) return;
   const type = document.getElementById('quizType-'+id).value;
   const question = document.getElementById('quizQuestion-'+id).value.trim();
@@ -9515,8 +9541,10 @@ function quizSaveEdit(id){
 function quizDeleteQuestion(id){
   if(!canManageQuiz()) return;
   if(!confirm('متأكد تبي تحذف هذا السؤال من الاختبار؟')) return;
+  const bank = (window.__quizState && window.__quizState.bank) || 'practice';
+  const bankKey = bank === 'exam' ? 'examQuestions' : 'quizQuestions';
   const ov = loadAdminOverrides();
-  ov.quizQuestions = (ov.quizQuestions||[]).filter(function(x){ return x.id!==id; });
+  ov[bankKey] = (ov[bankKey]||[]).filter(function(x){ return x.id!==id; });
   saveAdminOverrides(ov);
   renderQuiz();
 }
@@ -9736,9 +9764,10 @@ function quizPrintResult(resultId){
       + (d.correct?'':'<div style="color:#0e6a5a;">الإجابة الصحيحة: '+kbEsc(correctText)+'</div>')
       + '</div>';
   });
-  w.document.write('<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>نتيجة اختبار المعرفة</title>'
+  const resultTypeLabel = result.examId ? 'نتيجة الاختبار الرسمي المجدول' : 'نتيجة الاختبار التدريبي';
+  w.document.write('<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>'+resultTypeLabel+'</title>'
     + '<style>body{font-family:Tahoma,Arial,sans-serif;padding:30px;color:#16233f;} h2{color:#16233f;} .meta div{margin-bottom:4px;font-size:13px;}</style></head><body>'
-    + '<h2>نتيجة اختبار المعرفة — '+(sectorInfo?kbEsc(sectorInfo.name):'')+'</h2>'
+    + '<h2>'+resultTypeLabel+' — '+(sectorInfo?kbEsc(sectorInfo.name):'')+'</h2>'
     + '<div class="meta">'
     + '<div><b>الاسم:</b> '+kbEsc(result.employeeName)+'</div>'
     + '<div><b>الرقم الوظيفي:</b> '+kbEsc(result.jobNo||'')+'</div>'
@@ -9773,7 +9802,7 @@ function quizExportResultExcel(resultId){
   const blob = new Blob(['\ufeff' + html], { type:'application/vnd.ms-excel' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = 'نتيجة_اختبار_المعرفة.xls';
+  link.download = (result.examId ? 'نتيجة_الاختبار_الرسمي' : 'نتيجة_الاختبار_التدريبي') + '.xls';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -9792,13 +9821,14 @@ function renderQuizResultsView(root){
     const delBtn = canManage ? '<button type="button" onclick="quizDeleteResult('+r.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">حذف</button>' : '';
     const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=true;quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
     const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
+    const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 رسمي</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
     return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
-      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;">'+kbEsc(r.employeeName)+'</div>'
+      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;">'+kbEsc(r.employeeName)+' '+typeBadge+'</div>'
       + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+(sectorInfo?sectorInfo.name:'')+' — '+dt.toLocaleDateString('ar-SA')+' — المدة '+mins+'د '+secs+'ث</div></div>'
       + '<div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+delBtn+'</div></div>';
   }).join('');
   if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي نتيجة اختبار بعد.</div>';
-  root.innerHTML = kbHeader('نتائج اختبار المعرفة', results.length+' نتيجة', 'quizBackToKb()')
+  root.innerHTML = kbHeader('نتائج الاختبارات', results.length+' نتيجة', 'quizBackToKb()')
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
 }
 function quizDeleteResult(id){
@@ -9822,13 +9852,14 @@ function renderQuizMyResultsView(root){
     const dt = new Date(r.takenAt);
     const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
     const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=\'mine\';quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
+    const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 رسمي</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
     return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
-      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;">'+(sectorInfo?sectorInfo.name:'')+'</div>'
+      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;">'+(sectorInfo?sectorInfo.name:'')+' '+typeBadge+'</div>'
       + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+dt.toLocaleDateString('ar-SA')+' — المدة '+mins+'د '+secs+'ث</div></div>'
       + '<div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+'</div></div>';
   }).join('');
-  if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما اختبرت لين الحين — ابدأ اختبار المعرفة عشان تظهر نتائجك هنا.</div>';
-  root.innerHTML = kbHeader('نتائجي باختبار المعرفة', results.length+' محاولة', 'quizGoSectors()')
+  if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما اختبرت لين الحين — ابدأ الاختبار التدريبي عشان تظهر نتائجك هنا.</div>';
+  root.innerHTML = kbHeader('نتائجي بالاختبارات', results.length+' محاولة', 'quizGoSectors()')
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
 }
 
