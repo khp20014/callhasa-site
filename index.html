@@ -1981,6 +1981,19 @@ function getDisplayedVersionText(){
   try{ const v = localStorage.getItem(VER_OV_KEY); return (v!==null && v!=='') ? v : defaultVersionText(); }catch(err){ return defaultVersionText(); }
 }
 document.addEventListener('DOMContentLoaded', ()=>{
+  // حارس تنقل المتصفح: أزرار رجوع/تقدم المتصفح (أو السحب بالإصبع) كانت أحيانا تُخرج المستخدم
+  // من النظام بالكامل لموقع خارجي كان مفتوح قبله بنفس التبويب. نمنع هذا بإضافة محطة تاريخ
+  // داخلية عند كل تحميل، وأي رجوع/تقدم بالمتصفح يعيد إضافتها فورا بدل ما يكمل للخارج،
+  // ويرجّع المستخدم للصفحة الرئيسية بالنظام نفسه.
+  (function browserNavGuard(){
+    try{
+      history.pushState({ app:true }, '', location.href);
+      window.addEventListener('popstate', function(){
+        history.pushState({ app:true }, '', location.href);
+        if(window.__showEmployeeSearchApp) window.__showEmployeeSearchApp();
+      });
+    }catch(err){}
+  })();
   const vb = document.getElementById('verBadge');
   if(vb) vb.textContent = getDisplayedVersionText();
 
@@ -5989,7 +6002,7 @@ function subscribeToIncomingMessagesRealtime(){
     let next = new Date(now.getFullYear(), bm-1, bd);
     if(next < todayMidnight) next = new Date(now.getFullYear()+1, bm-1, bd);
     const diffDays = Math.round((next - todayMidnight) / 86400000);
-    if(diffDays >= 1 && diffDays <= 7) upcoming.push({ e, diffDays });
+    if(diffDays === 1) upcoming.push({ e, diffDays });
   });
   upcoming.sort((a,b)=>a.diffDays-b.diffDays);
 
@@ -8003,9 +8016,17 @@ function renderKbSectionsView(root){
     + '<input id="kbSectorSearch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="kb-sector-search-nofill" oninput="kbSectorSearchHandler(this.value,\''+st.sector+'\')" placeholder="🔍 ابحث هنا…" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;border:1.5px solid #e2e6ea;font-size:13.5px;font-family:inherit;">'
     + '<div id="kbSectorSearchResults" style="display:none;position:absolute;top:48px;right:0;left:0;background:#fff;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.18);max-height:280px;overflow:auto;z-index:5;"></div>'
     + '</div>'
+    + '<button type="button" onclick="goSchedExamFromKb(\''+st.sector+'\')" style="width:100%;text-align:right;background:linear-gradient(135deg,#16233f 0%,#0f2e3d 55%,#0e6a5a 100%);border:none;border-radius:18px;padding:20px 22px;margin-bottom:16px;cursor:pointer;display:flex;align-items:center;gap:16px;box-shadow:0 14px 30px rgba(15,46,61,.28),inset 0 1px 0 rgba(255,255,255,.08);position:relative;overflow:hidden;">'
+    + '<div style="position:absolute;inset:0;background:radial-gradient(circle at 85% -20%,rgba(240,195,61,.25),transparent 60%);"></div>'
+    + '<div style="position:relative;flex-shrink:0;width:58px;height:58px;border-radius:16px;background:linear-gradient(145deg,#f0c33d,#d9a418);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.4);font-size:28px;">📅</div>'
+    + '<div style="position:relative;flex:1;">'
+    + '<div style="color:#fff;font-weight:900;font-size:16.5px;">الاختبار الرسمي المجدول</div>'
+    + '<div style="color:rgba(255,255,255,.75);font-size:11.5px;font-weight:700;margin-top:3px;">بموافقة الإدارة — يفتح فقط بالوقت المحدد للمشاركين المسموح لهم</div>'
+    + '</div>'
+    + '<div style="position:relative;flex-shrink:0;color:#f0c33d;font-size:20px;">←</div>'
+    + '</button>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
     + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ الاختبار التدريبي</button>'
-    + '<button type="button" onclick="goSchedExamFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">📅 اختبار مجدول</button>'
     + '<button type="button" onclick="goQuizMyResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🧾 نتائجي</button>'
     + '<button type="button" onclick="kbGoFavorites(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #f0c33d;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⭐ مفضلتي</button>'
     + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
@@ -9169,18 +9190,90 @@ function renderSchedExamListView(root){
       const resultsBtn = (typeof canViewQuizResults === 'function' && canViewQuizResults())
         ? '<button type="button" onclick="schedExamViewResults('+exam.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12px;cursor:pointer;">📋 نتائج المشاركين</button>'
         : '';
+      const bigScreenBtn = canManage
+        ? '<button type="button" onclick="quizGoBigScreen('+exam.id+')" style="background:#16233f;color:#f0c33d;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12px;cursor:pointer;">🖥️ شاشة العرض الكبيرة</button>'
+        : '';
       return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">'
         + '<div style="min-width:200px;">'
         + '<div style="font-weight:800;font-size:15px;color:#16233f;">'+kbEsc(exam.title||'اختبار مجدول')+' <span style="font-size:11px;font-weight:800;color:'+statusInfo.color+';">'+statusInfo.label+'</span></div>'
         + '<div style="font-size:11.5px;color:#8a93a6;margin-top:4px;">من '+kbFmtDateTime(exam.startAt)+' إلى '+kbFmtDateTime(exam.endAt)+'</div>'
         + '<div style="font-size:11.5px;color:#8a93a6;margin-top:2px;">'+(exam.selectionMode==='manual'?((exam.manualQuestionIds||[]).length+' سؤال محدد يدويا'):(exam.questionCount+' سؤال عشوائي'))+' — مدة الاختبار '+(exam.totalMinutes||15)+' دقيقة — '+(exam.allowedJobNos||[]).length+' مشارك مسموح'+(canManage?(' — أنشأه '+kbEsc(kbNormalizeAuthorName(exam.createdByName))):'')+'</div>'
         + '</div>'
-        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+actionBtn+resultsBtn+mgmtBtns+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+actionBtn+resultsBtn+bigScreenBtn+mgmtBtns+'</div>'
         + '</div>';
     }).join('') + '</div>';
   }
   html += '</div>';
   root.innerHTML = html;
+}
+// ================= شاشة العرض الكبيرة (تُعرض على شاشة القاعة/المسرح) =================
+function quizGoBigScreen(examId){
+  window.__quizState = { view:'bigscreen', examId: examId };
+  renderQuiz();
+}
+function quizBigScreenExit(examId){
+  if(window.__bigScreenTimerHandle){ clearInterval(window.__bigScreenTimerHandle); window.__bigScreenTimerHandle = null; }
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===examId; });
+  if(exam){ window.__quizState = { view:'sched', sector:exam.sector }; window.__schedExamState = { view:'list', sector:exam.sector }; }
+  else if(window.__showKnowledgeBankApp) window.__showKnowledgeBankApp();
+  renderQuiz();
+}
+function quizBigScreenTick(examId){
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===examId; });
+  const box = document.getElementById('bigScreenTimerBox');
+  const label = document.getElementById('bigScreenTimerLabel');
+  if(!exam || !box || !label) return;
+  const now = Date.now();
+  let phaseLabel, remaining, urgent = false, ended = false;
+  if(now < exam.startAt){
+    phaseLabel = '⏳ الاختبار يبدأ خلال';
+    remaining = Math.round((exam.startAt - now)/1000);
+  } else if(now < exam.endAt){
+    phaseLabel = '⏱ الوقت المتبقي للاختبار';
+    remaining = Math.round((exam.endAt - now)/1000);
+    urgent = remaining <= 300; // آخر 5 دقائق
+  } else {
+    ended = true;
+  }
+  if(ended){
+    box.innerHTML = '<div style="font-size:min(14vw,180px);font-weight:900;color:#c0392b;line-height:1;">⛔</div><div style="font-size:min(9vw,90px);font-weight:900;color:#c0392b;margin-top:10px;">انتهى الاختبار</div>';
+    label.textContent = '';
+    if(window.__bigScreenTimerHandle){ clearInterval(window.__bigScreenTimerHandle); window.__bigScreenTimerHandle = null; }
+    return;
+  }
+  const h = Math.floor(remaining/3600), m = Math.floor((remaining%3600)/60), s = remaining%60;
+  const timeText = (h>0 ? (h<10?'0'+h:h)+':' : '') + (m<10?'0'+m:m) + ':' + (s<10?'0'+s:s);
+  box.innerHTML = '<div style="font-size:min(22vw,260px);font-weight:900;color:'+(urgent?'#ff4d4d':'#f0c33d')+';line-height:1;font-variant-numeric:tabular-nums;letter-spacing:4px;'+(urgent?'animation:bigScreenPulse 1s ease-in-out infinite;':'')+'">'+timeText+'</div>';
+  label.textContent = phaseLabel;
+  label.style.color = urgent ? '#ff4d4d' : '#fff';
+}
+function renderQuizBigScreenView(root){
+  const st = window.__quizState;
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===st.examId; });
+  if(!exam){ quizBigScreenExit(st.examId); return; }
+  const sectorInfo = KB_SECTORS.find(function(s){ return s.id===exam.sector; });
+  const dt = new Date(exam.startAt);
+  const dayName = dt.toLocaleDateString('ar-SA', { weekday:'long' });
+  const dateText = dt.toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' });
+  root.innerHTML = '<style>@keyframes bigScreenPulse{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}</style>'
+    + '<div style="position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,#16233f,#060c14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:min(4vh,34px);padding:4vh 4vw;text-align:center;z-index:9999;">'
+    + '<button type="button" onclick="quizBigScreenExit('+exam.id+')" style="position:absolute;top:18px;left:18px;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;">✕ خروج</button>'
+    + '<div style="color:#f0c33d;font-size:min(4vw,26px);font-weight:800;letter-spacing:1px;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</div>'
+    + '<div style="color:#fff;font-size:min(6.5vw,58px);font-weight:900;">'+kbEsc(exam.title||'اختبار مجدول')+'</div>'
+    + '<div style="color:rgba(255,255,255,.75);font-size:min(3vw,22px);font-weight:700;">'+dayName+' — '+dateText+(exam.examLocation?(' — 📍 '+kbEsc(exam.examLocation)):'')+'</div>'
+    + '<div id="bigScreenTimerBox" style="margin:min(3vh,20px) 0;"></div>'
+    + '<div id="bigScreenTimerLabel" style="color:#fff;font-size:min(3.2vw,24px);font-weight:800;"></div>'
+    + '<div style="display:flex;gap:min(8vw,80px);flex-wrap:wrap;justify-content:center;margin-top:min(4vh,30px);">'
+    + '<div><div style="color:rgba(255,255,255,.55);font-size:min(2.2vw,16px);font-weight:700;">مشرف الاختبار</div><div style="color:#fff;font-size:min(3.4vw,26px);font-weight:900;">'+kbEsc(exam.supervisorName||'أحمد بن صالح الجاسم')+'</div></div>'
+    + '<div><div style="color:rgba(255,255,255,.55);font-size:min(2.2vw,16px);font-weight:700;">مدير المركز</div><div style="color:#fff;font-size:min(3.4vw,26px);font-weight:900;">'+kbEsc(exam.managerName||'إبراهيم بن ناصر العيد')+'</div></div>'
+    + '</div>'
+    + '</div>';
+  if(window.__bigScreenTimerHandle) clearInterval(window.__bigScreenTimerHandle);
+  quizBigScreenTick(exam.id);
+  window.__bigScreenTimerHandle = setInterval(function(){ quizBigScreenTick(exam.id); }, 1000);
 }
 function schedExamDelete(id){
   if(!canManageQuiz()) return;
@@ -9257,6 +9350,14 @@ function renderSchedExamFormView(root){
     + '<div><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عنوان الاختبار</label>'
     + '<input id="schedTitle" value="'+kbEsc(editExam?editExam.title:'')+'" placeholder="مثال: اختبار دوري — قطاع العمل" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
+    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">مقر الاختبار</label>'
+    + '<input id="schedLocation" value="'+kbEsc(editExam?(editExam.examLocation||''):'')+'" placeholder="مثال: قاعة التدريب الرئيسية" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">اسم مشرف الاختبار</label>'
+    + '<input id="schedSupervisor" value="'+kbEsc(editExam?(editExam.supervisorName||'أحمد بن صالح الجاسم'):'أحمد بن صالح الجاسم')+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">اسم مدير المركز</label>'
+    + '<input id="schedManager" value="'+kbEsc(editExam?(editExam.managerName||'إبراهيم بن ناصر العيد'):'إبراهيم بن ناصر العيد')+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
     + '<div style="flex:1;min-width:140px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">تاريخ الاختبار</label>'
     + '<input type="date" id="schedDate" value="'+dateVal+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
     + '<div style="flex:1;min-width:120px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">وقت البداية</label>'
@@ -9310,6 +9411,9 @@ function schedExamSave(){
   const startAt = new Date(dateStr+'T'+startTimeStr+':00').getTime();
   const endAt = new Date(dateStr+'T'+endTimeStr+':00').getTime();
   if(isNaN(startAt) || isNaN(endAt) || endAt <= startAt){ alert('وقت النهاية لازم يكون بعد وقت البداية'); return; }
+  const examLocation = (document.getElementById('schedLocation').value||'').trim();
+  const supervisorName = (document.getElementById('schedSupervisor').value||'').trim() || 'أحمد بن صالح الجاسم';
+  const managerName = (document.getElementById('schedManager').value||'').trim() || 'إبراهيم بن ناصر العيد';
   const questionCount = parseInt(document.getElementById('schedQCount').value, 10) || 10;
   const totalMinutes = parseInt(document.getElementById('schedTotalMinutes').value, 10) || 15;
   const selectionMode = document.querySelector('input[name="schedSelMode"]:checked').value;
@@ -9326,6 +9430,7 @@ function schedExamSave(){
       exam.title=title; exam.startAt=startAt; exam.endAt=endAt; exam.questionCount=questionCount;
       exam.totalMinutes=totalMinutes; exam.allowedJobNos=allowedJobNos;
       exam.selectionMode=selectionMode; exam.manualQuestionIds=manualQuestionIds;
+      exam.examLocation=examLocation; exam.supervisorName=supervisorName; exam.managerName=managerName;
       exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
     }
   } else {
@@ -9333,6 +9438,7 @@ function schedExamSave(){
       id: schedExamNextId(), sector: st.sector, title: title, startAt: startAt, endAt: endAt,
       questionCount: questionCount, totalMinutes: totalMinutes, allowedJobNos: allowedJobNos,
       selectionMode: selectionMode, manualQuestionIds: manualQuestionIds,
+      examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
     });
   }
@@ -9392,6 +9498,7 @@ function renderQuiz(){
   if(st.view === 'myresults') return renderQuizMyResultsView(root);
   if(st.view === 'review') return renderQuizReviewView(root);
   if(st.view === 'sched') return renderSchedExam(root);
+  if(st.view === 'bigscreen') return renderQuizBigScreenView(root);
   return renderQuizSectorsView(root);
 }
 
