@@ -7689,7 +7689,7 @@ function kbHeader(title, subtitle, onBack){
     +'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>'
     +'<span style="font-size:12px;font-weight:800;color:#fff;">رجوع للصفحة السابقة</span>'
     +'</button>'
-    +'<button type="button" onclick="window.__showAppHub && window.__showAppHub()" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;border-radius:10px;background:#f0c33d;padding:8px 12px;flex-shrink:0;">'
+    +'<button type="button" onclick="window.__showEmployeeSearchApp ? window.__showEmployeeSearchApp() : (window.__showAppHub && window.__showAppHub())" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:6px;border-radius:10px;background:#f0c33d;padding:8px 12px;flex-shrink:0;">'
     +'<svg viewBox="0 0 24 24" fill="none" stroke="#16233f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>'
     +'<span style="font-size:12px;font-weight:800;color:#16233f;">الصفحة الرئيسية</span>'
     +'</button>'
@@ -7821,7 +7821,7 @@ function renderKnowledgeBank(){
 }
 function kbGoFavorites(sector){ window.__kbState = { view:'favorites', sector:sector }; renderKnowledgeBank(); }
 function kbGoSearchMisses(sector){ window.__kbState = { view:'searchmisses', sector:sector }; renderKnowledgeBank(); }
-function kbGoHub(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; if(window.__showAppHub) window.__showAppHub(); }
+function kbGoHub(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; if(window.__showEmployeeSearchApp) window.__showEmployeeSearchApp(); else if(window.__showAppHub) window.__showAppHub(); }
 function kbGoSectors(){ window.__kbState = { view:'sectors', sector:null, sectionId:null }; renderKnowledgeBank(); }
 function kbGoSections(sector){ window.__kbState = { view:'sections', sector:sector, sectionId:null }; renderKnowledgeBank(); }
 function kbGoItems(sector, sectionId){ kbArtFilesReset('new'); window.__kbState = { view:'items', sector:sector, sectionId:sectionId }; renderKnowledgeBank(); }
@@ -9344,7 +9344,7 @@ function renderQuizSectorsView(root){
   const canManage = typeof canManageQuiz === 'function' && canManageQuiz();
   const canResults = typeof canViewQuizResults === 'function' && canViewQuizResults();
   root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
-    + '<button type="button" onclick="window.__showAppHub && window.__showAppHub()" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
+    + '<button type="button" onclick="window.__showEmployeeSearchApp ? window.__showEmployeeSearchApp() : (window.__showAppHub && window.__showAppHub())" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
     + '<div style="position:absolute;top:20px;left:20px;display:flex;gap:8px;flex-wrap:wrap;">'
     + '<button type="button" onclick="quizGoMyResults()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">🧾 نتائجي</button>'
