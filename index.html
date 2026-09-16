@@ -1408,7 +1408,7 @@
     <div class="modal-box" style="max-width:480px;">
       <button class="modal-close" id="closeAboutSystemModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
       <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> عن النظام</h3>
-      <div style="font-size:13.5px;line-height:2;color:var(--text);margin-top:8px;">
+      <div data-nosnippet style="font-size:13.5px;line-height:2;color:var(--text);margin-top:8px;">
         <b>مرحباً بك في منصة إدارة بيانات موظفي مركز الاتصال بالأحساء</b>
         <br><br>
         صممت هذه المنصة لتكون بوابتك الرقمية المتكاملة لتيسير متابعة مسيرتك المهنية وتعزيز التواصل الفعال بكل مرونة واحترافية.
@@ -9331,7 +9331,10 @@ function renderQuiz(){
   if(!root) return;
   const st = window.__quizState;
   if(st.view === 'manage') return renderQuizManageView(root);
-  if(st.view === 'run') return renderQuizRunView(root);
+  if(st.view === 'run'){
+    if(window.__quizRun && window.__quizRun.viewingReview) return renderQuizReviewBeforeSubmitView(root);
+    return renderQuizRunView(root);
+  }
   if(st.view === 'results') return renderQuizResultsView(root);
   if(st.view === 'myresults') return renderQuizMyResultsView(root);
   if(st.view === 'review') return renderQuizReviewView(root);
@@ -9637,6 +9640,11 @@ function renderQuizRunView(root){
   const prevBtn = run.idx > 0
     ? '<button type="button" onclick="quizPrevQuestion()" style="background:#eef1f3;color:#16233f;border:none;border-radius:10px;padding:11px 16px;font-weight:800;font-size:13px;cursor:pointer;">→ السؤال السابق</button>'
     : '';
+  const isLast = run.idx === total - 1;
+  const nextBtnLabel = run.reviewMode ? '💾 حفظ والرجوع للمراجعة' : (isLast ? '💾 حفظ الإجابة ومراجعة الأسئلة' : '💾 حفظ الإجابة والتالي');
+  const nextBtn = already
+    ? '<button type="button" onclick="quizGoNextAfterAnswer()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:12px 18px;font-weight:800;font-size:13.5px;cursor:pointer;width:100%;">'+nextBtnLabel+'</button>'
+    : '<div style="text-align:center;color:#8a93a6;font-size:11.5px;font-weight:700;padding:6px 0;">اختر إجابة عشان يفعّل زر المتابعة</div>';
   root.innerHTML = '<div style="min-height:100vh;background:#f4f6f8;padding:20px 16px 60px;">'
     + '<div style="max-width:640px;margin:0 auto;">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
@@ -9648,7 +9656,8 @@ function renderQuizRunView(root){
     + '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 22px rgba(15,46,61,.08);">'
     + '<div style="font-size:16px;font-weight:800;color:#16233f;margin-bottom:16px;">'+kbEsc(q.question)+'</div>'
     + '<div id="quizOptionsBox" style="display:flex;flex-direction:column;gap:10px;">'+optionsHtml+'</div>'
-    + (prevBtn ? '<div style="margin-top:14px;">'+prevBtn+'</div>' : '')
+    + '<div style="margin-top:16px;">'+nextBtn+'</div>'
+    + (prevBtn ? '<div style="margin-top:10px;">'+prevBtn+'</div>' : '')
     + '</div></div></div>';
   if(!already) quizStartTimer(); else quizClearTimer();
 }
@@ -9682,11 +9691,11 @@ function quizStartTimer(){
     }
     if(run.remaining <= 0){
       quizClearTimer();
-      if(!run.answers[run.idx]) quizAnswer(-1); // وقت السؤال انتهى بدون إجابة — يُسجَّل ويتقدّم تلقائيا
+      if(!run.answers[run.idx]) quizAnswer(-1, true); // وقت السؤال انتهى بدون إجابة — يُسجَّل وينتقل تلقائيا
     }
   }, 1000);
 }
-function quizAnswer(chosenIndex){
+function quizAnswer(chosenIndex, timedOut){
   const run = window.__quizRun;
   if(!run) return;
   quizClearTimer();
@@ -9694,13 +9703,71 @@ function quizAnswer(chosenIndex){
   const already = run.answers[run.idx];
   const timeTaken = already ? (already.timeTakenSeconds||0) : Math.round((Date.now() - run.qStartedAt)/1000);
   run.answers[run.idx] = { qId:q.id, chosenIndex:chosenIndex, correct: chosenIndex===q.correct_index, timeTakenSeconds:timeTaken };
-  // تقدّم تلقائي فوري: يحفظ إجابته وينتقل مباشرة، بدون زر "التالي" يدوي
-  if(run.idx + 1 < run.questions.length){
-    run.idx += 1;
-    renderQuiz();
+  if(timedOut){
+    // انتهى وقت السؤال — ننتقل تلقائيا للي بعده بدون انتظار ضغط المستخدم
+    quizGoNextAfterAnswer();
   } else {
-    quizFinish();
+    // نحفظ الاختيار فقط ونعيد الرسم — الانتقال يصير بضغط زر "حفظ الإجابة والتالي" يدويا
+    renderQuiz();
   }
+}
+function quizGoNextAfterAnswer(){
+  const run = window.__quizRun;
+  if(!run) return;
+  if(run.reviewMode){ run.reviewMode = false; quizGoReview(); return; }
+  if(run.idx + 1 < run.questions.length){ run.idx += 1; renderQuiz(); }
+  else { quizGoReview(); }
+}
+function quizGoReview(){
+  const run = window.__quizRun;
+  if(!run) return;
+  run.viewingReview = true;
+  renderQuiz();
+}
+function quizReviewEditQuestion(idx){
+  const run = window.__quizRun;
+  if(!run) return;
+  run.idx = idx;
+  run.viewingReview = false;
+  run.reviewMode = true;
+  renderQuiz();
+}
+function renderQuizReviewBeforeSubmitView(root){
+  const run = window.__quizRun;
+  if(!run){ quizBackToKb(); return; }
+  const total = run.questions.length;
+  const unansweredIdx = [];
+  const cells = run.questions.map(function(q,i){
+    const ans = run.answers[i];
+    const answered = ans && ans.chosenIndex !== -1 && ans.chosenIndex != null;
+    if(!answered) unansweredIdx.push(i+1);
+    const bg = answered ? '#e7f6f1' : '#fdecea';
+    const border = answered ? '#0e6a5a' : '#c0392b';
+    const color = answered ? '#0e6a5a' : '#c0392b';
+    return '<button type="button" onclick="quizReviewEditQuestion('+i+')" style="width:44px;height:44px;border-radius:10px;border:1.5px solid '+border+';background:'+bg+';color:'+color+';font-weight:900;font-size:13px;cursor:pointer;">'+(i+1)+'</button>';
+  }).join('');
+  const warningHtml = unansweredIdx.length
+    ? '<div style="background:#fdecea;color:#c0392b;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;font-weight:800;">⚠ عندك '+unansweredIdx.length+' سؤال بدون إجابة (رقم '+unansweredIdx.join('، ')+') — اضغط على رقم السؤال بالأعلى عشان تجاوب عليه، أو أنهِ الاختبار وبتُحسب هذي الأسئلة غلط.</div>'
+    : '<div style="background:#e7f6f1;color:#0e6a5a;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;font-weight:800;">✓ جاوبت على كل الأسئلة. تقدر تراجع أي سؤال بالضغط على رقمه، أو تنهي الاختبار مباشرة.</div>';
+  root.innerHTML = '<div style="min-height:100vh;background:#f4f6f8;padding:20px 16px 60px;">'
+    + '<div style="max-width:640px;margin:0 auto;">'
+    + '<div style="font-size:16px;font-weight:900;color:#16233f;margin-bottom:14px;">📝 مراجعة الأسئلة قبل التسليم</div>'
+    + warningHtml
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(15,46,61,.08);margin-bottom:18px;">'+cells+'</div>'
+    + '<button type="button" onclick="quizConfirmFinish()" style="background:#0e6a5a;color:#fff;border:none;border-radius:12px;padding:14px 18px;font-weight:900;font-size:14px;cursor:pointer;width:100%;">✅ إنهاء الاختبار وتسليمه نهائيا</button>'
+    + '<div style="text-align:center;margin-top:10px;">'
+    + '<button type="button" onclick="quizExitConfirm()" style="all:unset;cursor:pointer;font-size:11.5px;font-weight:800;color:#8a93a6;">إنهاء والخروج بدون تسليم</button>'
+    + '</div></div></div>';
+}
+function quizConfirmFinish(){
+  const run = window.__quizRun;
+  if(!run) return;
+  const unanswered = run.answers.filter(function(a){ return !a || a.chosenIndex === -1 || a.chosenIndex == null; }).length;
+  const msg = unanswered
+    ? ('عندك '+unanswered+' سؤال بدون إجابة وبتُحسب غلط. متأكد تبي تسلّم الاختبار نهائيا؟')
+    : 'متأكد تبي تسلّم الاختبار نهائيا؟ ما تقدر تعدّل إجاباتك بعدها.';
+  if(!confirm(msg)) return;
+  quizFinish();
 }
 function quizPrevQuestion(){
   const run = window.__quizRun;
