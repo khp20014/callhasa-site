@@ -9238,16 +9238,17 @@ function quizBigScreenTick(examId){
     ended = true;
   }
   if(ended){
-    box.innerHTML = '<div style="font-size:min(14vw,180px);font-weight:900;color:#c0392b;line-height:1;">⛔</div><div style="font-size:min(9vw,90px);font-weight:900;color:#c0392b;margin-top:10px;">انتهى الاختبار</div>';
+    box.innerHTML = '<div style="font-size:min(12vw,150px);line-height:1;">⛔</div><div style="font-size:min(7vw,64px);font-weight:900;color:#ff6b6b;margin-top:10px;text-shadow:0 0 30px rgba(255,80,80,.55);">انتهى الاختبار</div>';
     label.textContent = '';
     if(window.__bigScreenTimerHandle){ clearInterval(window.__bigScreenTimerHandle); window.__bigScreenTimerHandle = null; }
     return;
   }
   const h = Math.floor(remaining/3600), m = Math.floor((remaining%3600)/60), s = remaining%60;
   const timeText = (h>0 ? (h<10?'0'+h:h)+':' : '') + (m<10?'0'+m:m) + ':' + (s<10?'0'+s:s);
-  box.innerHTML = '<div style="font-size:min(22vw,260px);font-weight:900;color:'+(urgent?'#ff4d4d':'#f0c33d')+';line-height:1;font-variant-numeric:tabular-nums;letter-spacing:4px;'+(urgent?'animation:bigScreenPulse 1s ease-in-out infinite;':'')+'">'+timeText+'</div>';
+  const glowColor = urgent ? 'rgba(255,77,77,.65)' : 'rgba(240,195,61,.55)';
+  box.innerHTML = '<div style="font-size:min(19vw,220px);font-weight:900;color:'+(urgent?'#ff4d4d':'#f0c33d')+';line-height:1;font-variant-numeric:tabular-nums;letter-spacing:4px;text-shadow:0 0 40px '+glowColor+';'+(urgent?'animation:bigScreenPulse 1s ease-in-out infinite;':'')+'">'+timeText+'</div>';
   label.textContent = phaseLabel;
-  label.style.color = urgent ? '#ff4d4d' : '#fff';
+  label.style.color = urgent ? '#ff4d4d' : 'rgba(255,255,255,.85)';
 }
 function renderQuizBigScreenView(root){
   const st = window.__quizState;
@@ -9258,17 +9259,36 @@ function renderQuizBigScreenView(root){
   const dt = new Date(exam.startAt);
   const dayName = dt.toLocaleDateString('ar-SA', { weekday:'long' });
   const dateText = dt.toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' });
-  root.innerHTML = '<style>@keyframes bigScreenPulse{0%{transform:scale(1);}50%{transform:scale(1.04);}100%{transform:scale(1);}}</style>'
-    + '<div style="position:fixed;inset:0;background:radial-gradient(circle at 50% 0%,#16233f,#060c14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:min(4vh,34px);padding:4vh 4vw;text-align:center;z-index:9999;">'
-    + '<button type="button" onclick="quizBigScreenExit('+exam.id+')" style="position:absolute;top:18px;left:18px;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:800;cursor:pointer;">✕ خروج</button>'
-    + '<div style="color:#f0c33d;font-size:min(4vw,26px);font-weight:800;letter-spacing:1px;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</div>'
-    + '<div style="color:#fff;font-size:min(6.5vw,58px);font-weight:900;">'+kbEsc(exam.title||'اختبار مجدول')+'</div>'
-    + '<div style="color:rgba(255,255,255,.75);font-size:min(3vw,22px);font-weight:700;">'+dayName+' — '+dateText+(exam.examLocation?(' — 📍 '+kbEsc(exam.examLocation)):'')+'</div>'
-    + '<div id="bigScreenTimerBox" style="margin:min(3vh,20px) 0;"></div>'
-    + '<div id="bigScreenTimerLabel" style="color:#fff;font-size:min(3.2vw,24px);font-weight:800;"></div>'
-    + '<div style="display:flex;gap:min(8vw,80px);flex-wrap:wrap;justify-content:center;margin-top:min(4vh,30px);">'
-    + '<div><div style="color:rgba(255,255,255,.55);font-size:min(2.2vw,16px);font-weight:700;">مشرف الاختبار</div><div style="color:#fff;font-size:min(3.4vw,26px);font-weight:900;">'+kbEsc(exam.supervisorName||'أحمد بن صالح الجاسم')+'</div></div>'
-    + '<div><div style="color:rgba(255,255,255,.55);font-size:min(2.2vw,16px);font-weight:700;">مدير المركز</div><div style="color:#fff;font-size:min(3.4vw,26px);font-weight:900;">'+kbEsc(exam.managerName||'إبراهيم بن ناصر العيد')+'</div></div>'
+  const qCountLabel = exam.selectionMode==='manual' ? ((exam.manualQuestionIds||[]).length) : exam.questionCount;
+  root.innerHTML = '<style>'
+      + '@keyframes bigScreenPulse{0%{transform:scale(1);}50%{transform:scale(1.045);}100%{transform:scale(1);}}'
+      + '@keyframes bigScreenFloat1{0%{transform:translate(0,0);}50%{transform:translate(3vw,2vh);}100%{transform:translate(0,0);}}'
+      + '@keyframes bigScreenFloat2{0%{transform:translate(0,0);}50%{transform:translate(-4vw,-2vh);}100%{transform:translate(0,0);}}'
+      + '@keyframes bigScreenGlow{0%{opacity:.55;}50%{opacity:.9;}100%{opacity:.55;}}'
+    + '</style>'
+    + '<div style="position:fixed;inset:0;overflow:hidden;background:linear-gradient(160deg,#0a1330 0%,#0f2e3d 45%,#0b3b34 78%,#0a1330 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:min(3.2vh,26px);padding:4vh 4vw;text-align:center;z-index:9999;font-family:inherit;">'
+    + '<div style="position:absolute;top:-15vh;right:-10vw;width:55vw;height:55vw;max-width:650px;max-height:650px;border-radius:50%;background:radial-gradient(circle,rgba(240,195,61,.22),transparent 70%);animation:bigScreenFloat1 14s ease-in-out infinite;pointer-events:none;"></div>'
+    + '<div style="position:absolute;bottom:-20vh;left:-12vw;width:60vw;height:60vw;max-width:700px;max-height:700px;border-radius:50%;background:radial-gradient(circle,rgba(14,106,90,.35),transparent 70%);animation:bigScreenFloat2 18s ease-in-out infinite;pointer-events:none;"></div>'
+    + '<button type="button" onclick="quizBigScreenExit('+exam.id+')" style="position:absolute;top:22px;left:22px;background:rgba(255,255,255,.1);backdrop-filter:blur(6px);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;z-index:2;">✕ خروج</button>'
+    + '<div style="position:relative;display:inline-flex;align-items:center;gap:8px;background:rgba(240,195,61,.14);border:1px solid rgba(240,195,61,.35);border-radius:30px;padding:8px 20px;color:#f0c33d;font-size:min(3vw,17px);font-weight:800;letter-spacing:.5px;">🏢 '+(sectorInfo?kbEsc(sectorInfo.name):'')+'</div>'
+    + '<div style="position:relative;color:#fff;font-size:min(6vw,54px);font-weight:900;text-shadow:0 4px 24px rgba(0,0,0,.35);">'+kbEsc(exam.title||'اختبار مجدول')+'</div>'
+    + '<div style="position:relative;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'
+    + '<div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:7px 16px;color:rgba(255,255,255,.9);font-size:min(2.4vw,16px);font-weight:700;">📆 '+dayName+' — '+dateText+'</div>'
+    + (exam.examLocation ? ('<div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:7px 16px;color:rgba(255,255,255,.9);font-size:min(2.4vw,16px);font-weight:700;">📍 '+kbEsc(exam.locationLabel||'مقر الاختبار')+': '+kbEsc(exam.examLocation)+'</div>') : '')
+    + '<div style="background:rgba(14,106,90,.28);border:1px solid rgba(14,199,165,.4);border-radius:20px;padding:7px 16px;color:#8ff0d8;font-size:min(2.4vw,16px);font-weight:800;">📝 '+qCountLabel+' سؤال</div>'
+    + '<div style="background:rgba(14,106,90,.28);border:1px solid rgba(14,199,165,.4);border-radius:20px;padding:7px 16px;color:#8ff0d8;font-size:min(2.4vw,16px);font-weight:800;">⏱ مدة الاختبار '+(exam.totalMinutes||15)+' دقيقة</div>'
+    + '</div>'
+    + '<div style="position:relative;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);border-radius:32px;padding:min(3vh,26px) min(6vw,60px);box-shadow:0 20px 60px rgba(0,0,0,.35);">'
+    + '<div id="bigScreenTimerBox"></div>'
+    + '<div id="bigScreenTimerLabel" style="color:#fff;font-size:min(3.2vw,24px);font-weight:800;margin-top:8px;"></div>'
+    + '</div>'
+    + '<div style="position:relative;display:flex;gap:min(5vw,50px);flex-wrap:wrap;justify-content:center;margin-top:min(2vh,14px);">'
+    + '<div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:14px 26px;display:flex;align-items:center;gap:12px;min-width:220px;">'
+    + '<div style="font-size:min(4vw,34px);">🎓</div><div style="text-align:right;"><div style="color:rgba(255,255,255,.55);font-size:min(2vw,14px);font-weight:700;">'+kbEsc(exam.supervisorLabel||'مشرف الاختبار')+'</div><div style="color:#fff;font-size:min(3vw,23px);font-weight:900;">'+kbEsc(exam.supervisorName||'أحمد بن صالح الجاسم')+'</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:14px 26px;display:flex;align-items:center;gap:12px;min-width:220px;">'
+    + '<div style="font-size:min(4vw,34px);">🏛️</div><div style="text-align:right;"><div style="color:rgba(255,255,255,.55);font-size:min(2vw,14px);font-weight:700;">'+kbEsc(exam.managerLabel||'مدير المركز')+'</div><div style="color:#fff;font-size:min(3vw,23px);font-weight:900;">'+kbEsc(exam.managerName||'إبراهيم بن ناصر العيد')+'</div></div>'
+    + '</div>'
     + '</div>'
     + '</div>';
   if(window.__bigScreenTimerHandle) clearInterval(window.__bigScreenTimerHandle);
@@ -9349,14 +9369,19 @@ function renderSchedExamFormView(root){
     + '<div style="background:#fff;border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;flex-direction:column;gap:12px;">'
     + '<div><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عنوان الاختبار</label>'
     + '<input id="schedTitle" value="'+kbEsc(editExam?editExam.title:'')+'" placeholder="مثال: اختبار دوري — قطاع العمل" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + '<div style="background:#f8fafb;border-radius:12px;padding:12px;">'
+    + '<div style="font-size:11px;color:#8a93a6;font-weight:700;margin-bottom:8px;">✏ تقدر تغيّر عنوان كل حقل من هذي (يظهر بنفس التسمية بشاشة العرض الكبيرة)، وتعبّي قيمته تحته:</div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
-    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">مقر الاختبار</label>'
+    + '<div style="flex:1;min-width:160px;">'
+    + '<input id="schedLocationLabel" value="'+kbEsc(editExam?(editExam.locationLabel||'مقر الاختبار'):'مقر الاختبار')+'" style="width:100%;box-sizing:border-box;padding:5px 8px;border:none;border-bottom:1.5px dashed #c7cdd6;background:transparent;font-size:11.5px;font-weight:700;color:#16233f;margin-bottom:5px;font-family:inherit;">'
     + '<input id="schedLocation" value="'+kbEsc(editExam?(editExam.examLocation||''):'')+'" placeholder="مثال: قاعة التدريب الرئيسية" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
-    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">اسم مشرف الاختبار</label>'
+    + '<div style="flex:1;min-width:160px;">'
+    + '<input id="schedSupervisorLabel" value="'+kbEsc(editExam?(editExam.supervisorLabel||'مشرف الاختبار'):'مشرف الاختبار')+'" style="width:100%;box-sizing:border-box;padding:5px 8px;border:none;border-bottom:1.5px dashed #c7cdd6;background:transparent;font-size:11.5px;font-weight:700;color:#16233f;margin-bottom:5px;font-family:inherit;">'
     + '<input id="schedSupervisor" value="'+kbEsc(editExam?(editExam.supervisorName||'أحمد بن صالح الجاسم'):'أحمد بن صالح الجاسم')+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
-    + '<div style="flex:1;min-width:160px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">اسم مدير المركز</label>'
+    + '<div style="flex:1;min-width:160px;">'
+    + '<input id="schedManagerLabel" value="'+kbEsc(editExam?(editExam.managerLabel||'مدير المركز'):'مدير المركز')+'" style="width:100%;box-sizing:border-box;padding:5px 8px;border:none;border-bottom:1.5px dashed #c7cdd6;background:transparent;font-size:11.5px;font-weight:700;color:#16233f;margin-bottom:5px;font-family:inherit;">'
     + '<input id="schedManager" value="'+kbEsc(editExam?(editExam.managerName||'إبراهيم بن ناصر العيد'):'إبراهيم بن ناصر العيد')+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
-    + '</div>'
+    + '</div></div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
     + '<div style="flex:1;min-width:140px;"><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">تاريخ الاختبار</label>'
     + '<input type="date" id="schedDate" value="'+dateVal+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
@@ -9414,6 +9439,9 @@ function schedExamSave(){
   const examLocation = (document.getElementById('schedLocation').value||'').trim();
   const supervisorName = (document.getElementById('schedSupervisor').value||'').trim() || 'أحمد بن صالح الجاسم';
   const managerName = (document.getElementById('schedManager').value||'').trim() || 'إبراهيم بن ناصر العيد';
+  const locationLabel = (document.getElementById('schedLocationLabel').value||'').trim() || 'مقر الاختبار';
+  const supervisorLabel = (document.getElementById('schedSupervisorLabel').value||'').trim() || 'مشرف الاختبار';
+  const managerLabel = (document.getElementById('schedManagerLabel').value||'').trim() || 'مدير المركز';
   const questionCount = parseInt(document.getElementById('schedQCount').value, 10) || 10;
   const totalMinutes = parseInt(document.getElementById('schedTotalMinutes').value, 10) || 15;
   const selectionMode = document.querySelector('input[name="schedSelMode"]:checked').value;
@@ -9431,6 +9459,7 @@ function schedExamSave(){
       exam.totalMinutes=totalMinutes; exam.allowedJobNos=allowedJobNos;
       exam.selectionMode=selectionMode; exam.manualQuestionIds=manualQuestionIds;
       exam.examLocation=examLocation; exam.supervisorName=supervisorName; exam.managerName=managerName;
+      exam.locationLabel=locationLabel; exam.supervisorLabel=supervisorLabel; exam.managerLabel=managerLabel;
       exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
     }
   } else {
@@ -9439,6 +9468,7 @@ function schedExamSave(){
       questionCount: questionCount, totalMinutes: totalMinutes, allowedJobNos: allowedJobNos,
       selectionMode: selectionMode, manualQuestionIds: manualQuestionIds,
       examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
+      locationLabel: locationLabel, supervisorLabel: supervisorLabel, managerLabel: managerLabel,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
     });
   }
