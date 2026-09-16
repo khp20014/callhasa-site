@@ -9166,13 +9166,16 @@ function renderSchedExamListView(root){
         ? '<button type="button" onclick="schedExamGoEdit('+exam.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:14px;padding:4px 6px;">✎</button>'
           + '<button type="button" onclick="schedExamDelete('+exam.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:14px;padding:4px 6px;">🗑</button>'
         : '';
+      const resultsBtn = (typeof canViewQuizResults === 'function' && canViewQuizResults())
+        ? '<button type="button" onclick="schedExamViewResults('+exam.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12px;cursor:pointer;">📋 نتائج المشاركين</button>'
+        : '';
       return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">'
         + '<div style="min-width:200px;">'
         + '<div style="font-weight:800;font-size:15px;color:#16233f;">'+kbEsc(exam.title||'اختبار مجدول')+' <span style="font-size:11px;font-weight:800;color:'+statusInfo.color+';">'+statusInfo.label+'</span></div>'
         + '<div style="font-size:11.5px;color:#8a93a6;margin-top:4px;">من '+kbFmtDateTime(exam.startAt)+' إلى '+kbFmtDateTime(exam.endAt)+'</div>'
-        + '<div style="font-size:11.5px;color:#8a93a6;margin-top:2px;">'+exam.questionCount+' سؤال — مدة الاختبار '+(exam.totalMinutes||15)+' دقيقة — '+(exam.allowedJobNos||[]).length+' مشارك مسموح'+(canManage?(' — أنشأه '+kbEsc(kbNormalizeAuthorName(exam.createdByName))):'')+'</div>'
+        + '<div style="font-size:11.5px;color:#8a93a6;margin-top:2px;">'+(exam.selectionMode==='manual'?((exam.manualQuestionIds||[]).length+' سؤال محدد يدويا'):(exam.questionCount+' سؤال عشوائي'))+' — مدة الاختبار '+(exam.totalMinutes||15)+' دقيقة — '+(exam.allowedJobNos||[]).length+' مشارك مسموح'+(canManage?(' — أنشأه '+kbEsc(kbNormalizeAuthorName(exam.createdByName))):'')+'</div>'
         + '</div>'
-        + '<div style="display:flex;align-items:center;gap:8px;">'+actionBtn+mgmtBtns+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+actionBtn+resultsBtn+mgmtBtns+'</div>'
         + '</div>';
     }).join('') + '</div>';
   }
@@ -9187,7 +9190,29 @@ function schedExamDelete(id){
   saveAdminOverrides(ov);
   renderQuiz();
 }
+// نتائج المشاركين بامتحان رسمي مجدول واحد بالذات — كل اللي دخلوه بكل تفاصيلهم
+function schedExamViewResults(examId){
+  window.__quizState = { view:'results', sector:null, examIdFilter: examId };
+  renderQuiz();
+}
 // ---------- قائمة اختيار الموظفين المسموح لهم بالدخول (بحث + تحديد الكل) ----------
+function schedExamToggleSelMode(){
+  const manual = document.querySelector('input[name="schedSelMode"]:checked').value === 'manual';
+  const box = document.getElementById('schedManualQBox');
+  if(box) box.style.display = manual ? 'block' : 'none';
+}
+function schedExamQuestionCheckboxesHtml(sector, selectedIds){
+  const ov = loadAdminOverrides();
+  const selected = (selectedIds||[]).map(Number);
+  const questions = (ov.examQuestions||[]).filter(function(q){ return q.sector===sector; });
+  if(!questions.length) return '<div style="color:#8a93a6;font-size:12px;padding:8px;">لا يوجد أسئلة بعد في بنك الاختبار الرسمي المجدول لهذا القطاع — أضفها أولا.</div>';
+  return questions.map(function(q){
+    const checked = selected.includes(q.id) ? 'checked' : '';
+    return '<label style="display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:8px;font-size:12.5px;cursor:pointer;">'
+      + '<input type="checkbox" class="schedManualQChk" value="'+q.id+'" '+checked+' style="margin-top:3px;">'
+      + '<span>'+kbEsc(quizCleanQuestionText(q.question))+'</span></label>';
+  }).join('');
+}
 function schedExamEmployeeCheckboxesHtml(selectedJobNos){
   const selected = (selectedJobNos||[]).map(String);
   return (typeof EMPLOYEES !== 'undefined' ? EMPLOYEES : []).map(function(e){
@@ -9246,7 +9271,18 @@ function renderSchedExamFormView(root){
     + '<input type="number" min="1" id="schedTotalMinutes" value="'+(editExam?(editExam.totalMinutes||15):15)+'" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
     + '</div>'
     + '<div style="font-size:11px;color:#8a93a6;">مؤقت واحد لكل الاختبار من أوله لآخره — لا يوجد وقت منفصل لكل سؤال، والموظف يقدر يرجع ويعدّل أي إجابة طول ما الوقت الكلي باقي.</div>'
-    + '<div style="font-size:11.5px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب عشوائيًا من بنك أسئلة هذا القطاع.</div>'
+    + '<div>'
+    + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">طريقة اختيار الأسئلة</label>'
+    + '<div style="display:flex;gap:16px;margin-bottom:10px;">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedSelMode" value="random" onchange="schedExamToggleSelMode()" '+((!editExam || editExam.selectionMode!=='manual')?'checked':'')+'> 🎲 اختيار عشوائي (حسب عدد الأسئلة أعلاه)</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedSelMode" value="manual" onchange="schedExamToggleSelMode()" '+(editExam && editExam.selectionMode==='manual'?'checked':'')+'> ✅ اختيار أسئلة محددة بنفسي</label>'
+    + '</div>'
+    + '<div id="schedManualQBox" style="display:'+(editExam && editExam.selectionMode==='manual'?'block':'none')+';">'
+    + '<div style="font-size:11px;color:#8a93a6;margin-bottom:6px;">حدد الأسئلة اللي تبيها بالضبط من بنك أسئلة الاختبار الرسمي المجدول لهذا القطاع — بيتجاهل النظام حقل "عدد الأسئلة" أعلاه ويستخدم بس اللي تحددها هنا.</div>'
+    + '<div id="schedManualQList" style="max-height:260px;overflow:auto;border:1.5px solid #e2e6ea;border-radius:10px;padding:6px;">'+schedExamQuestionCheckboxesHtml(st.sector, editExam?(editExam.manualQuestionIds||[]):[])+'</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="font-size:11.5px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب من بنك أسئلة الاختبار الرسمي المجدول لهذا القطاع.</div>'
     + '<div>'
     + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">الموظفون المسموح لهم بدخول هذا الاختبار</label>'
     + '<input id="schedEmpSearch" oninput="schedExamFilterEmployees()" placeholder="🔍 ابحث باسم الموظف…" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:6px;">'
@@ -9276,6 +9312,9 @@ function schedExamSave(){
   if(isNaN(startAt) || isNaN(endAt) || endAt <= startAt){ alert('وقت النهاية لازم يكون بعد وقت البداية'); return; }
   const questionCount = parseInt(document.getElementById('schedQCount').value, 10) || 10;
   const totalMinutes = parseInt(document.getElementById('schedTotalMinutes').value, 10) || 15;
+  const selectionMode = document.querySelector('input[name="schedSelMode"]:checked').value;
+  const manualQuestionIds = Array.from(document.querySelectorAll('#schedManualQList input.schedManualQChk:checked')).map(function(chk){ return parseInt(chk.value,10); });
+  if(selectionMode === 'manual' && !manualQuestionIds.length){ alert('لازم تحدد سؤال واحد على الأقل من قائمة الأسئلة'); return; }
   const allowedJobNos = Array.from(document.querySelectorAll('#schedEmpList input.schedEmpChk:checked')).map(function(chk){ return chk.value; });
   if(!allowedJobNos.length){ alert('لازم تحدد موظف واحد على الأقل مسموح له بالاختبار'); return; }
   const ov = loadAdminOverrides();
@@ -9286,12 +9325,14 @@ function schedExamSave(){
     if(exam){
       exam.title=title; exam.startAt=startAt; exam.endAt=endAt; exam.questionCount=questionCount;
       exam.totalMinutes=totalMinutes; exam.allowedJobNos=allowedJobNos;
+      exam.selectionMode=selectionMode; exam.manualQuestionIds=manualQuestionIds;
       exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
     }
   } else {
     ov.scheduledExams.push({
       id: schedExamNextId(), sector: st.sector, title: title, startAt: startAt, endAt: endAt,
       questionCount: questionCount, totalMinutes: totalMinutes, allowedJobNos: allowedJobNos,
+      selectionMode: selectionMode, manualQuestionIds: manualQuestionIds,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
     });
   }
@@ -9310,8 +9351,15 @@ function schedExamStart(id){
   if(schedExamMyResult(exam.id)){ alert('سبق ودخلت هذا الاختبار.'); return; }
   const pool = (ov.examQuestions||[]).filter(function(q){ return q.sector===exam.sector; });
   if(!pool.length){ alert('لا يوجد أسئلة بعد في بنك أسئلة الاختبار المجدول لهذا القطاع — أضفها أولا من "🔒 إدارة أسئلة الاختبار المجدول".'); return; }
-  const count = Math.min(exam.questionCount||10, pool.length);
-  const shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
+  let shuffled;
+  if(exam.selectionMode === 'manual' && (exam.manualQuestionIds||[]).length){
+    const chosen = pool.filter(function(q){ return (exam.manualQuestionIds||[]).includes(q.id); });
+    if(!chosen.length){ alert('الأسئلة المحددة لهذا الاختبار محذوفة من البنك — راجع إعدادات الاختبار.'); return; }
+    shuffled = chosen.slice().sort(function(){ return Math.random()-0.5; });
+  } else {
+    const count = Math.min(exam.questionCount||10, pool.length);
+    shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
+  }
   window.__quizRun = { sector:exam.sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), timerHandle:null, totalSeconds:(exam.totalMinutes||15)*60, examEndsAt: Date.now() + (exam.totalMinutes||15)*60000, warned3min:false, examId: exam.id };
   window.__quizState = { view:'run', sector:exam.sector };
   renderQuiz();
@@ -9552,7 +9600,7 @@ function quizRenderQuestionsList(questions){
     if(window.__quizEditingId === q.id) return quizRenderForm(q);
     const answerLabel = q.q_type==='tf' ? (q.correct_index===0?'صح':'خطأ') : (q.options||[])[q.correct_index]||'';
     return '<div style="background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
-      + '<div><div style="font-weight:800;font-size:13.5px;color:#16233f;">'+kbEsc(q.question)+'</div>'
+      + '<div><div style="font-weight:800;font-size:13.5px;color:#16233f;">'+kbEsc(quizCleanQuestionText(q.question))+'</div>'
       + '<div style="font-size:11.5px;color:#8a93a6;margin-top:3px;">('+ (q.q_type==='tf'?'صح/خطأ':'اختيار من متعدد') +') — الإجابة: '+kbEsc(answerLabel)+'</div></div>'
       + '<div style="display:flex;gap:6px;flex-shrink:0;">'
       + '<button type="button" onclick="quizEditQuestion('+q.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">✎</button>'
@@ -9716,7 +9764,7 @@ function renderQuizRunView(root){
     + '</div>'
     + '<div style="height:6px;background:#e2e6ea;border-radius:3px;overflow:hidden;margin-bottom:20px;"><div style="width:'+Math.round((run.idx)/total*100)+'%;height:100%;background:#0e6a5a;"></div></div>'
     + '<div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 8px 22px rgba(15,46,61,.08);">'
-    + '<div style="font-size:16px;font-weight:800;color:#16233f;margin-bottom:16px;">'+kbEsc(q.question)+'</div>'
+    + '<div style="font-size:16px;font-weight:800;color:#16233f;margin-bottom:16px;">'+kbEsc(quizCleanQuestionText(q.question))+'</div>'
     + '<div id="quizOptionsBox" style="display:flex;flex-direction:column;gap:10px;">'+optionsHtml+'</div>'
     + '<div style="margin-top:16px;">'+nextBtn+'</div>'
     + (prevBtn ? '<div style="margin-top:10px;">'+prevBtn+'</div>' : '')
@@ -9725,6 +9773,12 @@ function renderQuizRunView(root){
 }
 function quizCleanOptionText(label){
   return String(label||'').replace(/^\s*(الإجابة|الاجابة)\s*[:：]\s*/,'').trim();
+}
+// يشيل أي رقم ترقيم ملصق بأول نص السؤال (زي "6- " أو "14. ") ناتج عادة من نسخ سؤال جاهز
+// من بنك المعرفة برقمه الأصلي — هذا الرقم مالوش علاقة بترتيب السؤال داخل الاختبار الحالي
+// فيسبب لبس للموظف، فنشيله وقت العرض بس (النص المخزّن بالبنك ما يتغيّر).
+function quizCleanQuestionText(text){
+  return String(text||'').replace(/^\s*\d+\s*[-.)：]\s*/,'').trim();
 }
 function quizOptionBtn(i, label, q, already){
   const selected = already && i === already.chosenIndex;
@@ -9786,7 +9840,10 @@ function renderQuizReviewBeforeSubmitView(root){
   root.innerHTML = '<div style="min-height:100vh;background:#f4f6f8;padding:20px 16px 60px;">'
     + '<div style="max-width:640px;margin:0 auto;">'
     + quizGlobalTimerBarHtml()
-    + '<div style="font-size:16px;font-weight:900;color:#16233f;margin-bottom:14px;">📝 مراجعة الأسئلة قبل التسليم</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'
+    + '<button type="button" onclick="quizReviewEditQuestion('+(total-1)+')" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:#16233f;background:#eef1f3;border-radius:8px;padding:8px 12px;">→ الرجوع للأسئلة</button>'
+    + '<div style="font-size:16px;font-weight:900;color:#16233f;">📝 مراجعة الأسئلة قبل التسليم</div>'
+    + '</div>'
     + warningHtml
     + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 22px rgba(15,46,61,.08);margin-bottom:18px;">'+cells+'</div>'
     + '<button type="button" onclick="quizConfirmFinish()" style="background:#0e6a5a;color:#fff;border:none;border-radius:12px;padding:14px 18px;font-weight:900;font-size:14px;cursor:pointer;width:100%;">✅ إنهاء الاختبار وتسليمه نهائيا</button>'
@@ -9916,7 +9973,7 @@ function renderQuizReviewView(root){
       ? '<button type="button" onclick="quizGoToSource(\''+result.sector+'\','+d.sourceSectionId+','+d.sourceItemId+')" style="margin-top:8px;background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">📍 تحقق من المصدر بنك المعرفة</button>'
       : '';
     html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
-      + '<div style="font-weight:800;font-size:13.5px;color:#16233f;margin-bottom:8px;">'+(i+1)+'. '+kbEsc(d.question)+'</div>'
+      + '<div style="font-weight:800;font-size:13.5px;color:#16233f;margin-bottom:8px;">'+(i+1)+'. '+kbEsc(quizCleanQuestionText(d.question))+'</div>'
       + '<div style="display:flex;flex-direction:column;gap:6px;">'+optsLines+'</div>'
       + sourceBtn + '</div>';
   });
@@ -9935,7 +9992,7 @@ function quizPrintResult(resultId){
     const correctText = d.q_type==='tf' ? (d.correct_index===0?'صح':'خطأ') : quizCleanOptionText((d.options||[])[d.correct_index]||'');
     const chosenText = d.chosenIndex==null||d.chosenIndex<0 ? '(بدون إجابة)' : (d.q_type==='tf' ? (d.chosenIndex===0?'صح':'خطأ') : quizCleanOptionText((d.options||[])[d.chosenIndex]||''));
     qHtml += '<div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #ddd;">'
-      + '<div style="font-weight:700;">'+(i+1)+'. '+kbEsc(d.question)+'</div>'
+      + '<div style="font-weight:700;">'+(i+1)+'. '+kbEsc(quizCleanQuestionText(d.question))+'</div>'
       + '<div style="color:'+(d.correct?'#0e6a5a':'#c0392b')+';">إجابتك: '+kbEsc(chosenText)+' '+(d.correct?'✔':'✕')+'</div>'
       + (d.correct?'':'<div style="color:#0e6a5a;">الإجابة الصحيحة: '+kbEsc(correctText)+'</div>')
       + '</div>';
@@ -9972,7 +10029,7 @@ function quizExportResultExcel(resultId){
   (result.detail||[]).forEach(function(d){
     const correctText = d.q_type==='tf' ? (d.correct_index===0?'صح':'خطأ') : quizCleanOptionText((d.options||[])[d.correct_index]||'');
     const chosenText = d.chosenIndex==null||d.chosenIndex<0 ? '(بدون إجابة)' : (d.q_type==='tf' ? (d.chosenIndex===0?'صح':'خطأ') : quizCleanOptionText((d.options||[])[d.chosenIndex]||''));
-    rows += '<tr><td>'+kbEsc(d.question)+'</td><td>'+kbEsc(chosenText)+'</td><td>'+kbEsc(correctText)+'</td></tr>';
+    rows += '<tr><td>'+kbEsc(quizCleanQuestionText(d.question))+'</td><td>'+kbEsc(chosenText)+'</td><td>'+kbEsc(correctText)+'</td></tr>';
   });
   const html = '<table border="1">'+rows+'</table>';
   const blob = new Blob(['\ufeff' + html], { type:'application/vnd.ms-excel' });
@@ -9987,8 +10044,14 @@ function quizExportResultExcel(resultId){
 // ---------- عرض النتائج (المالك ومن يفوّضهم) ----------
 function renderQuizResultsView(root){
   if(!(typeof canViewQuizResults === 'function' && canViewQuizResults())){ quizBackToKb(); return; }
+  const st = window.__quizState || {};
   const ov = loadAdminOverrides();
-  const results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
+  let results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
+  let examInfo = null;
+  if(st.examIdFilter){
+    examInfo = (ov.scheduledExams||[]).find(function(e){ return e.id===st.examIdFilter; });
+    results = results.filter(function(r){ return r.examId === st.examIdFilter; });
+  }
   const canManage = typeof canManageQuiz === 'function' && canManageQuiz();
   let rows = results.map(function(r){
     const sectorInfo = KB_SECTORS.find(function(s){ return s.id===r.sector; });
@@ -9998,13 +10061,16 @@ function renderQuizResultsView(root){
     const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=true;quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
     const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
     const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 رسمي</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
-    return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
-      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;">'+kbEsc(r.employeeName)+' '+typeBadge+'</div>'
-      + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+(sectorInfo?sectorInfo.name:'')+' — '+dt.toLocaleDateString('ar-SA')+' — المدة '+mins+'د '+secs+'ث</div></div>'
+    const jobNoLine = r.jobNo ? (' — رقم وظيفي '+kbEsc(String(r.jobNo))) : '';
+    return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
+      + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;">'+kbEsc(r.employeeName)+jobNoLine+' '+typeBadge+'</div>'
+      + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+(sectorInfo?sectorInfo.name:'')+' — '+kbFmtDateTime(r.takenAt)+' — المدة '+mins+'د '+secs+'ث</div></div>'
       + '<div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+delBtn+'</div></div>';
   }).join('');
   if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي نتيجة اختبار بعد.</div>';
-  root.innerHTML = kbHeader('نتائج الاختبارات', results.length+' نتيجة', 'quizBackToKb()')
+  const backAction = examInfo ? ("quizBackToSchedList('"+examInfo.sector+"')") : 'quizBackToKb()';
+  const titleText = examInfo ? ('📋 نتائج: '+examInfo.title) : 'نتائج الاختبارات';
+  root.innerHTML = kbHeader(titleText, results.length+' نتيجة', backAction)
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
 }
 function quizDeleteResult(id){
