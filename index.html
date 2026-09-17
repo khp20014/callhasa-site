@@ -2263,8 +2263,16 @@ function loadAdminOverrides(){
     // إلا عند تشغيل اختبار مجدول (schedExamStart)، عشان الأسئلة تضل سرية وما تنكشف
     // من كثر ما الموظف يتدرب على "اختبر نفسك".
     ov.examQuestions = ov.examQuestions || [];
+    // "شواهد حذف" (tombstones): معرّفات كل عنصر حُذف عمدا من كل بنك — لازمة
+    // عشان دمج الحفظ السحابي (راجع saveOverridesToCloud) يفرّق بين عنصر "لسا
+    // ما وصل لهذا الجهاز" وعنصر "انحذف عمدا"، وإلا يرجع الحذف يتكرر من نفسه
+    // بعد كل تحديث للصفحة.
+    ov.deletedScheduledExamIds = ov.deletedScheduledExamIds || [];
+    ov.deletedQuizResultIds = ov.deletedQuizResultIds || [];
+    ov.deletedExamQuestionIds = ov.deletedExamQuestionIds || [];
+    ov.deletedQuizQuestionIds = ov.deletedQuizQuestionIds || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], examQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, quizTotalMinutes:{work:15,dev:15}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], examQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, quizTotalMinutes:{work:15,dev:15}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[], deletedScheduledExamIds:[], deletedQuizResultIds:[], deletedExamQuestionIds:[], deletedQuizQuestionIds:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -3655,21 +3663,30 @@ window.logAccessVisit = logAccessVisit;
 const APP_SETTINGS_KEY = 'admin_overrides';
 let __applyingCloudOverrides = false; // يمنع حلقة كتابة-قراءة لا نهائية وقت استقبال بث لحظي
 
-// دمج مصفوفة محلية مع نسخة السحابة بالمعرّف (id) — اتحاد الاثنتين، بدون تكرار.
-// يمنع ضياع عناصر أضافها جهاز آخر بعد آخر تحميل لهذا الجهاز (نتائج اختبار،
-// اختبار مجدول، سؤال...) عندما يحفظ هذا الجهاز حفظة إدارية غير متعلقة بها.
-function mergeArraysById(localArr, cloudArr){
+// دمج مصفوفة محلية مع نسخة السحابة بالمعرّف (id) — اتحاد الاثنتين، بدون تكرار،
+// لكن باستثناء أي عنصر معرّفه ضمن "شواهد الحذف" (deletedIds) — عشان عنصر
+// انحذف عمدا (بهذا الجهاز أو غيره) ما يرجع يظهر من نسخة سحابية أقدم لسا فيها.
+function mergeArraysById(localArr, cloudArr, deletedIds){
   const local = Array.isArray(localArr) ? localArr : [];
   const cloud = Array.isArray(cloudArr) ? cloudArr : [];
-  const seen = new Set(local.map(function(x){ return x && x.id; }));
-  const merged = local.slice();
-  cloud.forEach(function(x){ if(x && !seen.has(x.id)){ merged.push(x); seen.add(x.id); } });
+  const deleted = new Set(deletedIds || []);
+  const merged = local.filter(function(x){ return !(x && deleted.has(x.id)); });
+  const seen = new Set(merged.map(function(x){ return x && x.id; }));
+  cloud.forEach(function(x){
+    if(x && !seen.has(x.id) && !deleted.has(x.id)){ merged.push(x); seen.add(x.id); }
+  });
   return merged;
 }
-// المفاتيح المعرّضة لفقد بيانات بسبب سباق الحفظ (append-only بمعرّف id فريد) —
-// أي حفظة إدارية عادية (حذف اختبار، تعديل موظف...) تمر من هنا فتُدمج تلقائيا
-// مع آخر نسخة سحابية بدل ما تكتب فوقها بنسخة محلية قديمة ناقصة.
-const CLOUD_MERGE_KEYS = ['quizResults', 'scheduledExams', 'examQuestions', 'quizQuestions'];
+// المفاتيح المعرّضة لفقد بيانات بسبب سباق الحفظ (append-only بمعرّف id فريد)،
+// وشاهد الحذف المقابل لكل واحدة. أي حفظة إدارية عادية (حذف اختبار، تعديل
+// موظف...) تمر من هنا فتُدمج تلقائيا مع آخر نسخة سحابية بدل ما تكتب فوقها
+// بنسخة محلية قديمة ناقصة — مع احترام أي حذف مقصود فعلا.
+const CLOUD_MERGE_CONFIG = {
+  quizResults: 'deletedQuizResultIds',
+  scheduledExams: 'deletedScheduledExamIds',
+  examQuestions: 'deletedExamQuestionIds',
+  quizQuestions: 'deletedQuizQuestionIds'
+};
 async function saveOverridesToCloud(ov){
   if(__applyingCloudOverrides) return; // هذا التغيير جاء أصلا من السحابة، لا داعي لإعادة رفعه
   const client = getSupabaseClient();
@@ -3678,7 +3695,13 @@ async function saveOverridesToCloud(ov){
     const { data: prevRow } = await client.from('app_settings').select('value').eq('key', APP_SETTINGS_KEY).maybeSingle();
     const cloudOv = prevRow ? prevRow.value : null;
     if(cloudOv){
-      CLOUD_MERGE_KEYS.forEach(function(k){ ov[k] = mergeArraysById(ov[k], cloudOv[k]); });
+      Object.keys(CLOUD_MERGE_CONFIG).forEach(function(k){
+        const tombKey = CLOUD_MERGE_CONFIG[k];
+        const mergedTomb = Array.from(new Set((ov[tombKey]||[]).concat(cloudOv[tombKey]||[])));
+        while(mergedTomb.length > 1000) mergedTomb.shift();
+        ov[tombKey] = mergedTomb;
+        ov[k] = mergeArraysById(ov[k], cloudOv[k], mergedTomb);
+      });
       // نحدّث التخزين المحلي بنفس الدمج حتى ما يعيد هذا الجهاز فقدها لاحقا
       try{ localStorage.setItem(ADMIN_OV_KEY, JSON.stringify(ov)); }catch(err){}
     }
@@ -9415,6 +9438,8 @@ function schedExamDelete(id){
   if(!confirm('متأكد تبي تحذف هذا الاختبار المجدول؟')) return;
   const ov = loadAdminOverrides();
   ov.scheduledExams = (ov.scheduledExams||[]).filter(function(e){ return e.id!==id; });
+  ov.deletedScheduledExamIds = ov.deletedScheduledExamIds || [];
+  if(!ov.deletedScheduledExamIds.includes(id)) ov.deletedScheduledExamIds.push(id);
   saveAdminOverrides(ov);
   renderQuiz();
 }
@@ -10082,6 +10107,9 @@ function quizDeleteQuestion(id){
   const bankKey = bank === 'exam' ? 'examQuestions' : 'quizQuestions';
   const ov = loadAdminOverrides();
   ov[bankKey] = (ov[bankKey]||[]).filter(function(x){ return x.id!==id; });
+  const tombKey = bank === 'exam' ? 'deletedExamQuestionIds' : 'deletedQuizQuestionIds';
+  ov[tombKey] = ov[tombKey] || [];
+  if(!ov[tombKey].includes(id)) ov[tombKey].push(id);
   saveAdminOverrides(ov);
   renderQuiz();
 }
@@ -10513,6 +10541,8 @@ function quizDeleteResult(id){
   if(!confirm('حذف هذه النتيجة نهائيا؟')) return;
   const ov = loadAdminOverrides();
   ov.quizResults = (ov.quizResults||[]).filter(function(x){ return x.id!==id; });
+  ov.deletedQuizResultIds = ov.deletedQuizResultIds || [];
+  if(!ov.deletedQuizResultIds.includes(id)) ov.deletedQuizResultIds.push(id);
   saveAdminOverrides(ov);
   renderQuiz();
 }
