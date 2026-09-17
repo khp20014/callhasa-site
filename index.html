@@ -9538,6 +9538,8 @@ function schedExamToggleSelMode(){
   const manual = document.querySelector('input[name="schedSelMode"]:checked').value === 'manual';
   const box = document.getElementById('schedManualQBox');
   if(box) box.style.display = manual ? 'block' : 'none';
+  const typeBox = document.getElementById('schedRandomTypeBox');
+  if(typeBox) typeBox.style.display = manual ? 'none' : 'block';
 }
 function schedExamQuestionCheckboxesHtml(sector, selectedIds){
   const ov = loadAdminOverrides();
@@ -9634,6 +9636,13 @@ function renderSchedExamFormView(root){
     + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedSelMode" value="random" onchange="schedExamToggleSelMode()" '+((!editExam || editExam.selectionMode!=='manual')?'checked':'')+'> 🎲 اختيار عشوائي (حسب عدد الأسئلة أعلاه)</label>'
     + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedSelMode" value="manual" onchange="schedExamToggleSelMode()" '+(editExam && editExam.selectionMode==='manual'?'checked':'')+'> ✅ اختيار أسئلة محددة بنفسي</label>'
     + '</div>'
+    + '<div id="schedRandomTypeBox" style="display:'+(editExam && editExam.selectionMode==='manual'?'none':'block')+';padding:10px;background:#f8fafb;border-radius:10px;margin-bottom:10px;">'
+    + '<label style="font-size:11.5px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">نوع الأسئلة (عند الاختيار العشوائي)</label>'
+    + '<div style="display:flex;gap:14px;flex-wrap:wrap;">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedTypeFilter" value="all" '+((!editExam || !editExam.questionTypeFilter || editExam.questionTypeFilter==='all')?'checked':'')+'> 🔀 مختلط (صح/خطأ + اختيارات)</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedTypeFilter" value="tf" '+(editExam && editExam.questionTypeFilter==='tf'?'checked':'')+'> ✅ صح وخطأ فقط</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedTypeFilter" value="mcq" '+(editExam && editExam.questionTypeFilter==='mcq'?'checked':'')+'> ✅ اختيار من متعدد فقط</label>'
+    + '</div></div>'
     + '<div id="schedManualQBox" style="display:'+(editExam && editExam.selectionMode==='manual'?'block':'none')+';">'
     + '<div style="font-size:11px;color:#8a93a6;margin-bottom:6px;">حدد الأسئلة اللي تبيها بالضبط من بنك أسئلة الاختبار المجدول لهذا القطاع — بيتجاهل النظام حقل "عدد الأسئلة" أعلاه ويستخدم بس اللي تحددها هنا.</div>'
     + '<div id="schedManualQList" style="max-height:260px;overflow:auto;border:1.5px solid #e2e6ea;border-radius:10px;padding:6px;">'+schedExamQuestionCheckboxesHtml(st.sector, editExam?(editExam.manualQuestionIds||[]):[])+'</div>'
@@ -9677,6 +9686,7 @@ function schedExamSave(){
   const totalMinutes = parseInt(document.getElementById('schedTotalMinutes').value, 10) || 15;
   const lateTimerMode = document.querySelector('input[name="schedLateMode"]:checked').value;
   const selectionMode = document.querySelector('input[name="schedSelMode"]:checked').value;
+  const questionTypeFilter = document.querySelector('input[name="schedTypeFilter"]:checked').value;
   const manualQuestionIds = Array.from(document.querySelectorAll('#schedManualQList input.schedManualQChk:checked')).map(function(chk){ return parseInt(chk.value,10); });
   if(selectionMode === 'manual' && !manualQuestionIds.length){ alert('لازم تحدد سؤال واحد على الأقل من قائمة الأسئلة'); return; }
   const allowedJobNos = Array.from(document.querySelectorAll('#schedEmpList input.schedEmpChk:checked')).map(function(chk){ return chk.value; });
@@ -9689,7 +9699,7 @@ function schedExamSave(){
     if(exam){
       exam.title=title; exam.startAt=startAt; exam.endAt=endAt; exam.questionCount=questionCount;
       exam.totalMinutes=totalMinutes; exam.lateTimerMode=lateTimerMode; exam.allowedJobNos=allowedJobNos;
-      exam.selectionMode=selectionMode; exam.manualQuestionIds=manualQuestionIds;
+      exam.selectionMode=selectionMode; exam.manualQuestionIds=manualQuestionIds; exam.questionTypeFilter=questionTypeFilter;
       exam.examLocation=examLocation; exam.supervisorName=supervisorName; exam.managerName=managerName;
       exam.locationLabel=locationLabel; exam.supervisorLabel=supervisorLabel; exam.managerLabel=managerLabel;
       exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
@@ -9698,7 +9708,7 @@ function schedExamSave(){
     ov.scheduledExams.push({
       id: schedExamNextId(), sector: st.sector, title: title, startAt: startAt, endAt: endAt,
       questionCount: questionCount, totalMinutes: totalMinutes, lateTimerMode: lateTimerMode, allowedJobNos: allowedJobNos,
-      selectionMode: selectionMode, manualQuestionIds: manualQuestionIds,
+      selectionMode: selectionMode, manualQuestionIds: manualQuestionIds, questionTypeFilter: questionTypeFilter,
       examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
       locationLabel: locationLabel, supervisorLabel: supervisorLabel, managerLabel: managerLabel,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
@@ -9725,8 +9735,12 @@ function schedExamStart(id){
     if(!chosen.length){ alert('الأسئلة المحددة لهذا الاختبار محذوفة من البنك — راجع إعدادات الاختبار.'); return; }
     shuffled = chosen.slice().sort(function(){ return Math.random()-0.5; });
   } else {
-    const count = Math.min(exam.questionCount||10, pool.length);
-    shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
+    const typeFiltered = (exam.questionTypeFilter && exam.questionTypeFilter !== 'all')
+      ? pool.filter(function(q){ return q.q_type === exam.questionTypeFilter; })
+      : pool;
+    if(!typeFiltered.length){ alert('لا يوجد أسئلة من النوع المحدد ('+(exam.questionTypeFilter==='tf'?'صح/خطأ':'اختيار من متعدد')+') ببنك هذا القطاع — أضف أسئلة من هذا النوع أو غيّر إعداد نوع الأسئلة بالاختبار.'); return; }
+    const count = Math.min(exam.questionCount||10, typeFiltered.length);
+    shuffled = typeFiltered.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
   }
   const startedAtNow = Date.now();
   const fullEndsAt = startedAtNow + (exam.totalMinutes||15)*60000;
