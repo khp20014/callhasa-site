@@ -9332,8 +9332,11 @@ function renderQuizBigScreenView(root){
   if(!exam){ quizBigScreenExit(st.examId); return; }
   const sectorInfo = KB_SECTORS.find(function(s){ return s.id===exam.sector; });
   const dt = new Date(exam.startAt);
+  const endDt = new Date(exam.endAt);
   const dayName = dt.toLocaleDateString('ar-SA', { weekday:'long' });
   const dateText = dt.toLocaleDateString('ar-SA', { year:'numeric', month:'long', day:'numeric' });
+  const startTimeText = dt.toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' });
+  const endTimeText = endDt.toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit' });
   const qCountLabel = exam.selectionMode==='manual' ? ((exam.manualQuestionIds||[]).length) : exam.questionCount;
   root.innerHTML = '<style>'
       + '@keyframes bigScreenPulse{0%{transform:scale(1);}50%{transform:scale(1.045);}100%{transform:scale(1);}}'
@@ -9354,7 +9357,7 @@ function renderQuizBigScreenView(root){
     + '<div style="position:relative;display:inline-flex;align-items:center;gap:8px;background:rgba(240,195,61,.14);border:1px solid rgba(240,195,61,.35);border-radius:30px;padding:10px 24px;color:#f0c33d;font-size:min(3.6vw,21px);font-weight:900;letter-spacing:.5px;">🏢 '+(sectorInfo?kbEsc(sectorInfo.name):'')+'</div>'
     + '<div style="position:relative;color:#fff;font-size:min(6vw,54px);font-weight:900;text-shadow:0 4px 24px rgba(0,0,0,.35);">'+kbEsc(exam.title||'اختبار مجدول')+'</div>'
     + '<div style="position:relative;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">'
-    + '<div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:7px 16px;color:rgba(255,255,255,.9);font-size:min(2.4vw,16px);font-weight:700;">📆 '+dayName+' — '+dateText+'</div>'
+    + '<div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:7px 16px;color:rgba(255,255,255,.9);font-size:min(2.4vw,16px);font-weight:700;">📆 يوم '+dayName+' — '+dateText+' — من الساعة '+startTimeText+' إلى '+endTimeText+'</div>'
     + (exam.examLocation ? ('<div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:7px 16px;color:rgba(255,255,255,.9);font-size:min(2.4vw,16px);font-weight:700;">📍 '+kbEsc(exam.locationLabel||'مقر الاختبار')+': '+kbEsc(exam.examLocation)+'</div>') : '')
     + '<div style="background:rgba(14,106,90,.28);border:1px solid rgba(14,199,165,.4);border-radius:20px;padding:7px 16px;color:#8ff0d8;font-size:min(2.4vw,16px);font-weight:800;">📝 '+qCountLabel+' سؤال</div>'
     + '<div style="background:rgba(14,106,90,.28);border:1px solid rgba(14,199,165,.4);border-radius:20px;padding:7px 16px;color:#8ff0d8;font-size:min(2.4vw,16px);font-weight:800;">⏱ مدة الاختبار '+(exam.totalMinutes||15)+' دقيقة</div>'
