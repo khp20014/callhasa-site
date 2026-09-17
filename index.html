@@ -1254,7 +1254,7 @@
     </div>
   </section>
 
-  <!-- إشعار "عندك اختبار رسمي مجدول" — يظهر فقط لمن هو مسموح له بالاختبار الحالي،
+  <!-- إشعار "عندك اختبار مجدول" — يظهر فقط لمن هو مسموح له بالاختبار الحالي،
        ويختفي تلقائيا بعد 5 دقائق من وقت بداية الاختبار (انظر renderExamNoticeRibbon) -->
   <section id="examNoticeRibbon" style="display:none;max-width:900px;margin:0 auto 14px;padding:0 14px;">
     <div id="examNoticeCard" style="display:flex;flex-direction:column;gap:10px;"></div>
@@ -1272,7 +1272,7 @@
   <!-- DIRECTORY / SEARCH -->
   <section class="panel dir-panel" id="directorySection">
     <button type="button" id="secHeadKnowledgeBankLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
-      <span class="idx">01</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق، اختبار تدريبي مفتوح لكل قطاع، واختبار رسمي مجدول بموافقة الإدارة — اضغط للفتح</span>
+      <span class="idx">01</span><h2 style="margin:0;">بنك المعرفة</h2><span class="sub">أسئلة وأجوبة تدريبية للفريق، اختبار تدريبي مفتوح لكل قطاع، واختبار مجدول بموافقة الإدارة — اضغط للفتح</span>
     </button>
     <button type="button" id="secHeadContactReasonsLink" class="sec-head sec-c-teal reveal-sec" style="border:none;font:inherit;text-align:start;box-sizing:border-box;display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;cursor:pointer;color:inherit;">
       <span class="idx">02</span><h2 style="margin:0;">مسارات أسباب الاتصال لقطاع العمل</h2><span class="sub">دليل تفاعلي لمسارات وأسباب اتصال المستفيدين — اضغط للفتح</span>
@@ -6024,7 +6024,7 @@ function subscribeToIncomingMessagesRealtime(){
   document.getElementById('bdayRibbon').style.display = '';
 })();
 
-// ================= إشعار "عندك اختبار رسمي مجدول" بالصفحة الرئيسية =================
+// ================= إشعار "عندك اختبار مجدول" بالصفحة الرئيسية =================
 // يظهر فقط للموظف اللي رقمه الوظيفي مسجل ضمن المسموح لهم بهذا الاختبار بالذات،
 // ويختفي تلقائيا (بدون تدخل) بعد مرور 5 دقائق من وقت بداية الاختبار المحدد،
 // بغض النظر إذا دخل الاختبار أو لأ — حتى لو بقي مفتوح بالصفحة بدون تحديث.
@@ -6055,7 +6055,7 @@ function renderExamNoticeRibbon(me){
     return '<button type="button" onclick="examNoticeGoStart('+exam.id+')" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#16233f,#0e6a5a);border-radius:16px;padding:14px 18px;box-shadow:0 8px 20px rgba(15,46,61,.2);box-sizing:border-box;width:100%;">'
       + '<div style="flex-shrink:0;width:46px;height:46px;border-radius:12px;background:linear-gradient(145deg,#f0c33d,#d9a418);display:flex;align-items:center;justify-content:center;font-size:22px;">📅</div>'
       + '<div style="text-align:right;flex:1;">'
-      + '<div style="color:#fff;font-weight:900;font-size:14.5px;">عندك اختبار رسمي مجدول: '+kbEsc(exam.title||'اختبار')+'</div>'
+      + '<div style="color:#fff;font-weight:900;font-size:14.5px;">عندك اختبار مجدول: '+kbEsc(exam.title||'اختبار')+'</div>'
       + '<div style="color:rgba(255,255,255,.8);font-size:12px;font-weight:700;margin-top:2px;">'+dayName+' — الساعة '+timeText+'</div>'
       + '</div>'
       + '<div style="color:#f0c33d;font-size:20px;flex-shrink:0;">←</div>'
@@ -8082,13 +8082,13 @@ function renderKbSectionsView(root){
     + '<div style="position:absolute;inset:0;background:radial-gradient(circle at 85% -20%,rgba(240,195,61,.25),transparent 60%);"></div>'
     + '<div style="position:relative;flex-shrink:0;width:58px;height:58px;border-radius:16px;background:linear-gradient(145deg,#f0c33d,#d9a418);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.4);font-size:28px;">📅</div>'
     + '<div style="position:relative;flex:1;">'
-    + '<div style="color:#fff;font-weight:900;font-size:16.5px;">الاختبار الرسمي المجدول</div>'
+    + '<div style="color:#fff;font-weight:900;font-size:16.5px;">الاختبار المجدول</div>'
     + '<div style="color:rgba(255,255,255,.75);font-size:11.5px;font-weight:700;margin-top:3px;">بموافقة الإدارة — يفتح فقط بالوقت المحدد للمشاركين المسموح لهم</div>'
     + '</div>'
     + '<div style="position:relative;flex-shrink:0;color:#f0c33d;font-size:20px;">←</div>'
     + '</button>'
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">'
-    + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 ابدأ الاختبار التدريبي</button>'
+    + '<button type="button" onclick="goQuizStartFromKb(\''+st.sector+'\')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:2px solid transparent;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🎯 اختبر معلوماتك</button>'
     + '<button type="button" onclick="goQuizMyResultsFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">🧾 نتائجي</button>'
     + '<button type="button" onclick="kbGoFavorites(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #f0c33d;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⭐ مفضلتي</button>'
     + (canManageQuiz() ? '<button type="button" onclick="goQuizManageFromKb(\''+st.sector+'\')" style="background:#fff;color:#16233f;border:2px solid #0e6a5a;border-radius:10px;padding:10px 18px;font-weight:800;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">⚙ إدارة أسئلة الاختبار</button>' : '')
@@ -9217,11 +9217,11 @@ function renderSchedExamListView(root){
   const all = (ov.scheduledExams||[]).filter(function(e){ return e.sector===st.sector; })
     .sort(function(a,b){ return a.startAt-b.startAt; });
   const visible = canManage ? all : all.filter(schedExamIsAllowed);
-  let html = kbHeader('📅 الاختبارات الرسمية المجدولة', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
+  let html = kbHeader('📅 الاختبارات المجدولة', sectorInfo?sectorInfo.name:'', 'quizBackToKb()')
     + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">';
   if(canManage){
     html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">'
-      + '<button type="button" onclick="schedExamGoCreate()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;">+ جدولة اختبار رسمي جديد</button>'
+      + '<button type="button" onclick="schedExamGoCreate()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;">+ جدولة اختبار جديد</button>'
       + '<button type="button" onclick="quizGoManage(\''+st.sector+'\',\'exam\')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:11px 20px;font-weight:800;font-size:13px;cursor:pointer;">🔒 إدارة أسئلة الاختبار المجدول (سرية)</button>'
       + '</div>'
       + '<div style="background:#fdecea;color:#c0392b;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;font-weight:700;">⚠ بنك أسئلة الاختبار المجدول منفصل تماما عن بنك "اختبر نفسك" — أضف الأسئلة من الزر الغامق حصرا، ولا تستخدم بنك "اختبر نفسك" للاختبار المجدول عشان ما تنكشف الأسئلة للموظفين.</div>';
@@ -9387,7 +9387,7 @@ function schedExamDelete(id){
   saveAdminOverrides(ov);
   renderQuiz();
 }
-// نتائج المشاركين بامتحان رسمي مجدول واحد بالذات — كل اللي دخلوه بكل تفاصيلهم
+// نتائج المشاركين بامتحان مجدول واحد بالذات — كل اللي دخلوه بكل تفاصيلهم
 function schedExamViewResults(examId){
   window.__quizState = { view:'results', sector:null, examIdFilter: examId };
   renderQuiz();
@@ -9402,7 +9402,7 @@ function schedExamQuestionCheckboxesHtml(sector, selectedIds){
   const ov = loadAdminOverrides();
   const selected = (selectedIds||[]).map(Number);
   const questions = (ov.examQuestions||[]).filter(function(q){ return q.sector===sector; });
-  if(!questions.length) return '<div style="color:#8a93a6;font-size:12px;padding:8px;">لا يوجد أسئلة بعد في بنك الاختبار الرسمي المجدول لهذا القطاع — أضفها أولا.</div>';
+  if(!questions.length) return '<div style="color:#8a93a6;font-size:12px;padding:8px;">لا يوجد أسئلة بعد في بنك الاختبار المجدول لهذا القطاع — أضفها أولا.</div>';
   return questions.map(function(q){
     const checked = selected.includes(q.id) ? 'checked' : '';
     return '<label style="display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:8px;font-size:12.5px;cursor:pointer;">'
@@ -9448,7 +9448,7 @@ function renderSchedExamFormView(root){
   const dateVal = editExam ? (defDate.getFullYear()+'-'+pad(defDate.getMonth()+1)+'-'+pad(defDate.getDate())) : (now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate()));
   const startTimeVal = editExam ? pad(new Date(editExam.startAt).getHours())+':'+pad(new Date(editExam.startAt).getMinutes()) : '10:00';
   const endTimeVal = editExam ? pad(new Date(editExam.endAt).getHours())+':'+pad(new Date(editExam.endAt).getMinutes()) : '10:30';
-  let html = kbHeader(editExam?'تعديل اختبار رسمي مجدول':'+ جدولة اختبار رسمي جديد', sectorInfo?sectorInfo.name:'', 'schedExamCancelForm()')
+  let html = kbHeader(editExam?'تعديل اختبار مجدول':'+ جدولة اختبار جديد', sectorInfo?sectorInfo.name:'', 'schedExamCancelForm()')
     + '<div style="max-width:900px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="background:#fff;border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;flex-direction:column;gap:12px;">'
     + '<div><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عنوان الاختبار</label>'
@@ -9488,11 +9488,11 @@ function renderSchedExamFormView(root){
     + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedSelMode" value="manual" onchange="schedExamToggleSelMode()" '+(editExam && editExam.selectionMode==='manual'?'checked':'')+'> ✅ اختيار أسئلة محددة بنفسي</label>'
     + '</div>'
     + '<div id="schedManualQBox" style="display:'+(editExam && editExam.selectionMode==='manual'?'block':'none')+';">'
-    + '<div style="font-size:11px;color:#8a93a6;margin-bottom:6px;">حدد الأسئلة اللي تبيها بالضبط من بنك أسئلة الاختبار الرسمي المجدول لهذا القطاع — بيتجاهل النظام حقل "عدد الأسئلة" أعلاه ويستخدم بس اللي تحددها هنا.</div>'
+    + '<div style="font-size:11px;color:#8a93a6;margin-bottom:6px;">حدد الأسئلة اللي تبيها بالضبط من بنك أسئلة الاختبار المجدول لهذا القطاع — بيتجاهل النظام حقل "عدد الأسئلة" أعلاه ويستخدم بس اللي تحددها هنا.</div>'
     + '<div id="schedManualQList" style="max-height:260px;overflow:auto;border:1.5px solid #e2e6ea;border-radius:10px;padding:6px;">'+schedExamQuestionCheckboxesHtml(st.sector, editExam?(editExam.manualQuestionIds||[]):[])+'</div>'
     + '</div>'
     + '</div>'
-    + '<div style="font-size:11.5px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب من بنك أسئلة الاختبار الرسمي المجدول لهذا القطاع.</div>'
+    + '<div style="font-size:11.5px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب من بنك أسئلة الاختبار المجدول لهذا القطاع.</div>'
     + '<div>'
     + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">الموظفون المسموح لهم بدخول هذا الاختبار</label>'
     + '<input id="schedEmpSearch" oninput="schedExamFilterEmployees()" placeholder="🔍 ابحث باسم الموظف…" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:6px;">'
@@ -9656,11 +9656,11 @@ function renderQuizManageView(root){
   const countVal = (ov.quizQuestionCount||{})[st.sector] || 10;
   const minutesVal = (ov.quizTotalMinutes||{})[st.sector] || 15;
   const backAction = bank === 'exam' ? ("quizBackToSchedList('"+st.sector+"')") : 'quizBackToKb()';
-  const titleText = bank === 'exam' ? '🔒 إدارة أسئلة الاختبار الرسمي المجدول' : '🎯 إدارة أسئلة الاختبار التدريبي';
+  const titleText = bank === 'exam' ? '🔒 إدارة أسئلة الاختبار المجدول' : '🎯 إدارة أسئلة الاختبار التدريبي';
   let html = kbHeader(titleText, sectorInfo?sectorInfo.name:'', backAction)
     + '<div style="max-width:1500px;margin:0 auto 60px;padding:24px 18px 0;">'
     + (bank === 'exam'
-        ? '<div style="background:#fdecea;color:#c0392b;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;font-weight:700;">⚠ هذا بنك أسئلة سري خاص بالاختبار الرسمي المجدول فقط — منفصل تماما عن بنك "الاختبار التدريبي"، ولا يظهر ولا يُتاح الاطلاع عليه للموظفين إطلاقا، ولا يُستخدم إلا وقت تشغيل الاختبار الرسمي نفسه.</div>'
+        ? '<div style="background:#fdecea;color:#c0392b;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;font-weight:700;">⚠ هذا بنك أسئلة سري خاص بالاختبار المجدول فقط — منفصل تماما عن بنك "الاختبار التدريبي"، ولا يظهر ولا يُتاح الاطلاع عليه للموظفين إطلاقا، ولا يُستخدم إلا وقت تشغيل الاختبار نفسه.</div>'
         : '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
           + '<label style="font-size:12.5px;font-weight:700;color:#16233f;">عدد أسئلة الاختبار الواحد:</label>'
           + '<input type="number" min="1" id="quizCountInput" value="'+countVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
@@ -10145,7 +10145,7 @@ function renderQuizDoneView(root, result){
       + '<div style="font-size:22px;">🎊 ✨ 🥇 ✨ 🎊</div>'
     : '';
   const thanksNote = (result.examId && !isPerfect)
-    ? '<div style="background:rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;font-size:13px;font-weight:700;max-width:420px;">🌟 شكرًا لك على وقتك والتزامك بأداء الاختبار الرسمي — نقدّر جهدك ومبادرتك، بالتوفيق دائمًا!</div>'
+    ? '<div style="background:rgba(255,255,255,.08);border-radius:14px;padding:14px 18px;font-size:13px;font-weight:700;max-width:420px;">🌟 شكرًا لك على وقتك والتزامك بأداء الاختبار — نقدّر جهدك ومبادرتك، بالتوفيق دائمًا!</div>'
     : '';
   root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);color:#fff;text-align:center;">'
     + (isPerfect ? perfectHtml : '<div style="font-size:44px;">🎯</div>')
@@ -10222,7 +10222,7 @@ function quizPrintResult(resultId){
       + (d.correct?'':'<div style="color:#0e6a5a;">الإجابة الصحيحة: '+kbEsc(correctText)+'</div>')
       + '</div>';
   });
-  const resultTypeLabel = result.examId ? 'نتيجة الاختبار الرسمي المجدول' : 'نتيجة الاختبار التدريبي';
+  const resultTypeLabel = result.examId ? 'نتيجة الاختبار المجدول' : 'نتيجة الاختبار التدريبي';
   w.document.write('<html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>'+resultTypeLabel+'</title>'
     + '<style>body{font-family:Tahoma,Arial,sans-serif;padding:30px;color:#16233f;} h2{color:#16233f;} .meta div{margin-bottom:4px;font-size:13px;}</style></head><body>'
     + '<h2>'+resultTypeLabel+' — '+(sectorInfo?kbEsc(sectorInfo.name):'')+'</h2>'
@@ -10260,7 +10260,7 @@ function quizExportResultExcel(resultId){
   const blob = new Blob(['\ufeff' + html], { type:'application/vnd.ms-excel' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = (result.examId ? 'نتيجة_الاختبار_الرسمي' : 'نتيجة_الاختبار_التدريبي') + '.xls';
+  link.download = (result.examId ? 'نتيجة_الاختبار_المجدول' : 'نتيجة_الاختبار_التدريبي') + '.xls';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -10285,7 +10285,7 @@ function renderQuizResultsView(root){
     const delBtn = canManage ? '<button type="button" onclick="quizDeleteResult('+r.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">حذف</button>' : '';
     const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=true;quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
     const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
-    const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 رسمي</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
+    const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 مجدول</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
     const jobNoLine = r.jobNo ? (' — رقم وظيفي '+kbEsc(String(r.jobNo))) : '';
     return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
       + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;">'+kbEsc(r.employeeName)+jobNoLine+' '+typeBadge+'</div>'
@@ -10319,13 +10319,13 @@ function renderQuizMyResultsView(root){
     const dt = new Date(r.takenAt);
     const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
     const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=\'mine\';quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
-    const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 رسمي</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
+    const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 مجدول</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
     return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;">'
       + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;">'+(sectorInfo?sectorInfo.name:'')+' '+typeBadge+'</div>'
       + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+dt.toLocaleDateString('ar-SA')+' — المدة '+mins+'د '+secs+'ث</div></div>'
       + '<div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+'</div></div>';
   }).join('');
-  if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما اختبرت لين الحين — ابدأ الاختبار التدريبي عشان تظهر نتائجك هنا.</div>';
+  if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما اختبرت لين الحين — اضغط "اختبر معلوماتك" عشان تظهر نتائجك هنا.</div>';
   root.innerHTML = kbHeader('نتائجي بالاختبارات', results.length+' محاولة', 'quizGoSectors()')
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
 }
