@@ -9625,7 +9625,7 @@ function renderSchedExamFormView(root){
     + '<div>'
     + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">إذا دخل الموظف متأخرا عن بداية الاختبار</label>'
     + '<div style="display:flex;flex-direction:column;gap:8px;">'
-    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedLateMode" value="full" '+((!editExam || editExam.lateTimerMode!=='capped')?'checked':'')+'> ⏱ يحصل على كامل مدة الاختبار ('+(editExam?(editExam.totalMinutes||15):15)+' دقيقة) من لحظة دخوله، حتى لو تجاوز وقت النهاية الرسمي</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedLateMode" value="full" '+((!editExam || editExam.lateTimerMode!=='capped')?'checked':'')+'> ⏱ يحصل على كامل مدة الاختبار المحددة أعلاه من لحظة دخوله، حتى لو تجاوز وقت النهاية الرسمي</label>'
     + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedLateMode" value="capped" '+(editExam && editExam.lateTimerMode==='capped'?'checked':'')+'> ⏳ ينتهي وقته مع نهاية وقت الاختبار الرسمي مباشرة مهما تأخر بالدخول</label>'
     + '</div></div>'
     + '<div>'
@@ -10257,8 +10257,6 @@ function quizFinish(){
   const percent = total ? Math.round((score/total)*100) : 0;
   const durationSeconds = Math.round((Date.now() - run.startedAt)/1000);
   const me = window.__currentEmployee;
-  const ov = loadAdminOverrides();
-  ov.quizResults = ov.quizResults || [];
   // نحفظ لقطة كاملة من كل سؤال وخياراته وإجابة الموظف، عشان تصير المراجعة لاحقا ممكنة
   // حتى لو تغيّرت أسئلة الاختبار الأصلية أو حُذفت فيما بعد.
   const detail = run.questions.map(function(q, i){
@@ -10270,18 +10268,40 @@ function quizFinish(){
     };
   });
   const result = {
-    id: quizNextId(), jobNo: me?me.job_no:null, employeeName: me?me.name:'—',
+    id: Date.now()*1000 + Math.floor(Math.random()*1000), jobNo: me?me.job_no:null, employeeName: me?me.name:'—',
     nationalId: me?me.national_id:'', email: me?me.email:'', mobile: me?me.mobile:'',
     sector: run.sector, score:score, total:total, percent:percent,
     durationSeconds:durationSeconds, takenAt: Date.now(), detail: detail,
     examId: run.examId || null
   };
-  ov.quizResults.push(result);
-  saveAdminOverrides(ov);
   window.__quizLastResult = result;
   window.__quizRun = null;
   window.__quizState = { view:'done' };
+  // نعرض نتيجته فورا بدون ما ننتظر الشبكة
   renderQuizDoneView(document.getElementById('quizRoot'), result);
+  // ثم نحفظ بالخلفية — قبل الحفظ نجيب آخر نسخة من السحابة وندمج نتيجتنا معها بدل
+  // ما نكتب فوق نسختنا المحلية (اللي ممكن تكون قديمة). هذا يمنع ضياع نتائج موظفين
+  // ثانيين سلّموا بنفس اللحظة تقريبا (كل حفظة كانت قبل كذا تكتب فوق الاختبار كامل).
+  quizSaveResultSafely(result);
+}
+async function quizSaveResultSafely(result){
+  const ov = loadAdminOverrides();
+  ov.quizResults = ov.quizResults || [];
+  try{
+    const cloudOv = await fetchOverridesFromCloud();
+    if(cloudOv && Array.isArray(cloudOv.quizResults)){
+      const knownIds = new Set(ov.quizResults.map(function(r){ return r.id; }));
+      cloudOv.quizResults.forEach(function(r){
+        if(!knownIds.has(r.id)){ ov.quizResults.push(r); knownIds.add(r.id); }
+      });
+    }
+  }catch(err){ /* تعذر الجلب — نكمل بالنسخة المحلية أفضل من فقدان النتيجة تماما */ }
+  if(!ov.quizResults.some(function(r){ return r.id === result.id; })){
+    ov.quizResults.push(result);
+  }
+  saveAdminOverrides(ov);
+  // لو المستخدم لسا واقف بشاشة النتيجة أو رجع لقائمة النتائج، نحدّثها بأحدث بيانات
+  if(window.__quizState && (window.__quizState.view === 'results' || window.__quizState.view === 'analysis')) renderQuiz();
 }
 function renderQuizDoneView(root, result){
   if(!root) return;
