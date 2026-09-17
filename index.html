@@ -2976,7 +2976,7 @@ updateClock(); setInterval(updateClock,1000);
     }
     map[uid] = toStore;
     try{ localStorage.setItem(TWOFA_KEY, JSON.stringify(map)); }catch(err){}
-    if(typeof save2FAToCloud === 'function') save2FAToCloud(map).catch(()=>{});
+    if(typeof save2FAToCloud === 'function') save2FAToCloud({type:'set', uid: uid, value: toStore}).catch(()=>{});
     if(typeof bumpChangeCounter === 'function') bumpChangeCounter(uid, 'security_code_change_count');
     if(typeof logAccessVisit === 'function') logAccessVisit(uid, 'security_code_change');
   }
@@ -2989,7 +2989,7 @@ updateClock(); setInterval(updateClock,1000);
     const map = loadTwoFA();
     delete map[uid];
     try{ localStorage.setItem(TWOFA_KEY, JSON.stringify(map)); }catch(err){}
-    if(typeof save2FAToCloud === 'function') save2FAToCloud(map).catch(()=>{});
+    if(typeof save2FAToCloud === 'function') save2FAToCloud({type:'delete', uid: uid}).catch(()=>{});
   }
   function normalizeAnswer(s){ return (s||'').trim().toLowerCase(); }
   function isValidPin(p){ return /^[0-9]{6}$/.test(p||''); }
@@ -3694,9 +3694,13 @@ async function saveOverridesToCloud(ov){
   if(__applyingCloudOverrides) return; // هذا التغيير جاء أصلا من السحابة، لا داعي لإعادة رفعه
   const client = getSupabaseClient();
   if(!client) return;
-  try{
-    const { data: prevRow } = await client.from('app_settings').select('value').eq('key', APP_SETTINGS_KEY).maybeSingle();
-    const cloudOv = prevRow ? prevRow.value : null;
+  const MAX_ATTEMPTS = 8;
+  for(let attempt=0; attempt<MAX_ATTEMPTS; attempt++){
+    let cloudOv = null, cloudUpdatedAt = null;
+    try{
+      const { data: prevRow } = await client.from('app_settings').select('value, updated_at').eq('key', APP_SETTINGS_KEY).maybeSingle();
+      if(prevRow){ cloudOv = prevRow.value; cloudUpdatedAt = prevRow.updated_at; }
+    }catch(err){ /* تعذر جلب النسخة السابقة — نكمل بالنسخة المحلية أفضل من عدم الحفظ إطلاقا */ }
     if(cloudOv){
       Object.keys(CLOUD_MERGE_CONFIG).forEach(function(k){
         const tombKey = CLOUD_MERGE_CONFIG[k];
@@ -3708,9 +3712,30 @@ async function saveOverridesToCloud(ov){
       // نحدّث التخزين المحلي بنفس الدمج حتى ما يعيد هذا الجهاز فقدها لاحقا
       try{ localStorage.setItem(ADMIN_OV_KEY, JSON.stringify(ov)); }catch(err){}
     }
-  }catch(err){ /* تعذر جلب النسخة السابقة — نكمل بالنسخة المحلية أفضل من عدم الحفظ إطلاقا */ }
-  const { error } = await client.from('app_settings').upsert({ key: APP_SETTINGS_KEY, value: ov, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-  if(error) console.error('تعذر رفع إعدادات المالك لقاعدة البيانات:', error);
+    const nowIso = new Date().toISOString();
+    if(cloudUpdatedAt){
+      // كتابة مشروطة (compare-and-swap): تنجح فقط لو الصف بالسحابة لم يتغيّر
+      // منذ آخر قراءة لنا الآن بالتو. لو جهاز آخر كتب بينهما (مثلا موظف ثاني
+      // سلّم اختباره بنفس اللحظة تقريبا)، هذا التحديث يفشل بهدوء (صفر صفوف
+      // تأثرت، بدون خطأ)، فنعيد القراءة وندمج من جديد ونحاول ثانية — بدل ما
+      // نكتب فوق التعديل المتزامن للجهاز الآخر ونفقده.
+      const { data: updated, error } = await client.from('app_settings')
+        .update({ value: ov, updated_at: nowIso })
+        .eq('key', APP_SETTINGS_KEY)
+        .eq('updated_at', cloudUpdatedAt)
+        .select('key');
+      if(error){ console.error('تعذر رفع إعدادات المالك لقاعدة البيانات:', error); return; }
+      if(updated && updated.length){ return; } // نجحت الكتابة
+      await new Promise(function(res){ setTimeout(res, 120 + attempt*150 + Math.random()*150); });
+      continue; // فيه تزاحم — أعد القراءة والدمج والمحاولة
+    } else {
+      // لا يوجد صف بعد بقاعدة البيانات — هذه أول كتابة على الإطلاق لهذا المفتاح
+      const { error } = await client.from('app_settings').upsert({ key: APP_SETTINGS_KEY, value: ov, updated_at: nowIso }, { onConflict: 'key' });
+      if(error) console.error('تعذر رفع إعدادات المالك لقاعدة البيانات:', error);
+      return;
+    }
+  }
+  console.error('تعذر حفظ الإعدادات بعد عدة محاولات متتالية بسبب تزاحم شديد بالحفظ من أجهزة أخرى بنفس اللحظة.');
 }
 
 async function fetchOverridesFromCloud(){
@@ -4099,13 +4124,47 @@ function subscribeToEmployeesRealtime(){
 const TWOFA_SETTINGS_KEY = 'employee_2fa';
 let __applyingCloud2FA = false;
 
-async function save2FAToCloud(map){
-  if(__applyingCloud2FA) return;
+// mutation: {type:'set', uid, value} أو {type:'delete', uid} أو {type:'clearAll'}
+// — نطبّق هذا التغيير المحدد دايما فوق أحدث نسخة سحابية فعليا (نعيد جلبها
+// عند كل محاولة)، بدل ما نكتب فوق الخريطة كاملة بنسخة محلية قد تكون قديمة.
+// هذا بالضبط ما كان يسبب رجوع رمز الأمان القديم بعد تغييره.
+async function save2FAToCloud(mutation){
   const client = getSupabaseClient();
   if(!client) return;
-  const { error } = await client.from('app_settings').upsert({ key: TWOFA_SETTINGS_KEY, value: map, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-  if(error) console.error('تعذر رفع رموز الأمان لقاعدة البيانات:', error);
+  const MAX_ATTEMPTS = 8;
+  for(let attempt=0; attempt<MAX_ATTEMPTS; attempt++){
+    let cloudMap = null, cloudUpdatedAt = null;
+    try{
+      const { data: prevRow } = await client.from('app_settings').select('value, updated_at').eq('key', TWOFA_SETTINGS_KEY).maybeSingle();
+      if(prevRow){ cloudMap = prevRow.value; cloudUpdatedAt = prevRow.updated_at; }
+    }catch(err){ /* تعذر الجلب */ }
+    let localFallback = {};
+    try{ localFallback = JSON.parse(localStorage.getItem('ahsaCallCenter2FA') || '{}'); }catch(err){}
+    const map = Object.assign({}, cloudMap || localFallback);
+    if(mutation.type === 'set') map[mutation.uid] = mutation.value;
+    else if(mutation.type === 'delete') delete map[mutation.uid];
+    else if(mutation.type === 'clearAll') Object.keys(map).forEach(function(k){ delete map[k]; });
+    try{ localStorage.setItem(TWOFA_KEY, JSON.stringify(map)); }catch(err){}
+    const nowIso = new Date().toISOString();
+    if(cloudUpdatedAt){
+      const { data: updated, error } = await client.from('app_settings')
+        .update({ value: map, updated_at: nowIso })
+        .eq('key', TWOFA_SETTINGS_KEY)
+        .eq('updated_at', cloudUpdatedAt)
+        .select('key');
+      if(error){ console.error('تعذر رفع رموز الأمان لقاعدة البيانات:', error); return; }
+      if(updated && updated.length){ return; }
+      await new Promise(function(res){ setTimeout(res, 120 + attempt*150 + Math.random()*150); });
+      continue;
+    } else {
+      const { error } = await client.from('app_settings').upsert({ key: TWOFA_SETTINGS_KEY, value: map, updated_at: nowIso }, { onConflict: 'key' });
+      if(error) console.error('تعذر رفع رموز الأمان لقاعدة البيانات:', error);
+      return;
+    }
+  }
+  console.error('تعذر حفظ رمز الأمان بعد عدة محاولات بسبب تزاحم بالحفظ.');
 }
+window.save2FAToCloud = save2FAToCloud;
 
 async function fetch2FAFromCloud(){
   const client = getSupabaseClient();
@@ -4155,7 +4214,7 @@ function subscribeTo2FARealtime(){
 // عند أول محاولة دخول تالية له. لا يمس كلمات المرور ولا بيانات الموظفين.
 async function ownerResetAll2FA(){
   try{ localStorage.setItem('ahsaCallCenter2FA', JSON.stringify({})); }catch(err){}
-  await save2FAToCloud({});
+  await save2FAToCloud({type:'clearAll'});
 }
 
 const SUPABASE_URL = 'https://rxcfzsuldhyyhgqlebuo.supabase.co';
@@ -9515,12 +9574,13 @@ function renderQuizAnalysisView(root){
     (r.detail||[]).forEach(function(d){
       const key = d.question;
       if(!byQuestion[key]){
-        byQuestion[key] = { question:d.question, q_type:d.q_type, options:d.options, correct_index:d.correct_index, correctCount:0, wrongCount:0, skippedCount:0, choiceCounts:{} };
+        byQuestion[key] = { question:d.question, q_type:d.q_type, options:d.options, correct_index:d.correct_index, correctCount:0, wrongCount:0, skippedCount:0, choiceCounts:{}, correctNames:[], wrongNames:[], skippedNames:[] };
         order.push(key);
       }
       const stat = byQuestion[key];
-      if(d.chosenIndex === -1 || d.chosenIndex == null){ stat.skippedCount++; }
-      else if(d.correct){ stat.correctCount++; } else { stat.wrongCount++; }
+      const empName = r.employeeName || '';
+      if(d.chosenIndex === -1 || d.chosenIndex == null){ stat.skippedCount++; stat.skippedNames.push(empName); }
+      else if(d.correct){ stat.correctCount++; stat.correctNames.push(empName); } else { stat.wrongCount++; stat.wrongNames.push(empName); }
       if(d.chosenIndex !== -1 && d.chosenIndex != null){
         stat.choiceCounts[d.chosenIndex] = (stat.choiceCounts[d.chosenIndex]||0) + 1;
       }
@@ -9580,15 +9640,32 @@ function renderQuizAnalysisView(root){
           + '</div>';
       }).join('') + '</div>';
     }
+    const namesId = 'quizQNames'+idx;
+    const namesHtml = '<div style="margin-top:8px;">'
+      + '<button type="button" onclick="var el=document.getElementById(\''+namesId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="all:unset;cursor:pointer;font-size:11px;font-weight:800;color:#0e6a5a;">👥 عرض/إخفاء أسماء المشاركين لهذا السؤال</button>'
+      + '<div id="'+namesId+'" style="display:none;margin-top:8px;padding:10px;background:#f8fafb;border-radius:9px;font-size:11.5px;">'
+      + (q.wrongNames.length ? ('<div style="margin-bottom:6px;"><span style="color:#c0392b;font-weight:800;">❌ جاوبوا غلط ('+q.wrongNames.length+'):</span> '+q.wrongNames.map(kbEsc).join('، ')+'</div>') : '')
+      + (q.correctNames.length ? ('<div style="margin-bottom:6px;"><span style="color:#0e6a5a;font-weight:800;">✅ جاوبوا صح ('+q.correctNames.length+'):</span> '+q.correctNames.map(kbEsc).join('، ')+'</div>') : '')
+      + (q.skippedNames.length ? ('<div><span style="color:#8a93a6;font-weight:800;">⭘ ما جاوبوا ('+q.skippedNames.length+'):</span> '+q.skippedNames.map(kbEsc).join('، ')+'</div>') : '')
+      + '</div></div>';
     return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 4px 12px rgba(15,46,61,.06);margin-bottom:12px;">'
       + '<div style="font-weight:800;font-size:13.5px;color:#16233f;margin-bottom:8px;">'+(idx+1)+'. '+kbEsc(quizCleanQuestionText(q.question))+'</div>'
       + '<div style="height:8px;background:#eef1f3;border-radius:4px;overflow:hidden;margin-bottom:6px;"><div style="width:'+q.wrongRate+'%;height:100%;background:'+barColor+';"></div></div>'
       + '<div style="font-size:11.5px;color:#8a93a6;font-weight:700;">✅ '+q.correctCount+' جاوبوا صح — ❌ '+q.wrongCount+' جاوبوا غلط'+(q.skippedCount?(' — ⭘ '+q.skippedCount+' ما جاوبوا'):'')+' — نسبة الخطأ '+q.wrongRate+'%</div>'
       + choicesHtml
+      + namesHtml
       + '</div>';
   }).join('');
+  const legendHtml = '<div style="background:#eef6f4;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#16233f;font-weight:700;line-height:1.9;">'
+    + '💡 كيف تقرأ هذا التحليل ببساطة:<br>'
+    + '— الشريط العلوي (78% مثلا) = متوسط درجات كل المشاركين مع بعض.<br>'
+    + '— "أفضل موظف" و"أضعف موظف" = صاحب أعلى وأقل درجة في هذا الاختبار تحديدا.<br>'
+    + '— "سلم التقديرات" = كم شخص وقع بكل فئة (ممتاز، جيد جدا... إلخ).<br>'
+    + '— كل سؤال بالأسفل مرتب من الأكثر خطأ للأقل، وتقدر تضغط "عرض أسماء المشاركين" تحت أي سؤال لتعرف بالاسم مين جاوب صح ومين جاوب غلط بالضبط.'
+    + '</div>';
   root.innerHTML = kbHeader(titleText, results.length+' مشارك', backAction)
     + '<div style="max-width:800px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + legendHtml
     + summaryHtml
     + '<div style="font-size:13px;font-weight:800;color:#16233f;margin:6px 0 10px;">📋 تقرير نتائج الاختبار والقرارات التدريبية — سلم التقديرات وتوزيع الشرائح:</div>'
     + tiersHtml
@@ -9897,6 +9974,7 @@ function renderQuizManageView(root){
           + '<input type="number" min="1" id="quizMinutesInput" value="'+minutesVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
           + '<button type="button" onclick="quizSaveCount()" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;">حفظ</button>'
           + '</div>')
+    + quizBankStatsHtml(questions)
     + '<div id="quizFormBox"></div>'
     + '<div id="quizQuestionsListBox" style="display:flex;flex-direction:column;gap:12px;margin-top:14px;"></div>'
     + '</div>';
@@ -9904,6 +9982,22 @@ function renderQuizManageView(root){
   const formBox = document.getElementById('quizFormBox');
   if(window.__quizEditingId == null){ formBox.innerHTML = quizRenderForm(null); }
   quizRenderQuestionsList(questions);
+}
+// شريط إحصائي أعلى بنك الأسئلة: العدد الكلي، وتوزيعها حسب النوع (صح/خطأ —
+// اختيار من متعدد) وحسب عدد الخيارات لأسئلة الاختيار من متعدد، حتى لا يضطر
+// المسؤول يفتح كل سؤال بنفسه ليعرف نوعه.
+function quizBankStatsHtml(questions){
+  const total = questions.length;
+  const tfCount = questions.filter(function(q){ return q.q_type==='tf'; }).length;
+  const mcqQs = questions.filter(function(q){ return q.q_type==='mcq'; });
+  const byOptCount = {};
+  mcqQs.forEach(function(q){ const n=(q.options||[]).length; byOptCount[n]=(byOptCount[n]||0)+1; });
+  const optBreakdown = Object.keys(byOptCount).sort().map(function(n){ return n+' خيارات: '+byOptCount[n]; }).join(' — ');
+  return '<div style="background:#f8fafb;border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12.5px;font-weight:700;color:#16233f;">'
+    + '<div>📊 إجمالي الأسئلة بهذا القسم: <span style="color:#0e6a5a;font-weight:900;">'+total+'</span></div>'
+    + '<div>✔️/✖️ صح وخطأ: <span style="font-weight:900;">'+tfCount+'</span></div>'
+    + '<div>🔢 اختيار من متعدد: <span style="font-weight:900;">'+mcqQs.length+'</span>'+(optBreakdown?(' <span style="color:#8a93a6;font-weight:600;">('+optBreakdown+')</span>'):'')+'</div>'
+    + '</div>';
 }
 function quizSaveCount(){
   const ov = loadAdminOverrides();
@@ -9990,12 +10084,16 @@ function quizRenderForm(editQ){
   const q = editQ || { q_type:'tf', question:'', options:['','',''], correct_index:0, sourceSectionId:null, sourceItemId:null };
   const idAttr = editQ ? editQ.id : 'new';
   const sector = window.__quizState.sector;
+  const optCount = Math.max(2, Math.min(5, (q.options && q.options.length) ? q.options.length : 3));
   let mcqInputs = '';
-  for(let i=0;i<3;i++){
-    mcqInputs += '<input id="quizOpt'+i+'-'+idAttr+'" placeholder="الخيار '+(i+1)+'" value="'+kbEsc((q.options||[])[i]||'')+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">';
+  for(let i=0;i<optCount;i++){
+    mcqInputs += '<input class="quizMcqOptInput" id="quizOpt'+i+'-'+idAttr+'" placeholder="الخيار '+(i+1)+'" value="'+kbEsc((q.options||[])[i]||'')+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">';
   }
   let correctMcqOpts = '';
-  for(let i=0;i<3;i++){ correctMcqOpts += '<option value="'+i+'" '+(q.correct_index===i?'selected':'')+'>الإجابة الصحيحة: الخيار '+(i+1)+'</option>'; }
+  for(let i=0;i<optCount;i++){ correctMcqOpts += '<option value="'+i+'" '+(q.correct_index===i?'selected':'')+'>الإجابة الصحيحة: الخيار '+(i+1)+'</option>'; }
+  let optCountSelect = '<select id="quizMcqCount-'+idAttr+'" onchange="quizMcqSetCount(\''+idAttr+'\')" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">';
+  for(let n=2;n<=5;n++){ optCountSelect += '<option value="'+n+'" '+(optCount===n?'selected':'')+'>'+n+' خيارات</option>'; }
+  optCountSelect += '</select>';
   const tfCorrectHtml = '<select id="quizTfCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
     + '<option value="0" '+(q.correct_index===0?'selected':'')+'>الإجابة الصحيحة: صح</option>'
     + '<option value="1" '+(q.correct_index===1?'selected':'')+'>الإجابة الصحيحة: خطأ</option>'
@@ -10009,12 +10107,15 @@ function quizRenderForm(editQ){
     + '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
     + '<select id="quizType-'+idAttr+'" onchange="quizToggleTypeFields(\''+idAttr+'\')" style="width:150px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
     + '<option value="tf" '+(q.q_type==='tf'?'selected':'')+'>صح / خطأ</option>'
-    + '<option value="mcq" '+(q.q_type==='mcq'?'selected':'')+'>اختيار من متعدد (3 خيارات)</option>'
+    + '<option value="mcq" '+(q.q_type==='mcq'?'selected':'')+'>اختيار من متعدد</option>'
     + '</select>'
     + '<input id="quizQuestion-'+idAttr+'" placeholder="نص السؤال" value="'+kbEsc(q.question)+'" style="flex:1;min-width:180px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
     + '</div>'
     + '<div id="quizTfWrap-'+idAttr+'" style="display:'+(q.q_type==='tf'?'block':'none')+';margin-bottom:8px;">'+tfCorrectHtml+'</div>'
-    + '<div id="quizMcqWrap-'+idAttr+'" style="display:'+(q.q_type==='mcq'?'grid':'none')+';gap:6px;margin-bottom:8px;">'+mcqInputs+'<select id="quizMcqCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'+correctMcqOpts+'</select></div>'
+    + '<div id="quizMcqWrap-'+idAttr+'" style="display:'+(q.q_type==='mcq'?'block':'none')+';margin-bottom:8px;">'
+    + '<div style="margin-bottom:6px;">'+optCountSelect+'</div>'
+    + '<div id="quizMcqOptsList-'+idAttr+'" style="display:grid;gap:6px;margin-bottom:6px;">'+mcqInputs+'</div>'
+    + '<select id="quizMcqCorrect-'+idAttr+'" style="padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'+correctMcqOpts+'</select></div>'
     + '<div style="margin-bottom:10px;padding:10px;background:#f8fafb;border-radius:9px;">'
     + '<label style="font-size:11.5px;color:#5b6685;display:block;margin-bottom:6px;">🔗 توثيق: ربط السؤال بمصدره من بنك المعرفة (اختياري، يظهر للموظف بعد إجابته إذا جاوب غلط)</label>'
     + '<div id="quizSrcPreview-'+idAttr+'" style="font-size:11.5px;font-weight:800;color:'+(linkedItem0?'#0e6a5a':'#8a93a6')+';margin-bottom:8px;">'+srcPreviewText+'</div>'
@@ -10040,7 +10141,33 @@ function quizRenderForm(editQ){
 function quizToggleTypeFields(idAttr){
   const type = document.getElementById('quizType-'+idAttr).value;
   document.getElementById('quizTfWrap-'+idAttr).style.display = type==='tf' ? 'block' : 'none';
-  document.getElementById('quizMcqWrap-'+idAttr).style.display = type==='mcq' ? 'grid' : 'none';
+  document.getElementById('quizMcqWrap-'+idAttr).style.display = type==='mcq' ? 'block' : 'none';
+}
+function quizMcqSetCount(idAttr){
+  const count = parseInt(document.getElementById('quizMcqCount-'+idAttr).value, 10);
+  const list = document.getElementById('quizMcqOptsList-'+idAttr);
+  const correctSel = document.getElementById('quizMcqCorrect-'+idAttr);
+  if(!list || !correctSel) return;
+  const existing = Array.from(list.querySelectorAll('.quizMcqOptInput')).map(function(inp){ return inp.value; });
+  const prevCorrect = parseInt(correctSel.value, 10);
+  list.innerHTML = '';
+  for(let i=0;i<count;i++){
+    const inp = document.createElement('input');
+    inp.className = 'quizMcqOptInput';
+    inp.id = 'quizOpt'+i+'-'+idAttr;
+    inp.placeholder = 'الخيار '+(i+1);
+    inp.value = existing[i] || '';
+    inp.style.cssText = 'padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;';
+    list.appendChild(inp);
+  }
+  correctSel.innerHTML = '';
+  for(let i=0;i<count;i++){
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = 'الإجابة الصحيحة: الخيار '+(i+1);
+    if(i===prevCorrect) opt.selected = true;
+    correctSel.appendChild(opt);
+  }
 }
 function quizRenderQuestionsList(questions){
   const box = document.getElementById('quizQuestionsListBox');
@@ -10051,7 +10178,7 @@ function quizRenderQuestionsList(questions){
     const answerLabel = q.q_type==='tf' ? (q.correct_index===0?'صح':'خطأ') : (q.options||[])[q.correct_index]||'';
     return '<div style="background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
       + '<div><div style="font-weight:800;font-size:13.5px;color:#16233f;">'+kbEsc(quizCleanQuestionText(q.question))+'</div>'
-      + '<div style="font-size:11.5px;color:#8a93a6;margin-top:3px;">('+ (q.q_type==='tf'?'صح/خطأ':'اختيار من متعدد') +') — الإجابة: '+kbEsc(answerLabel)+'</div></div>'
+      + '<div style="font-size:11.5px;color:#8a93a6;margin-top:3px;">('+ (q.q_type==='tf'?'صح/خطأ':('اختيار من متعدد — '+(q.options||[]).length+' خيارات')) +') — الإجابة: '+kbEsc(answerLabel)+'</div></div>'
       + '<div style="display:flex;gap:6px;flex-shrink:0;">'
       + '<button type="button" onclick="quizEditQuestion('+q.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">✎</button>'
       + '<button type="button" onclick="quizDeleteQuestion('+q.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;">🗑</button>'
@@ -10070,8 +10197,9 @@ function quizAddQuestion(){
   if(type === 'tf'){
     q.correct_index = parseInt(document.getElementById('quizTfCorrect-'+idAttr).value, 10);
   } else {
-    const opts = [0,1,2].map(function(i){ return document.getElementById('quizOpt'+i+'-'+idAttr).value.trim(); });
-    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي الخيارات الثلاثة'); return; }
+    const opts = Array.from(document.querySelectorAll('#quizMcqOptsList-'+idAttr+' .quizMcqOptInput')).map(function(inp){ return inp.value.trim(); });
+    if(opts.length < 2){ alert('لازم خيارين على الأقل'); return; }
+    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي كل الخيارات'); return; }
     q.options = opts;
     q.correct_index = parseInt(document.getElementById('quizMcqCorrect-'+idAttr).value, 10);
   }
@@ -10101,8 +10229,9 @@ function quizSaveEdit(id){
     q.correct_index = parseInt(document.getElementById('quizTfCorrect-'+id).value, 10);
     delete q.options;
   } else {
-    const opts = [0,1,2].map(function(i){ return document.getElementById('quizOpt'+i+'-'+id).value.trim(); });
-    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي الخيارات الثلاثة'); return; }
+    const opts = Array.from(document.querySelectorAll('#quizMcqOptsList-'+id+' .quizMcqOptInput')).map(function(inp){ return inp.value.trim(); });
+    if(opts.length < 2){ alert('لازم خيارين على الأقل'); return; }
+    if(opts.some(function(o){ return !o; })){ alert('لازم تعبّي كل الخيارات'); return; }
     q.options = opts;
     q.correct_index = parseInt(document.getElementById('quizMcqCorrect-'+id).value, 10);
   }
@@ -10153,7 +10282,8 @@ function quizStartGlobalTimer(){
     }
     if(remaining <= 180 && !run.warned3min){
       run.warned3min = true;
-      alert('⚠️ تنبيه: تبقى 3 دقائق فقط على انتهاء الاختبار! أنهِ إجاباتك وسلّم الاختبار بأقرب وقت.');
+      // تم إلغاء نافذة التنبيه المنبثقة بناء على طلب المستخدم — المؤقت المعروض
+      // بالشاشة أصلا كافٍ، ونافذة alert() كانت تقطع تركيز الموظف أثناء الاختبار.
     }
     quizUpdateGlobalTimerUI();
   }, 1000);
@@ -10307,11 +10437,9 @@ function renderQuizReviewBeforeSubmitView(root){
 function quizConfirmFinish(){
   const run = window.__quizRun;
   if(!run) return;
-  const unanswered = run.answers.filter(function(a){ return !a || a.chosenIndex === -1 || a.chosenIndex == null; }).length;
-  const msg = unanswered
-    ? ('عندك '+unanswered+' سؤال بدون إجابة وبتُحسب غلط. متأكد تبي تسلّم الاختبار نهائيا؟')
-    : 'متأكد تبي تسلّم الاختبار نهائيا؟ ما تقدر تعدّل إجاباتك بعدها.';
-  if(!confirm(msg)) return;
+  // تم إلغاء نافذة confirm() الإضافية بناء على طلب المستخدم — الضغط على زر
+  // "إنهاء الاختبار وتسليمه نهائيا" نفسه هو الإجراء الصريح المقصود، فيُسلَّم
+  // الاختبار مباشرة بدون نافذة تأكيد ثانية.
   quizFinish();
 }
 function quizPrevQuestion(){
