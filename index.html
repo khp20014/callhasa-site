@@ -3655,10 +3655,34 @@ window.logAccessVisit = logAccessVisit;
 const APP_SETTINGS_KEY = 'admin_overrides';
 let __applyingCloudOverrides = false; // يمنع حلقة كتابة-قراءة لا نهائية وقت استقبال بث لحظي
 
+// دمج مصفوفة محلية مع نسخة السحابة بالمعرّف (id) — اتحاد الاثنتين، بدون تكرار.
+// يمنع ضياع عناصر أضافها جهاز آخر بعد آخر تحميل لهذا الجهاز (نتائج اختبار،
+// اختبار مجدول، سؤال...) عندما يحفظ هذا الجهاز حفظة إدارية غير متعلقة بها.
+function mergeArraysById(localArr, cloudArr){
+  const local = Array.isArray(localArr) ? localArr : [];
+  const cloud = Array.isArray(cloudArr) ? cloudArr : [];
+  const seen = new Set(local.map(function(x){ return x && x.id; }));
+  const merged = local.slice();
+  cloud.forEach(function(x){ if(x && !seen.has(x.id)){ merged.push(x); seen.add(x.id); } });
+  return merged;
+}
+// المفاتيح المعرّضة لفقد بيانات بسبب سباق الحفظ (append-only بمعرّف id فريد) —
+// أي حفظة إدارية عادية (حذف اختبار، تعديل موظف...) تمر من هنا فتُدمج تلقائيا
+// مع آخر نسخة سحابية بدل ما تكتب فوقها بنسخة محلية قديمة ناقصة.
+const CLOUD_MERGE_KEYS = ['quizResults', 'scheduledExams', 'examQuestions', 'quizQuestions'];
 async function saveOverridesToCloud(ov){
   if(__applyingCloudOverrides) return; // هذا التغيير جاء أصلا من السحابة، لا داعي لإعادة رفعه
   const client = getSupabaseClient();
   if(!client) return;
+  try{
+    const { data: prevRow } = await client.from('app_settings').select('value').eq('key', APP_SETTINGS_KEY).maybeSingle();
+    const cloudOv = prevRow ? prevRow.value : null;
+    if(cloudOv){
+      CLOUD_MERGE_KEYS.forEach(function(k){ ov[k] = mergeArraysById(ov[k], cloudOv[k]); });
+      // نحدّث التخزين المحلي بنفس الدمج حتى ما يعيد هذا الجهاز فقدها لاحقا
+      try{ localStorage.setItem(ADMIN_OV_KEY, JSON.stringify(ov)); }catch(err){}
+    }
+  }catch(err){ /* تعذر جلب النسخة السابقة — نكمل بالنسخة المحلية أفضل من عدم الحفظ إطلاقا */ }
   const { error } = await client.from('app_settings').upsert({ key: APP_SETTINGS_KEY, value: ov, updated_at: new Date().toISOString() }, { onConflict: 'key' });
   if(error) console.error('تعذر رفع إعدادات المالك لقاعدة البيانات:', error);
 }
