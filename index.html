@@ -3119,12 +3119,14 @@ updateClock(); setInterval(updateClock,1000);
   });
 
   checkPinBtn.addEventListener('click', async ()=>{
+    if(typeof refreshTwoFAFromCloud === 'function') await refreshTwoFAFromCloud();
     const twoFA = getEffectiveTwoFA(verifyUid);
     const entered = (checkPinInput.value || '').trim();
     if(twoFA && await verifyTwoFAValue(entered, twoFA.pin)){ finishVerification(verifyUid); }
     else { showVerifyCheckError('الرمز غير صحيح.'); checkPinInput.value=''; checkPinInput.focus(); }
   });
   checkQuestionBtn.addEventListener('click', async ()=>{
+    if(typeof refreshTwoFAFromCloud === 'function') await refreshTwoFAFromCloud();
     const twoFA = getEffectiveTwoFA(verifyUid);
     const entered = normalizeAnswer(checkQuestionAnswer.value);
     if(twoFA && entered && await verifyTwoFAValue(entered, twoFA.answer)){ finishVerification(verifyUid); }
@@ -3256,6 +3258,7 @@ updateClock(); setInterval(updateClock,1000);
 
   resetVerifyBtn.addEventListener('click', async ()=>{
     const uid = (resetUser.value || '').trim();
+    if(typeof refreshTwoFAFromCloud === 'function') await refreshTwoFAFromCloud();
     const twoFA = getEffectiveTwoFA(uid);
     if(!twoFA){ evaluateResetGate(); return; }
     let ok = false;
@@ -4123,6 +4126,17 @@ async function initial2FACloudSync(){
   const cloudMap = await fetch2FAFromCloud();
   if(cloudMap) applyCloud2FA(cloudMap);
 }
+// يُستدعى فورا قبل أي مقارنة لرمز الأمان (تسجيل دخول أو "نسيت رمز الأمان")
+// — يجيب آخر نسخة من السحابة ويطبّقها محليا أولا، عشان المقارنة تتم دائما
+// مقابل آخر رمز فعليا محفوظ، لا نسخة قديمة قد تكون عالقة بهذا الجهاز/المتصفح
+// (وهذا سبب شائع لرسالة "الرمز غير صحيح" رغم أن المدخل صحيح فعلا).
+async function refreshTwoFAFromCloud(){
+  try{
+    const cloudMap = await fetch2FAFromCloud();
+    if(cloudMap) applyCloud2FA(cloudMap);
+  }catch(err){ /* تعذر الجلب — نكمل بالنسخة المحلية المتوفرة */ }
+}
+window.refreshTwoFAFromCloud = refreshTwoFAFromCloud;
 
 function subscribeTo2FARealtime(){
   const client = getSupabaseClient();
