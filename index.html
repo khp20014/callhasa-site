@@ -1162,6 +1162,11 @@
 <div id="quizAppWrap" style="display:none;position:fixed;inset:0;z-index:500;overflow:auto;background:#f4f6f8;">
   <div id="quizRoot"></div>
 </div>
+<!-- زر ثابت لتبديل الوضع الليلي لقسم الاختبار — مقصودا خارج الحاوية اللي
+     ينطبق عليها فلتر الانعكاس، عشان شكله ولونه يبقى ثابت ولا يضيع أو يتغيّر
+     لونه ويصير مو واضح، وموجود فوق كل شاشات الاختبار دايما بنفس المكان
+     بالضبط بغض النظر عن أي شاشة فاتحها الموظف. -->
+<button type="button" id="quizDarkModeFab" onclick="quizToggleDarkMode()" style="display:none;position:fixed;bottom:20px;right:20px;z-index:600;width:52px;height:52px;border-radius:50%;background:#16233f;color:#fff;border:3px solid #f0c33d;font-size:22px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);align-items:center;justify-content:center;"></button>
 <style>
 /* الوضع الليلي لقسم "اختبر نفسك" فقط — باستخدام انعكاس ألوان على مستوى الفلتر
    البصري بدل إعادة كتابة كل لون بكل شاشة (اللي كان يحتاج تعديل عشرات الدوال).
@@ -9976,10 +9981,18 @@ function renderQuiz(){
 function quizIsDarkMode(){
   try{ return localStorage.getItem('quizDarkMode') === 'on'; }catch(err){ return false; }
 }
+// يظهر/يخفي زر الوضع الليلي العائم — يظهر فقط وقت فتح قسم الاختبار، ويختفي
+// تماما بأي قسم ثاني حتى ما يبقى عالقا فوق شاشات ما تخصه.
+function quizSetFabVisible(visible){
+  const fab = document.getElementById('quizDarkModeFab');
+  if(fab) fab.style.display = visible ? 'flex' : 'none';
+}
 function quizApplyDarkModePref(){
   const wrap = document.getElementById('quizAppWrap');
-  if(!wrap) return;
-  wrap.classList.toggle('quizDark', quizIsDarkMode());
+  const fab = document.getElementById('quizDarkModeFab');
+  const on = quizIsDarkMode();
+  if(wrap) wrap.classList.toggle('quizDark', on);
+  if(fab) fab.textContent = on ? '☀️' : '🌙';
 }
 function quizToggleDarkMode(){
   const on = !quizIsDarkMode();
@@ -9994,7 +10007,6 @@ function renderQuizSectorsView(root){
     + '<button type="button" onclick="window.__showEmployeeSearchApp ? window.__showEmployeeSearchApp() : (window.__showAppHub && window.__showAppHub())" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
     + '<div style="position:absolute;top:20px;left:20px;display:flex;gap:8px;flex-wrap:wrap;">'
-    + '<button type="button" onclick="quizToggleDarkMode()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">'+(quizIsDarkMode()?'☀️ الوضع العادي':'🌙 الوضع الليلي')+'</button>'
     + '<button type="button" onclick="quizGoMyResults()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">🧾 نتائجي</button>'
     + (canResults ? '<button type="button" onclick="quizGoResultsList()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">📋 كل النتائج</button>' : '')
     + '</div>'
@@ -15100,6 +15112,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(kbWrap) kbWrap.style.display = 'none';
     if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'none';
+    quizSetFabVisible(false);
   }
   function showEmployeeSearch(){
     if(hub) hub.style.display = 'none';
@@ -15108,6 +15121,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(kbWrap) kbWrap.style.display = 'none';
     if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
+    quizSetFabVisible(false);
   }
   function showKnowledgeBank(){
     if(typeof canViewKnowledgeBank === 'function' && !canViewKnowledgeBank()){ return; }
@@ -15119,6 +15133,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(backBtn) backBtn.style.display = 'flex';
     window.__kbState = { view:'sectors', sector:null, sectionId:null };
     window.__kbEditingId = null;
+    quizSetFabVisible(false);
     if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
   }
   function showQuiz(){
@@ -15128,6 +15143,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(kbWrap) kbWrap.style.display = 'none';
     if(quizWrap) quizWrap.style.display = 'block';
     if(backBtn) backBtn.style.display = 'flex';
+    quizSetFabVisible(true);
     if(typeof quizApplyDarkModePref === 'function') quizApplyDarkModePref();
   }
   function showContactReasons(){
@@ -15141,6 +15157,7 @@ document.addEventListener('keydown', ev=>{ if(ev.key==='Escape'){ closeModal('mo
     if(kbWrap) kbWrap.style.display = 'none';
     if(quizWrap) quizWrap.style.display = 'none';
     if(backBtn) backBtn.style.display = 'flex';
+    quizSetFabVisible(false);
     if(!crLoaded){
       crLoaded = true;
       // تحميل كسول: نفك ترميز التطبيق الثاني ونحقنه بالإطار أول مرة فقط
