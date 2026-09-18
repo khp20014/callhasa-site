@@ -2244,6 +2244,7 @@ function loadAdminOverrides(){
     ov.quizQuestions = ov.quizQuestions || [];
     ov.quizResults = ov.quizResults || [];
     ov.quizResultViewers = ov.quizResultViewers || [];
+    ov.quizResultScope = ov.quizResultScope || {};
     ov.quizQuestionCount = ov.quizQuestionCount || { work: 10, dev: 10 };
     ov.quizTotalMinutes = ov.quizTotalMinutes || { work: 15, dev: 15 };
     // عناصر بنك المعرفة نفسها (أسئلة/أجوبة) — تُخزَّن هنا وتُزامَن سحابيا
@@ -2272,7 +2273,7 @@ function loadAdminOverrides(){
     ov.deletedExamQuestionIds = ov.deletedExamQuestionIds || [];
     ov.deletedQuizQuestionIds = ov.deletedQuizQuestionIds || [];
     return ov;
-  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], examQuestions:[], quizResults:[], quizResultViewers:[], quizQuestionCount:{work:10,dev:10}, quizTotalMinutes:{work:15,dev:15}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[], deletedScheduledExamIds:[], deletedQuizResultIds:[], deletedExamQuestionIds:[], deletedQuizQuestionIds:[] }; }
+  }catch(err){ return { edits:{}, deleted:[], added:[], hidden:[], supervisorScope:{}, dynamicSupervisors:[], labelOverrides:{}, auditLog:[], violations:{}, perfNotes:{}, perfNoteTypes:[], perfNoteEditors:['1470'], personalGoals:{}, goalViewers:[], goalApprovers:[], goalMonths:{}, kudos:[], suggestions:[], contactReasonsViewers:[], knowledgeBankEditors:{work:[],dev:[],library:[],quality:[]}, knowledgeBankApprovers:{work:[],dev:[],library:[],quality:[]}, knowledgeBankPending:[], knowledgeBankArticles:[], knowledgeBankSections:[], knowledgeBankItems:[], quizQuestions:[], examQuestions:[], quizResults:[], quizResultViewers:[], quizResultScope:{}, quizQuestionCount:{work:10,dev:10}, quizTotalMinutes:{work:15,dev:15}, kbFavorites:{}, kbArticleVotes:{}, kbSearchMisses:[], scheduledExams:[], deletedScheduledExamIds:[], deletedQuizResultIds:[], deletedExamQuestionIds:[], deletedQuizQuestionIds:[] }; }
 }
 // خريطة مفتاح_حقل → تسميته العربية المعروضة، مبنية من نفس مصفوفات الحقول
 // المستخدمة بالعرض والتصدير — تُقرأ وقت الاستدعاء الفعلي (بعد اكتمال تحميل
@@ -9550,12 +9551,12 @@ function renderQuizAnalysisView(root){
   let exam = null, results, backAction, titleText;
   if(isPractice){
     const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.practiceSector; });
-    results = (ov.quizResults||[]).filter(function(r){ return !r.examId && r.sector===st.practiceSector; });
+    results = quizVisibleResults().filter(function(r){ return !r.examId && r.sector===st.practiceSector; });
     backAction = 'quizBackToKb()';
     titleText = '📊 تحليل الاختبار التدريبي'+(sectorInfo?(' — '+sectorInfo.name):'');
   } else {
     exam = (ov.scheduledExams||[]).find(function(e){ return e.id===st.examIdFilter; });
-    results = (ov.quizResults||[]).filter(function(r){ return r.examId === st.examIdFilter; });
+    results = quizVisibleResults().filter(function(r){ return r.examId === st.examIdFilter; });
     backAction = exam ? ("quizBackToSchedList('"+exam.sector+"')") : 'quizBackToKb()';
     titleText = '📊 تحليل الاختبار المجدول'+(exam?(': '+exam.title):'');
   }
@@ -9798,7 +9799,13 @@ function renderSchedExamFormView(root){
     + '<div id="schedManualQList" style="max-height:260px;overflow:auto;border:1.5px solid #e2e6ea;border-radius:10px;padding:6px;">'+schedExamQuestionCheckboxesHtml(st.sector, editExam?(editExam.manualQuestionIds||[]):[])+'</div>'
     + '</div>'
     + '</div>'
-    + '<div style="font-size:11.5px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب من بنك أسئلة الاختبار المجدول لهذا القطاع.</div>'
+    + '<div style="font-size:11px;color:#8a93a6;">القطاع: <b style="color:#16233f;">'+(sectorInfo?kbEsc(sectorInfo.name):'')+'</b> — الأسئلة تُسحب من بنك أسئلة الاختبار المجدول لهذا القطاع.</div>'
+    + '<div>'
+    + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">طريقة احتساب الدرجة</label>'
+    + '<div style="display:flex;flex-direction:column;gap:8px;">'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedWeightMode" value="equal" '+((!editExam || !editExam.useQuestionWeights)?'checked':'')+'> ⚖️ كل الأسئلة بنفس الدرجة (الافتراضي)</label>'
+    + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedWeightMode" value="custom" '+(editExam && editExam.useQuestionWeights?'checked':'')+'> ⚖️ استخدام وزن كل سؤال المحدد ببنك الأسئلة (سؤال يقدر يساوي درجة أكثر من ثاني)</label>'
+    + '</div></div>'
     + '<div>'
     + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">الموظفون المسموح لهم بدخول هذا الاختبار</label>'
     + '<input id="schedEmpSearch" oninput="schedExamFilterEmployees()" placeholder="🔍 ابحث باسم الموظف…" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:6px;">'
@@ -9835,6 +9842,7 @@ function schedExamSave(){
   const questionCount = parseInt(document.getElementById('schedQCount').value, 10) || 10;
   const totalMinutes = parseInt(document.getElementById('schedTotalMinutes').value, 10) || 15;
   const lateTimerMode = document.querySelector('input[name="schedLateMode"]:checked').value;
+  const useQuestionWeights = document.querySelector('input[name="schedWeightMode"]:checked').value === 'custom';
   const selectionMode = document.querySelector('input[name="schedSelMode"]:checked').value;
   const questionTypeFilter = document.querySelector('input[name="schedTypeFilter"]:checked').value;
   const manualQuestionIds = Array.from(document.querySelectorAll('#schedManualQList input.schedManualQChk:checked')).map(function(chk){ return parseInt(chk.value,10); });
@@ -9852,6 +9860,7 @@ function schedExamSave(){
       exam.selectionMode=selectionMode; exam.manualQuestionIds=manualQuestionIds; exam.questionTypeFilter=questionTypeFilter;
       exam.examLocation=examLocation; exam.supervisorName=supervisorName; exam.managerName=managerName;
       exam.locationLabel=locationLabel; exam.supervisorLabel=supervisorLabel; exam.managerLabel=managerLabel;
+      exam.useQuestionWeights=useQuestionWeights;
       exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
     }
   } else {
@@ -9861,6 +9870,7 @@ function schedExamSave(){
       selectionMode: selectionMode, manualQuestionIds: manualQuestionIds, questionTypeFilter: questionTypeFilter,
       examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
       locationLabel: locationLabel, supervisorLabel: supervisorLabel, managerLabel: managerLabel,
+      useQuestionWeights: useQuestionWeights,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
     });
   }
@@ -9880,7 +9890,7 @@ function schedExamStart(id){
   const savedProgress = quizLoadRunProgress(exam.id);
   if(savedProgress){
     __quizAutoFinishDone = false;
-    window.__quizRun = { sector:savedProgress.sector, questions:savedProgress.questions, idx:savedProgress.idx, answers:savedProgress.answers, startedAt:savedProgress.startedAt, timerHandle:null, totalSeconds:Math.round((savedProgress.examEndsAt-Date.now())/1000), examEndsAt: savedProgress.examEndsAt, warned3min:false, examId: exam.id };
+    window.__quizRun = { sector:savedProgress.sector, questions:savedProgress.questions, idx:savedProgress.idx, answers:savedProgress.answers, startedAt:savedProgress.startedAt, timerHandle:null, totalSeconds:Math.round((savedProgress.examEndsAt-Date.now())/1000), examEndsAt: savedProgress.examEndsAt, warned3min:false, examId: exam.id, useWeights: !!exam.useQuestionWeights };
     window.__quizState = { view:'run', sector:exam.sector };
     renderQuiz();
     return;
@@ -9904,7 +9914,7 @@ function schedExamStart(id){
   const fullEndsAt = startedAtNow + (exam.totalMinutes||15)*60000;
   const examEndsAt = (exam.lateTimerMode === 'capped') ? Math.min(fullEndsAt, exam.endAt) : fullEndsAt;
   __quizAutoFinishDone = false;
-  window.__quizRun = { sector:exam.sector, questions:shuffled, idx:0, answers:[], startedAt:startedAtNow, timerHandle:null, totalSeconds:Math.round((examEndsAt-startedAtNow)/1000), examEndsAt: examEndsAt, warned3min:false, examId: exam.id };
+  window.__quizRun = { sector:exam.sector, questions:shuffled, idx:0, answers:[], startedAt:startedAtNow, timerHandle:null, totalSeconds:Math.round((examEndsAt-startedAtNow)/1000), examEndsAt: examEndsAt, warned3min:false, examId: exam.id, useWeights: !!exam.useQuestionWeights };
   window.__quizState = { view:'run', sector:exam.sector };
   renderQuiz();
   quizStartGlobalTimer();
@@ -10101,7 +10111,7 @@ function quizSrcClear(idAttr){
   quizSrcUpdatePreview(idAttr);
 }
 function quizRenderForm(editQ){
-  const q = editQ || { q_type:'tf', question:'', options:['','',''], correct_index:0, sourceSectionId:null, sourceItemId:null };
+  const q = editQ || { q_type:'tf', question:'', options:['','',''], correct_index:0, sourceSectionId:null, sourceItemId:null, weight:1 };
   const idAttr = editQ ? editQ.id : 'new';
   const sector = window.__quizState.sector;
   const optCount = Math.max(2, Math.min(5, (q.options && q.options.length) ? q.options.length : 3));
@@ -10130,6 +10140,7 @@ function quizRenderForm(editQ){
     + '<option value="mcq" '+(q.q_type==='mcq'?'selected':'')+'>اختيار من متعدد</option>'
     + '</select>'
     + '<input id="quizQuestion-'+idAttr+'" placeholder="نص السؤال" value="'+kbEsc(q.question)+'" style="flex:1;min-width:180px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;">'
+    + '<input type="number" min="1" id="quizWeight-'+idAttr+'" title="وزن/درجة هذا السؤال (يُستخدم فقط لو فعّلت خيار الأوزان المخصصة بإعدادات الاختبار المجدول — غير ذلك كل الأسئلة متساوية تلقائيا)" value="'+(q.weight||1)+'" style="width:70px;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;" placeholder="الوزن">'
     + '</div>'
     + '<div id="quizTfWrap-'+idAttr+'" style="display:'+(q.q_type==='tf'?'block':'none')+';margin-bottom:8px;">'+tfCorrectHtml+'</div>'
     + '<div id="quizMcqWrap-'+idAttr+'" style="display:'+(q.q_type==='mcq'?'block':'none')+';margin-bottom:8px;">'
@@ -10213,7 +10224,7 @@ function quizAddQuestion(){
   const type = document.getElementById('quizType-'+idAttr).value;
   const question = document.getElementById('quizQuestion-'+idAttr).value.trim();
   if(!question){ alert('لازم تكتب نص السؤال'); return; }
-  const q = { id: quizNextId(), sector: window.__quizState.sector, q_type: type, question: question };
+  const q = { id: quizNextId(), sector: window.__quizState.sector, q_type: type, question: question, weight: Math.max(1, parseInt(document.getElementById('quizWeight-'+idAttr).value,10) || 1) };
   if(type === 'tf'){
     q.correct_index = parseInt(document.getElementById('quizTfCorrect-'+idAttr).value, 10);
   } else {
@@ -10245,6 +10256,7 @@ function quizSaveEdit(id){
   const question = document.getElementById('quizQuestion-'+id).value.trim();
   if(!question){ alert('لازم تكتب نص السؤال'); return; }
   q.q_type = type; q.question = question;
+  q.weight = Math.max(1, parseInt(document.getElementById('quizWeight-'+id).value,10) || 1);
   if(type === 'tf'){
     q.correct_index = parseInt(document.getElementById('quizTfCorrect-'+id).value, 10);
     delete q.options;
@@ -10511,8 +10523,11 @@ function quizGoToSource(sector, sectionId, itemId){
   kbGoItems(sector, sectionId);
 }
 function quizBuildResultObject(run){
-  const total = run.questions.length;
-  const score = run.answers.filter(function(a){ return a && a.correct; }).length;
+  const useWeights = !!run.useWeights;
+  const total = useWeights ? run.questions.reduce(function(s,q){ return s+(q.weight||1); }, 0) : run.questions.length;
+  const score = useWeights
+    ? run.questions.reduce(function(s,q,i){ const a=run.answers[i]; return s+((a&&a.correct)?(q.weight||1):0); }, 0)
+    : run.answers.filter(function(a){ return a && a.correct; }).length;
   const percent = total ? Math.round((score/total)*100) : 0;
   const durationSeconds = Math.round((Date.now() - run.startedAt)/1000);
   const me = window.__currentEmployee;
@@ -10520,7 +10535,7 @@ function quizBuildResultObject(run){
     const a = run.answers[i] || { chosenIndex:-1, correct:false };
     return {
       question: q.question, q_type: q.q_type, options: q.options||null, correct_index: q.correct_index,
-      chosenIndex: a.chosenIndex, correct: a.correct,
+      chosenIndex: a.chosenIndex, correct: a.correct, weight: q.weight||1,
       sourceSectionId: q.sourceSectionId||null, sourceItemId: q.sourceItemId||null
     };
   });
@@ -10639,7 +10654,11 @@ function quizReviewOptionLine(text, isCorrect, isChosen){
 }
 function renderQuizReviewView(root){
   const ov = loadAdminOverrides();
-  const result = (ov.quizResults||[]).find(function(r){ return r.id===window.__quizState.resultId; });
+  const me = window.__currentEmployee;
+  const found = (ov.quizResults||[]).find(function(r){ return r.id===window.__quizState.resultId; });
+  const isOwn = found && me && String(found.jobNo)===String(me.job_no);
+  const isPermitted = found && typeof canViewQuizResults === 'function' && canViewQuizResults() && quizVisibleResults().some(function(r){ return r.id===found.id; });
+  const result = (isOwn || isPermitted) ? found : null;
   if(!result){ quizBackToKb(); return; }
   const sectorInfo = KB_SECTORS.find(function(s){ return s.id===result.sector; });
   const backAction = window.__quizReviewFromResultsList === 'mine' ? 'quizGoMyResults()' : (window.__quizReviewFromResultsList ? 'quizGoResultsList()' : 'quizBackToKb()');
@@ -10735,7 +10754,7 @@ function renderQuizResultsView(root){
   if(!(typeof canViewQuizResults === 'function' && canViewQuizResults())){ quizBackToKb(); return; }
   const st = window.__quizState || {};
   const ov = loadAdminOverrides();
-  let results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
+  let results = quizVisibleResults().slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
   let examInfo = null;
   if(st.examIdFilter){
     examInfo = (ov.scheduledExams||[]).find(function(e){ return e.id===st.examIdFilter; });
@@ -10775,7 +10794,7 @@ function renderQuizResultsView(root){
 // ملف PDF بدون الحاجة لمكتبة خارجية.
 function quizPrintResults(examIdFilter){
   const ov = loadAdminOverrides();
-  let results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.percent - a.percent; });
+  let results = quizVisibleResults().slice().sort(function(a,b){ return b.percent - a.percent; });
   if(examIdFilter){ results = results.filter(function(r){ return r.examId === examIdFilter; }); }
   const examInfo = examIdFilter ? (ov.scheduledExams||[]).find(function(e){ return e.id===examIdFilter; }) : null;
   const titleText = examInfo ? examInfo.title : 'نتائج الاختبارات';
@@ -10801,7 +10820,7 @@ function quizPrintResults(examIdFilter){
 // فقط (نفس ما هو ظاهر بالشاشة)، وإلا يصدّر كل النتائج.
 function quizExportResultsCsv(examIdFilter){
   const ov = loadAdminOverrides();
-  let results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
+  let results = quizVisibleResults().slice().sort(function(a,b){ return b.takenAt - a.takenAt; });
   if(examIdFilter){ results = results.filter(function(r){ return r.examId === examIdFilter; }); }
   const headers = ['الاسم','الرقم الوظيفي','القسم','النوع','الدرجة','النسبة','المدة (ثانية)','تاريخ ووقت التسليم','خروج مفاجئ بدون تسليم','عدد مرات مغادرة الشاشة'];
   const csvRows = [headers.join(',')];
@@ -10870,13 +10889,24 @@ function renderQuizPermsList(){
   holder.innerHTML = viewers.map(function(jobNo){
     const emp = EMPLOYEES.find(function(x){ return x.job_no===jobNo; });
     const nm = emp ? emp.name : jobNo;
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">'
+    const scope = quizResultScopeFor(jobNo);
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);flex-wrap:wrap;">'
       +'<span style="font-size:12px;font-weight:700;">'+nm+' <span style="color:var(--muted);font-weight:500;">— '+jobNo+'</span></span>'
-      +'<button type="button" class="act-btn quiz-viewer-revoke" data-jobno="'+jobNo+'" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button></div>';
+      +'<div style="display:flex;align-items:center;gap:6px;">'
+      +'<select class="quiz-viewer-scope" data-jobno="'+jobNo+'" style="font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid var(--hair);">'
+      +'<option value="all" '+(scope==='all'?'selected':'')+'>يشوف الكل (القطاع كامل)</option>'
+      +'<option value="team" '+(scope==='team'?'selected':'')+'>فريقه المباشر فقط</option>'
+      +'</select>'
+      +'<button type="button" class="act-btn quiz-viewer-revoke" data-jobno="'+jobNo+'" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button>'
+      +'</div></div>';
   }).join('');
   holder.querySelectorAll('.quiz-viewer-revoke').forEach(function(b){ b.addEventListener('click', function(){
     revokeQuizResultViewer(b.getAttribute('data-jobno'));
     renderQuizPermsList();
+    flashQuizSaveStatus();
+  }); });
+  holder.querySelectorAll('.quiz-viewer-scope').forEach(function(sel){ sel.addEventListener('change', function(){
+    quizSetResultScope(sel.getAttribute('data-jobno'), sel.value);
     flashQuizSaveStatus();
   }); });
 }
@@ -11917,6 +11947,34 @@ function refreshKnowledgeBankAccessUI(){
 }
 // اختبر نفسك: إدارة الأسئلة (إضافة/تعديل/حذف) مقصورة على المالك فقط.
 function canManageQuiz(){ return isTrueOwner(); }
+// نطاق مشاهدة النتائج لكل مفوَّض: 'all' (الافتراضي — كل النتائج، نفس السلوك
+// القديم) أو 'team' (نتائج فريقه المباشر فقط، حسب حقل e.supervisor الموجود
+// أصلا بكل موظف). المالك دائما يشوف كل شي بغض النظر عن هذا الإعداد.
+function quizResultScopeFor(jobNo){
+  const ov = loadAdminOverrides();
+  return (ov.quizResultScope && ov.quizResultScope[jobNo]) || 'all';
+}
+function quizSetResultScope(jobNo, scope){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizResultScope = ov.quizResultScope || {};
+  ov.quizResultScope[jobNo] = scope;
+  saveAdminOverrides(ov);
+}
+// يرجّع كل نتائج الاختبارات اللي يحق للمستخدم الحالي يشوفها، بعد تطبيق نطاقه
+// (كل الموظفين أو فريقه المباشر بس). يُستخدم بدل قراءة ov.quizResults مباشرة
+// بأي شاشة يشوفها مفوَّض (نتائج، تحليل، تصدير، طباعة).
+function quizVisibleResults(){
+  const ov = loadAdminOverrides();
+  const all = ov.quizResults || [];
+  const me = window.__currentEmployee;
+  if(!me) return [];
+  if(isTrueOwner()) return all;
+  const scope = quizResultScopeFor(me.job_no);
+  if(scope !== 'team') return all;
+  const teamNames = new Set(EMPLOYEES.filter(function(e){ return e.supervisor === me.name; }).map(function(e){ return String(e.job_no); }));
+  return all.filter(function(r){ return teamNames.has(String(r.jobNo)); });
+}
 // مشاهدة نتائج الاختبار: المالك دائما، أو من فوّضه عبر ov.quizResultViewers.
 function canViewQuizResults(){
   const me = window.__currentEmployee;
