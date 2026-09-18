@@ -9624,7 +9624,7 @@ function renderQuizAnalysisView(root){
     const pct = results.length ? Math.round(count/results.length*100) : 0;
     const namesId = 'quizTierNames'+i;
     const namesListHtml = tierNames[i].length
-      ? tierNames[i].map(function(n){ return kbEsc(n.name)+' ('+n.percent+'%)'; }).join('، ')
+      ? '<ol style="margin:0;padding-right:20px;">'+tierNames[i].map(function(n){ return '<li style="margin-bottom:5px;">'+kbEsc(n.name)+' — <span style="color:#8a93a6;">'+n.percent+'%</span></li>'; }).join('')+'</ol>'
       : '<span style="color:#8a93a6;">لا يوجد أحد بهذه الفئة</span>';
     return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);margin-bottom:8px;">'
       + '<button type="button" onclick="var el=document.getElementById(\''+namesId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;">'
@@ -9654,9 +9654,9 @@ function renderQuizAnalysisView(root){
     const namesHtml = '<div style="margin-top:8px;">'
       + '<button type="button" onclick="var el=document.getElementById(\''+namesId+'\');el.style.display=el.style.display===\'none\'?\'block\':\'none\';" style="all:unset;cursor:pointer;font-size:11px;font-weight:800;color:#0e6a5a;">👥 عرض/إخفاء أسماء المشاركين لهذا السؤال</button>'
       + '<div id="'+namesId+'" style="display:none;margin-top:8px;padding:10px;background:#f8fafb;border-radius:9px;font-size:11.5px;">'
-      + (q.wrongNames.length ? ('<div style="margin-bottom:6px;"><span style="color:#c0392b;font-weight:800;">❌ جاوبوا غلط ('+q.wrongNames.length+'):</span> '+q.wrongNames.map(kbEsc).join('، ')+'</div>') : '')
-      + (q.correctNames.length ? ('<div style="margin-bottom:6px;"><span style="color:#0e6a5a;font-weight:800;">✅ جاوبوا صح ('+q.correctNames.length+'):</span> '+q.correctNames.map(kbEsc).join('، ')+'</div>') : '')
-      + (q.skippedNames.length ? ('<div><span style="color:#8a93a6;font-weight:800;">⭘ ما جاوبوا ('+q.skippedNames.length+'):</span> '+q.skippedNames.map(kbEsc).join('، ')+'</div>') : '')
+      + (q.wrongNames.length ? ('<div style="margin-bottom:8px;"><span style="color:#c0392b;font-weight:800;">❌ جاوبوا غلط ('+q.wrongNames.length+'):</span><ol style="margin:4px 0 0;padding-right:20px;">'+q.wrongNames.map(function(n){ return '<li>'+kbEsc(n)+'</li>'; }).join('')+'</ol></div>') : '')
+      + (q.correctNames.length ? ('<div style="margin-bottom:8px;"><span style="color:#0e6a5a;font-weight:800;">✅ جاوبوا صح ('+q.correctNames.length+'):</span><ol style="margin:4px 0 0;padding-right:20px;">'+q.correctNames.map(function(n){ return '<li>'+kbEsc(n)+'</li>'; }).join('')+'</ol></div>') : '')
+      + (q.skippedNames.length ? ('<div><span style="color:#8a93a6;font-weight:800;">⭘ ما جاوبوا ('+q.skippedNames.length+'):</span><ol style="margin:4px 0 0;padding-right:20px;">'+q.skippedNames.map(function(n){ return '<li>'+kbEsc(n)+'</li>'; }).join('')+'</ol></div>') : '')
       + '</div></div>';
     return '<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 4px 12px rgba(15,46,61,.06);margin-bottom:12px;">'
       + '<div style="font-weight:800;font-size:13.5px;color:#16233f;margin-bottom:8px;">'+(idx+1)+'. '+kbEsc(quizCleanQuestionText(q.question))+'</div>'
@@ -9877,6 +9877,14 @@ function schedExamStart(id){
   if(schedExamStatus(exam) !== 'active'){ alert('هذا الاختبار غير متاح الآن — تحقق من وقت البداية والنهاية.'); return; }
   if(!schedExamIsAllowed(exam)){ alert('غير مسموح لك بدخول هذا الاختبار.'); return; }
   if(schedExamMyResult(exam.id)){ alert('سبق ودخلت هذا الاختبار.'); return; }
+  const savedProgress = quizLoadRunProgress(exam.id);
+  if(savedProgress){
+    __quizAutoFinishDone = false;
+    window.__quizRun = { sector:savedProgress.sector, questions:savedProgress.questions, idx:savedProgress.idx, answers:savedProgress.answers, startedAt:savedProgress.startedAt, timerHandle:null, totalSeconds:Math.round((savedProgress.examEndsAt-Date.now())/1000), examEndsAt: savedProgress.examEndsAt, warned3min:false, examId: exam.id };
+    window.__quizState = { view:'run', sector:exam.sector };
+    renderQuiz();
+    return;
+  }
   const pool = (ov.examQuestions||[]).filter(function(q){ return q.sector===exam.sector; });
   if(!pool.length){ alert('لا يوجد أسئلة بعد في بنك أسئلة الاختبار المجدول لهذا القطاع — أضفها أولا من "🔒 إدارة أسئلة الاختبار المجدول".'); return; }
   let shuffled;
@@ -10393,15 +10401,47 @@ function quizAnswer(chosenIndex){
   if(!run) return;
   const q = run.questions[run.idx];
   run.answers[run.idx] = { qId:q.id, chosenIndex:chosenIndex, correct: chosenIndex===q.correct_index };
+  quizSaveRunProgress();
   // نحفظ الاختيار فقط ونعيد الرسم — الانتقال يصير بضغط زر "حفظ الإجابة والتالي" يدويا.
   // المؤقت الكلي للاختبار يفضل شغال بالخلفية بدون ما يتأثر بهالخطوة.
   renderQuiz();
+}
+// حفظ استمراري لتقدم الاختبار المجدول محليا (بالمتصفح فقط، خاص بهذا الموظف
+// وهذا الاختبار بالذات) — لو صار انقطاع فجائي (تطفّى الجهاز، تهنّق التطبيق،
+// انقطع النت) ما تلحق فيه أحداث الخروج العادية (pagehide/beforeunload) تشتغل،
+// يقدر الموظف يرجع لنفس الاختبار ويكمل من نفس السؤال بدل ما يضيع كل شي.
+function quizProgressKey(examId){
+  const me = window.__currentEmployee;
+  return 'quizProgress_' + examId + '_' + (me?me.job_no:'anon');
+}
+function quizSaveRunProgress(){
+  const run = window.__quizRun;
+  if(!run || !run.examId) return; // نحفظ فقط للاختبار المجدول (مو التدريبي)
+  try{
+    localStorage.setItem(quizProgressKey(run.examId), JSON.stringify({
+      sector: run.sector, questions: run.questions, idx: run.idx, answers: run.answers,
+      startedAt: run.startedAt, examEndsAt: run.examEndsAt, examId: run.examId
+    }));
+  }catch(err){}
+}
+function quizClearRunProgress(examId){
+  if(!examId) return;
+  try{ localStorage.removeItem(quizProgressKey(examId)); }catch(err){}
+}
+function quizLoadRunProgress(examId){
+  try{
+    const raw = localStorage.getItem(quizProgressKey(examId));
+    if(!raw) return null;
+    const saved = JSON.parse(raw);
+    if(!saved || !saved.examEndsAt || saved.examEndsAt <= Date.now()) return null; // انتهى وقته أصلا
+    return saved;
+  }catch(err){ return null; }
 }
 function quizGoNextAfterAnswer(){
   const run = window.__quizRun;
   if(!run) return;
   if(run.reviewMode){ run.reviewMode = false; quizGoReview(); return; }
-  if(run.idx + 1 < run.questions.length){ run.idx += 1; renderQuiz(); }
+  if(run.idx + 1 < run.questions.length){ run.idx += 1; quizSaveRunProgress(); renderQuiz(); }
   else { quizGoReview(); }
 }
 function quizGoReview(){
@@ -10459,6 +10499,7 @@ function quizPrevQuestion(){
   const run = window.__quizRun;
   if(!run || run.idx <= 0) return;
   run.idx -= 1;
+  quizSaveRunProgress();
   renderQuiz();
 }
 function quizGoToSource(sector, sectionId, itemId){
@@ -10505,6 +10546,7 @@ function quizAutoFinishOnAbandon(){
   run.__autoSubmitFlag = true;
   const result = quizBuildResultObject(run);
   window.__quizRun = null;
+  if(run.examId) quizClearRunProgress(run.examId);
   if(typeof quizSaveResultSafely === 'function') quizSaveResultSafely(result).catch(function(){});
 }
 window.addEventListener('pagehide', quizAutoFinishOnAbandon);
@@ -10523,6 +10565,7 @@ function quizFinish(){
   __quizAutoFinishDone = true; // تسليم طبيعي حصل — عطّل شبكة أمان الخروج المفاجئ حتى لا تكرر الحفظ
   quizClearGlobalTimer();
   const result = quizBuildResultObject(run);
+  if(run.examId) quizClearRunProgress(run.examId);
   window.__quizLastResult = result;
   window.__quizRun = null;
   window.__quizState = { view:'done' };
@@ -10718,9 +10761,40 @@ function renderQuizResultsView(root){
   if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي نتيجة اختبار بعد.</div>';
   const backAction = examInfo ? ("quizBackToSchedList('"+examInfo.sector+"')") : 'quizBackToKb()';
   const titleText = examInfo ? ('📋 نتائج: '+examInfo.title) : 'نتائج الاختبارات';
-  const exportBtn = results.length ? '<button type="button" onclick="quizExportResultsCsv('+(st.examIdFilter||'null')+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;margin-bottom:14px;">⬇ تصدير النتائج Excel (CSV)</button>' : '';
+  const exportBtns = results.length
+    ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">'
+      + '<button type="button" onclick="quizExportResultsCsv('+(st.examIdFilter||'null')+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">⬇ تصدير Excel (CSV)</button>'
+      + '<button type="button" onclick="quizPrintResults('+(st.examIdFilter||'null')+')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🖨️ طباعة / حفظ PDF</button>'
+      + '</div>'
+    : '';
   root.innerHTML = kbHeader(titleText, results.length+' نتيجة', backAction)
-    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+exportBtn+rows+'</div>';
+    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+exportBtns+rows+'</div>';
+}
+// يفتح نافذة طباعة نظيفة بجدول النتائج — المستخدم يقدر يطبعها ورقيا، أو يختار
+// "Save as PDF" من نافذة الطباعة نفسها (خيار موجود بكل المتصفحات) للحصول على
+// ملف PDF بدون الحاجة لمكتبة خارجية.
+function quizPrintResults(examIdFilter){
+  const ov = loadAdminOverrides();
+  let results = (ov.quizResults||[]).slice().sort(function(a,b){ return b.percent - a.percent; });
+  if(examIdFilter){ results = results.filter(function(r){ return r.examId === examIdFilter; }); }
+  const examInfo = examIdFilter ? (ov.scheduledExams||[]).find(function(e){ return e.id===examIdFilter; }) : null;
+  const titleText = examInfo ? examInfo.title : 'نتائج الاختبارات';
+  const rowsHtml = results.map(function(r, i){
+    const sectorInfo = KB_SECTORS.find(function(s){ return s.id===r.sector; });
+    const percent = r.percent!=null ? r.percent : (r.total?Math.round(r.score/r.total*100):0);
+    const mins = Math.floor((r.durationSeconds||0)/60), secs = (r.durationSeconds||0)%60;
+    return '<tr><td>'+(i+1)+'</td><td>'+kbEsc(r.employeeName||'')+'</td><td>'+kbEsc(String(r.jobNo||''))+'</td>'
+      + '<td>'+kbEsc(sectorInfo?sectorInfo.name:'')+'</td><td>'+r.score+'/'+r.total+'</td><td>'+percent+'%</td>'
+      + '<td>'+mins+'د '+secs+'ث</td><td>'+kbEsc(kbFmtDateTime(r.takenAt))+'</td></tr>';
+  }).join('');
+  const win = window.open('', '_blank');
+  if(!win) { alert('المتصفح منع فتح نافذة الطباعة — تأكد من السماح بالنوافذ المنبثقة لهذا الموقع.'); return; }
+  win.document.write('<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>'+kbEsc(titleText)+'</title>'
+    + '<style>body{font-family:Tahoma,Arial,sans-serif;padding:24px;color:#16233f;}h1{font-size:18px;}table{width:100%;border-collapse:collapse;margin-top:14px;}th,td{border:1px solid #ccc;padding:8px 10px;text-align:center;font-size:12px;}th{background:#eef1f3;}</style>'
+    + '</head><body><h1>'+kbEsc(titleText)+' — '+results.length+' نتيجة</h1>'
+    + '<table><thead><tr><th>#</th><th>الاسم</th><th>الرقم الوظيفي</th><th>القسم</th><th>الدرجة</th><th>النسبة</th><th>المدة</th><th>تاريخ التسليم</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'
+    + '<script>window.onload=function(){window.print();};<\/script></body></html>');
+  win.document.close();
 }
 // تصدير قائمة النتائج الحالية لملف CSV يفتح مباشرة بإكسل، بترميز يحافظ على
 // العربي صحيحا (UTF-8 BOM). لو examIdFilter محدد، يصدّر نتائج ذاك الاختبار
