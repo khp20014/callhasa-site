@@ -9949,6 +9949,7 @@ function renderQuiz(){
   if(st.view === 'sched') return renderSchedExam(root);
   if(st.view === 'bigscreen') return renderQuizBigScreenView(root);
   if(st.view === 'analysis') return renderQuizAnalysisView(root);
+  if(st.view === 'history') return renderQuizHistoryView(root);
   return renderQuizSectorsView(root);
 }
 
@@ -10767,6 +10768,7 @@ function renderQuizResultsView(root){
     const dt = new Date(r.takenAt);
     const delBtn = canManage ? '<button type="button" onclick="quizDeleteResult('+r.id+')" style="background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">حذف</button>' : '';
     const reviewBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=true;quizReviewResult('+r.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">مراجعة</button>';
+    const historyBtn = '<button type="button" onclick="quizGoHistory(\''+r.jobNo+'\',false)" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:5px 10px;font-size:10.5px;font-weight:700;cursor:pointer;">📈 أداؤه عبر الوقت</button>';
     const percent = r.percent!=null ? r.percent : Math.round(r.score/r.total*100);
     const typeBadge = r.examId ? '<span style="font-size:10px;font-weight:800;color:#c0392b;background:rgba(192,57,43,.1);border-radius:6px;padding:2px 7px;">🔒 مجدول</span>' : '<span style="font-size:10px;font-weight:800;color:#0e6a5a;background:rgba(14,106,90,.1);border-radius:6px;padding:2px 7px;">🎯 تدريبي</span>';
     const flagsBadge = (r.autoSubmittedOnExit ? '<span title="خرج من الاختبار بدون ما يضغط زر التسليم — تسجّل تلقائيا بآخر إجاباته" style="font-size:10px;font-weight:800;color:#e08e2b;background:rgba(224,142,43,.12);border-radius:6px;padding:2px 7px;">⚠ خروج مفاجئ</span>' : '')
@@ -10775,7 +10777,7 @@ function renderQuizResultsView(root){
     return '<div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">'
       + '<div><div style="font-weight:800;font-size:13px;color:#16233f;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">'+kbEsc(r.employeeName)+jobNoLine+' '+typeBadge+flagsBadge+'</div>'
       + '<div style="font-size:11px;color:#8a93a6;margin-top:2px;">'+(sectorInfo?sectorInfo.name:'')+' — '+kbFmtDateTime(r.takenAt)+' — المدة '+mins+'د '+secs+'ث</div></div>'
-      + '<div style="display:flex;align-items:center;gap:8px;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+delBtn+'</div></div>';
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><div style="font-weight:900;font-size:15px;color:#0e6a5a;">'+percent+'/100</div>'+reviewBtn+historyBtn+delBtn+'</div></div>';
   }).join('');
   if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">لا يوجد أي نتيجة اختبار بعد.</div>';
   const backAction = examInfo ? ("quizBackToSchedList('"+examInfo.sector+"')") : 'quizBackToKb()';
@@ -10862,6 +10864,7 @@ function renderQuizMyResultsView(root){
   const ov = loadAdminOverrides();
   const results = (ov.quizResults||[]).filter(function(r){ return me && String(r.jobNo)===String(me.job_no); })
     .sort(function(a,b){ return b.takenAt - a.takenAt; });
+  const historyBtn = results.length>1 ? '<button type="button" onclick="quizGoHistory(\''+(me?me.job_no:'')+'\',\'mine\')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;margin-bottom:14px;">📈 أداءك عبر كل الاختبارات (تحسّن أو تراجع، وأخطاء متكررة)</button>' : '';
   let rows = results.map(function(r){
     const sectorInfo = KB_SECTORS.find(function(s){ return s.id===r.sector; });
     const mins = Math.floor(r.durationSeconds/60), secs = r.durationSeconds%60;
@@ -10876,7 +10879,105 @@ function renderQuizMyResultsView(root){
   }).join('');
   if(!results.length) rows = '<div style="color:#8a93a6;font-size:13px;padding:20px;text-align:center;">ما اختبرت لين الحين — اضغط "اختبر معلوماتك" عشان تظهر نتائجك هنا.</div>';
   root.innerHTML = kbHeader('نتائجي بالاختبارات', results.length+' محاولة', 'quizGoSectors()')
-    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+rows+'</div>';
+    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;display:flex;flex-direction:column;gap:10px;">'+historyBtn+rows+'</div>';
+}
+function quizGoHistory(jobNo, isMine){
+  window.__quizHistoryFromMine = !!isMine;
+  window.__quizState = { view:'history', historyJobNo: jobNo };
+  renderQuiz();
+}
+// يبني تقرير أداء موظف عبر كل محاولاته بالاختبار المجدول (المدرّج زمنيا)،
+// يحسب اتجاه تحسّن/تراجع، ويكتشف الأسئلة اللي تكرر جوابه غلط فيها أكثر من مرة
+// بأكثر من اختبار — بمقارنة نص السؤال نفسه عبر كل التفاصيل المحفوظة.
+function quizBuildHistoryReport(jobNo){
+  const ov = loadAdminOverrides();
+  const attempts = (ov.quizResults||[]).filter(function(r){ return String(r.jobNo)===String(jobNo) && r.examId; })
+    .sort(function(a,b){ return a.takenAt - b.takenAt; });
+  const questionStats = {}; // question text -> {asked, wrong, lastCorrect, lastTakenAt}
+  attempts.forEach(function(r){
+    (r.detail||[]).forEach(function(d){
+      const key = d.question;
+      if(!questionStats[key]) questionStats[key] = { question:key, asked:0, wrong:0, lastCorrect:null, lastTakenAt:0 };
+      const s = questionStats[key];
+      s.asked++;
+      if(!d.correct) s.wrong++;
+      if(r.takenAt >= s.lastTakenAt){ s.lastCorrect = d.correct; s.lastTakenAt = r.takenAt; }
+    });
+  });
+  const recurring = Object.values(questionStats).filter(function(s){ return s.asked>=2 && s.wrong>=2; })
+    .sort(function(a,b){ return b.wrong-a.wrong; });
+  let trend = 'insufficient'; // insufficient | up | down | stable
+  if(attempts.length>=2){
+    const first = attempts[0].percent!=null?attempts[0].percent:0;
+    const last = attempts[attempts.length-1].percent!=null?attempts[attempts.length-1].percent:0;
+    const diff = last - first;
+    trend = diff>=8 ? 'up' : (diff<=-8 ? 'down' : 'stable');
+  }
+  return { attempts:attempts, recurring:recurring, trend:trend };
+}
+function renderQuizHistoryView(root){
+  const st = window.__quizState || {};
+  const jobNo = st.historyJobNo;
+  const me = window.__currentEmployee;
+  const isMine = !!window.__quizHistoryFromMine || (me && String(me.job_no)===String(jobNo));
+  if(!isMine && !(typeof canViewQuizResults === 'function' && canViewQuizResults() && quizVisibleResults().some(function(r){ return String(r.jobNo)===String(jobNo); }))){
+    quizBackToKb(); return;
+  }
+  const emp = EMPLOYEES.find(function(e){ return String(e.job_no)===String(jobNo); });
+  const report = quizBuildHistoryReport(jobNo);
+  const backAction = isMine ? 'quizGoMyResults()' : 'quizGoResultsList()';
+  if(!report.attempts.length){
+    root.innerHTML = kbHeader('📈 الأداء عبر الوقت', emp?emp.name:'', backAction)
+      + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;text-align:center;color:#8a93a6;font-size:13px;">لا يوجد اختبارات مجدولة كافية لهذا الموظف بعد لعرض تقرير مقارن.</div>';
+    return;
+  }
+  const trendMap = {
+    up: { label:'📈 في تحسّن مستمر', color:'#0e6a5a', sub:'نسبته بآخر اختبار أعلى بوضوح من أول اختبار خاضه.' },
+    down: { label:'📉 في تراجع', color:'#c0392b', sub:'نسبته بآخر اختبار أقل بوضوح من أول اختبار خاضه — يحتاج متابعة.' },
+    stable: { label:'➡️ مستواه ثابت', color:'#d9a418', sub:'لا يوجد فرق كبير بين أول وآخر اختبار.' },
+    insufficient: { label:'ℹ️ اختبار واحد فقط', color:'#8a93a6', sub:'يحتاج اختبارين على الأقل لقياس اتجاه التحسن أو التراجع.' }
+  };
+  const t = trendMap[report.trend];
+  const maxP = Math.max(...report.attempts.map(function(a){ return a.percent||0; }), 100);
+  const chartW = 640, chartH = 160, padX = 30, padY = 20;
+  const stepX = report.attempts.length>1 ? (chartW-2*padX)/(report.attempts.length-1) : 0;
+  const points = report.attempts.map(function(a,i){
+    const x = padX + i*stepX;
+    const y = padY + (chartH-2*padY)*(1-(a.percent||0)/100);
+    return { x:x, y:y, percent:a.percent||0 };
+  });
+  const polyline = points.map(function(p){ return p.x+','+p.y; }).join(' ');
+  const dots = points.map(function(p,i){
+    return '<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#0e6a5a"></circle>'
+      + '<text x="'+p.x+'" y="'+(p.y-10)+'" font-size="11" fill="#16233f" text-anchor="middle" font-weight="700">'+p.percent+'%</text>';
+  }).join('');
+  const chartSvg = '<svg viewBox="0 0 '+chartW+' '+chartH+'" style="width:100%;height:auto;">'
+    + '<polyline points="'+polyline+'" fill="none" stroke="#0e6a5a" stroke-width="2.5"></polyline>'
+    + dots + '</svg>';
+  const attemptsListHtml = report.attempts.slice().reverse().map(function(a, i){
+    const ov0 = loadAdminOverrides();
+    const exam = (ov0.scheduledExams||[]).find(function(e){ return e.id===a.examId; });
+    return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 2px 8px rgba(15,46,61,.05);">'
+      + '<div><div style="font-weight:800;font-size:12.5px;color:#16233f;">'+kbEsc(exam?exam.title:'اختبار محذوف')+'</div><div style="font-size:10.5px;color:#8a93a6;">'+kbFmtDate(a.takenAt)+'</div></div>'
+      + '<div style="font-weight:900;color:#0e6a5a;">'+(a.percent!=null?a.percent:0)+'%</div></div>';
+  }).join('');
+  const recurringHtml = report.recurring.length
+    ? '<ol style="margin:0;padding-right:20px;">'+report.recurring.map(function(s){
+        return '<li style="margin-bottom:8px;"><div style="font-weight:700;color:#16233f;">'+kbEsc(quizCleanQuestionText(s.question))+'</div>'
+          + '<div style="font-size:11px;color:#c0392b;font-weight:700;">أخطأ فيه '+s.wrong+' من '+s.asked+' مرات خاضه'+(s.lastCorrect===false?' — لسا يخطئ فيه بآخر مرة':(s.lastCorrect===true?' — صححه آخر مرة ✅':''))+'</div></li>';
+      }).join('')+'</ol>'
+    : '<div style="color:#0e6a5a;font-weight:700;">لا يوجد أسئلة تكرر الخطأ فيها أكثر من مرة — ممتاز.</div>';
+  root.innerHTML = kbHeader('📈 الأداء عبر الوقت', (emp?emp.name:'')+' — '+report.attempts.length+' اختبار مجدول', backAction)
+    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);">'
+    + '<div style="font-weight:900;font-size:15px;color:'+t.color+';margin-bottom:4px;">'+t.label+'</div>'
+    + '<div style="font-size:11.5px;color:#8a93a6;margin-bottom:14px;">'+t.sub+'</div>'
+    + chartSvg + '</div>'
+    + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">🔁 أسئلة يتكرر الخطأ فيها بأكثر من اختبار:</div>'
+    + '<div style="background:#f8fafb;border-radius:12px;padding:14px;margin-bottom:20px;font-size:12px;">'+recurringHtml+'</div>'
+    + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">سجل المحاولات (الأحدث أولا):</div>'
+    + attemptsListHtml
+    + '</div>';
 }
 
 // ---------- نافذة صلاحيات مشاهدة النتائج ----------
