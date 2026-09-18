@@ -1166,7 +1166,7 @@
      ينطبق عليها فلتر الانعكاس، عشان شكله ولونه يبقى ثابت ولا يضيع أو يتغيّر
      لونه ويصير مو واضح، وموجود فوق كل شاشات الاختبار دايما بنفس المكان
      بالضبط بغض النظر عن أي شاشة فاتحها الموظف. -->
-<button type="button" id="quizDarkModeFab" onclick="quizToggleDarkMode()" style="display:none;position:fixed;bottom:20px;right:20px;z-index:600;width:52px;height:52px;border-radius:50%;background:#16233f;color:#fff;border:3px solid #f0c33d;font-size:22px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);align-items:center;justify-content:center;"></button>
+<button type="button" id="quizDarkModeFab" onclick="quizToggleDarkMode()" style="display:none;position:fixed;top:14px;left:14px;z-index:600;width:44px;height:44px;border-radius:50%;background:#16233f;color:#fff;border:2.5px solid #f0c33d;font-size:19px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);align-items:center;justify-content:center;"></button>
 <style>
 /* الوضع الليلي لقسم "اختبر نفسك" فقط — باستخدام انعكاس ألوان على مستوى الفلتر
    البصري بدل إعادة كتابة كل لون بكل شاشة (اللي كان يحتاج تعديل عشرات الدوال).
@@ -9342,6 +9342,34 @@ function schedExamGoEdit(id){
   window.__schedExamState.view = 'edit';
   renderQuiz();
 }
+// نسخ اختبار مجدول بكل إعداداته (الأسئلة، المشاركين، المدة، وزن الأسئلة) لفترة
+// جديدة — بديل آمن وبسيط عن الجدولة التلقائية المتكررة: المسؤول يضغط الزر،
+// تتكون نسخة فورا، وتفتح مباشرة بوضع التعديل عشان يعدّل التواريخ ويحفظ.
+function schedExamDuplicate(id){
+  if(!canManageQuiz()) return;
+  const ov = loadAdminOverrides();
+  const orig = (ov.scheduledExams||[]).find(function(e){ return e.id===id; });
+  if(!orig) return;
+  const durationMs = Math.max(orig.endAt - orig.startAt, 3600000);
+  const newStart = Date.now() + 5*60000;
+  const me = window.__currentEmployee;
+  const clone = Object.assign({}, orig, {
+    id: schedExamNextId(),
+    title: orig.title + ' (نسخة)',
+    startAt: newStart,
+    endAt: newStart + durationMs,
+    createdByName: me?(me.username||me.name):'—',
+    createdAt: Date.now()
+  });
+  delete clone.updatedByName; delete clone.updatedAt;
+  ov.scheduledExams = ov.scheduledExams || [];
+  ov.scheduledExams.push(clone);
+  saveAdminOverrides(ov);
+  window.__schedExamEditingId = clone.id;
+  window.__schedExamState.view = 'edit';
+  renderQuiz();
+  alert('✓ تم إنشاء نسخة جديدة بنفس إعدادات الاختبار الأصلي — راجع التواريخ والمشاركين تحت واحفظ.');
+}
 function schedExamCancelForm(){
   window.__schedExamState.view = 'list';
   window.__schedExamEditingId = null;
@@ -9392,6 +9420,7 @@ function renderSchedExamListView(root){
       }
       const mgmtBtns = canManage
         ? '<button type="button" onclick="schedExamGoEdit('+exam.id+')" style="all:unset;cursor:pointer;color:#5b6685;font-size:14px;padding:4px 6px;">✎</button>'
+          + '<button type="button" onclick="schedExamDuplicate('+exam.id+')" title="نسخ هذا الاختبار بنفس إعداداته لفترة جديدة" style="all:unset;cursor:pointer;color:#5b6685;font-size:14px;padding:4px 6px;">📋⇢</button>'
           + '<button type="button" onclick="schedExamDelete('+exam.id+')" style="all:unset;cursor:pointer;color:#c0392b;font-size:14px;padding:4px 6px;">🗑</button>'
         : '';
       const resultsBtn = (typeof canViewQuizResults === 'function' && canViewQuizResults())
@@ -9697,8 +9726,13 @@ function renderQuizAnalysisView(root){
     + '— "سلم التقديرات" = كم شخص وقع بكل فئة (ممتاز، جيد جدا... إلخ) — اضغط على أي فئة لعرض أسماء الموظفين فيها بالضبط، مرتبين من الأعلى نسبة للأقل.<br>'
     + '— كل سؤال بالأسفل مرتب من الأكثر خطأ للأقل، وتقدر تضغط "عرض أسماء المشاركين" تحت أي سؤال لتعرف بالاسم مين جاوب صح ومين جاوب غلط بالضبط.'
     + '</div>';
+  const exportBtnsHtml = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">'
+    + '<button type="button" onclick="quizExportAnalysisCsv()" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">⬇ تصدير التحليل Excel (CSV)</button>'
+    + '<button type="button" onclick="quizPrintAnalysisReport()" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🖨️ طباعة / حفظ PDF</button>'
+    + '</div>';
   root.innerHTML = kbHeader(titleText, results.length+' مشارك', backAction)
     + '<div style="max-width:800px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + exportBtnsHtml
     + legendHtml
     + summaryHtml
     + '<div style="font-size:13px;font-weight:800;color:#16233f;margin:6px 0 10px;">📋 تقرير نتائج الاختبار والقرارات التدريبية — سلم التقديرات وتوزيع الشرائح:</div>'
@@ -9707,7 +9741,74 @@ function renderQuizAnalysisView(root){
     + questionsHtml
     + '</div>';
 }
-// ---------- قائمة اختيار الموظفين المسموح لهم بالدخول (بحث + تحديد الكل) ----------
+// يبني نفس بيانات شاشة "تحليل الاختبار" الحالية (المشاركين، إحصائية كل سؤال،
+// توزيع الشرائح) اعتمادا على window.__quizState — يُستخدم من زري التصدير
+// والطباعة بدل تكرار حساب كل شي مرتين.
+function quizBuildAnalysisData(){
+  const st = window.__quizState || {};
+  const ov = loadAdminOverrides();
+  const isPractice = !!st.practiceSector;
+  let exam = null, results, titleText;
+  if(isPractice){
+    const sectorInfo = KB_SECTORS.find(function(s){ return s.id===st.practiceSector; });
+    results = quizVisibleResults().filter(function(r){ return !r.examId && r.sector===st.practiceSector; });
+    titleText = 'تحليل الاختبار التدريبي'+(sectorInfo?(' — '+sectorInfo.name):'');
+  } else {
+    exam = (ov.scheduledExams||[]).find(function(e){ return e.id===st.examIdFilter; });
+    results = quizVisibleResults().filter(function(r){ return r.examId === st.examIdFilter; });
+    titleText = 'تحليل الاختبار المجدول'+(exam?(': '+exam.title):'');
+  }
+  const byQuestion = {}; const order = [];
+  results.forEach(function(r){
+    (r.detail||[]).forEach(function(d){
+      const key = d.question;
+      if(!byQuestion[key]){ byQuestion[key] = { question:d.question, correctCount:0, wrongCount:0, skippedCount:0 }; order.push(key); }
+      const s = byQuestion[key];
+      if(d.chosenIndex===-1 || d.chosenIndex==null) s.skippedCount++;
+      else if(d.correct) s.correctCount++; else s.wrongCount++;
+    });
+  });
+  const questionRows = order.map(function(key){
+    const s = byQuestion[key];
+    const total = s.correctCount+s.wrongCount+s.skippedCount;
+    const wrongRate = total ? Math.round((s.wrongCount/total)*100) : 0;
+    return { question:quizCleanQuestionText(s.question), correctCount:s.correctCount, wrongCount:s.wrongCount, skippedCount:s.skippedCount, wrongRate:wrongRate };
+  }).sort(function(a,b){ return b.wrongRate-a.wrongRate; });
+  const avgPercent = results.length ? Math.round(results.reduce(function(s,r){ return s+(r.percent||0); },0)/results.length) : 0;
+  return { results:results, titleText:titleText, questionRows:questionRows, avgPercent:avgPercent };
+}
+function quizExportAnalysisCsv(){
+  const data = quizBuildAnalysisData();
+  const rows = [['السؤال','عدد جاوبوا صح','عدد جاوبوا غلط','عدد ما جاوبوا','نسبة الخطأ %'].join(',')];
+  data.questionRows.forEach(function(q){
+    rows.push(['"'+q.question.replace(/"/g,'""')+'"', q.correctCount, q.wrongCount, q.skippedCount, q.wrongRate+'%'].join(','));
+  });
+  rows.push('');
+  rows.push('المتوسط العام,'+data.avgPercent+'%');
+  rows.push('عدد المشاركين,'+data.results.length);
+  const csvContent = '\uFEFF' + rows.join('\r\n');
+  const blob = new Blob([csvContent], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'تحليل_الاختبار_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function quizPrintAnalysisReport(){
+  const data = quizBuildAnalysisData();
+  const rowsHtml = data.questionRows.map(function(q,i){
+    return '<tr><td>'+(i+1)+'</td><td style="text-align:right;">'+kbEsc(q.question)+'</td><td>'+q.correctCount+'</td><td>'+q.wrongCount+'</td><td>'+q.skippedCount+'</td><td>'+q.wrongRate+'%</td></tr>';
+  }).join('');
+  const w = window.open('', '_blank');
+  if(!w){ alert('المتصفح منع فتح نافذة الطباعة — اسمح بالنوافذ المنبثقة لهذا الموقع.'); return; }
+  w.document.write('<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>'+kbEsc(data.titleText)+'</title>'
+    + '<style>body{font-family:Tahoma,Arial,sans-serif;padding:24px;color:#16233f;}h1{font-size:18px;}table{width:100%;border-collapse:collapse;margin-top:14px;}th,td{border:1px solid #ccc;padding:8px 10px;text-align:center;font-size:12px;}th{background:#eef1f3;}</style>'
+    + '</head><body><h1>'+kbEsc(data.titleText)+'</h1>'
+    + '<div>عدد المشاركين: '+data.results.length+' — المتوسط العام: '+data.avgPercent+'%</div>'
+    + '<table><thead><tr><th>#</th><th>السؤال</th><th>صح</th><th>غلط</th><th>ما جاوب</th><th>نسبة الخطأ</th></tr></thead><tbody>'+rowsHtml+'</tbody></table>'
+    + '<script>window.onload=function(){window.print();};<\/script></body></html>');
+  w.document.close();
+}
 function schedExamToggleSelMode(){
   const manual = document.querySelector('input[name="schedSelMode"]:checked').value === 'manual';
   const box = document.getElementById('schedManualQBox');
@@ -9973,6 +10074,7 @@ function renderQuiz(){
   if(st.view === 'bigscreen') return renderQuizBigScreenView(root);
   if(st.view === 'analysis') return renderQuizAnalysisView(root);
   if(st.view === 'history') return renderQuizHistoryView(root);
+  if(st.view === 'crosscompare') return renderQuizCrossCompareView(root);
   return renderQuizSectorsView(root);
 }
 
@@ -10000,9 +10102,36 @@ function quizToggleDarkMode(){
   quizApplyDarkModePref();
   renderQuiz();
 }
+// تنبيه بأعلى شاشة الاختبار: اختبارات مجدولة مخصصة لهذا الموظف، ما دخلها بعد،
+// وباقي عليها أقل من 24 ساعة — عشان ما يفوته الموعد بدون قصد.
+function quizBuildDeadlineReminderHtml(){
+  const me = window.__currentEmployee;
+  if(!me) return '';
+  const ov = loadAdminOverrides();
+  const now = Date.now();
+  const soon = now + 24*60*60*1000;
+  const due = (ov.scheduledExams||[]).filter(function(e){
+    return (e.allowedJobNos||[]).map(String).includes(String(me.job_no))
+      && e.endAt > now && e.endAt <= soon
+      && !schedExamMyResult(e.id);
+  }).sort(function(a,b){ return a.endAt-b.endAt; });
+  if(!due.length) return '';
+  const rows = due.map(function(e){
+    const hoursLeft = Math.max(1, Math.round((e.endAt-now)/3600000));
+    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;margin-top:6px;">'
+      + '<span style="font-size:12px;font-weight:700;">'+kbEsc(e.title)+' — باقي '+hoursLeft+' ساعة تقريبا</span>'
+      + '<button type="button" onclick="schedExamStart('+e.id+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:7px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;">ادخل الآن</button>'
+      + '</div>';
+  }).join('');
+  return '<div style="background:rgba(192,57,43,.18);border:1px solid rgba(192,57,43,.4);border-radius:14px;padding:14px 16px;max-width:480px;width:100%;color:#fff;">'
+    + '<div style="font-weight:900;font-size:13px;">⏰ عندك اختبار مجدول قرب ينتهي!</div>'
+    + rows
+    + '</div>';
+}
 function renderQuizSectorsView(root){
   const canManage = typeof canManageQuiz === 'function' && canManageQuiz();
   const canResults = typeof canViewQuizResults === 'function' && canViewQuizResults();
+  const reminderHtml = quizBuildDeadlineReminderHtml();
   root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);position:relative;">'
     + '<button type="button" onclick="window.__showEmployeeSearchApp ? window.__showEmployeeSearchApp() : (window.__showAppHub && window.__showAppHub())" style="all:unset;cursor:pointer;position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;">'
     + '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg></button>'
@@ -10010,6 +10139,7 @@ function renderQuizSectorsView(root){
     + '<button type="button" onclick="quizGoMyResults()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">🧾 نتائجي</button>'
     + (canResults ? '<button type="button" onclick="quizGoResultsList()" style="all:unset;cursor:pointer;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;font-weight:700;">📋 كل النتائج</button>' : '')
     + '</div>'
+    + reminderHtml
     + '<div style="text-align:center;color:#fff;">'
     + '<div style="font-size:15px;font-weight:800;opacity:.75;letter-spacing:.5px;margin-bottom:6px;">اختبار تدريبي</div>'
     + '<div style="font-size:22px;font-weight:900;">اختر القطاع</div>'
@@ -10700,6 +10830,18 @@ function renderQuizDoneView(root, result){
   const certBtn = showCertificate
     ? '<button type="button" onclick="quizPrintCertificate('+result.id+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:13px;cursor:pointer;">🏅 شهادة الاجتياز</button>'
     : '';
+  const wrongWithSource = (result.detail||[]).filter(function(d){ return !d.correct && d.sourceSectionId && d.sourceItemId; });
+  const improvementHtml = wrongWithSource.length
+    ? '<div style="background:rgba(255,255,255,.08);border-radius:14px;padding:16px 18px;max-width:460px;width:100%;text-align:right;">'
+      + '<div style="font-weight:900;font-size:13.5px;margin-bottom:10px;">🎯 خطة تحسين سريعة — راجع هذي المواضيع قبل الاختبار الجاي:</div>'
+      + wrongWithSource.map(function(d){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.06);border-radius:9px;padding:8px 10px;margin-bottom:6px;">'
+            + '<span style="font-size:11.5px;font-weight:700;flex:1;">'+kbEsc(quizCleanQuestionText(d.question))+'</span>'
+            + '<button type="button" onclick="quizGoToSource(\''+result.sector+'\','+d.sourceSectionId+','+d.sourceItemId+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:7px;padding:5px 10px;font-size:10.5px;font-weight:800;cursor:pointer;flex-shrink:0;">افتح المقالة</button>'
+            + '</div>';
+        }).join('')
+      + '</div>'
+    : '';
   root.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px 18px;background:linear-gradient(160deg,#0f2e3d 0%,#16233f 100%);color:#fff;text-align:center;">'
     + (isPerfect ? perfectHtml : '<div style="font-size:44px;">🎯</div>')
     + '<div style="font-size:20px;font-weight:900;">انتهى الاختبار</div>'
@@ -10707,6 +10849,7 @@ function renderQuizDoneView(root, result){
     + '<div style="font-size:12.5px;opacity:.8;">(أجبت صح على '+result.score+' من '+result.total+' سؤال)</div>'
     + '<div style="font-size:12.5px;opacity:.75;">المدة: '+mins+' دقيقة و'+secs+' ثانية</div>'
     + thanksNote
+    + improvementHtml
     + '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;justify-content:center;">'
     + certBtn
     + '<button type="button" onclick="window.__quizReviewFromResultsList=false;quizReviewResult('+result.id+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:10px;padding:10px 20px;font-weight:800;font-size:13px;cursor:pointer;">📋 مراجعة الإجابات</button>'
@@ -10893,6 +11036,7 @@ function renderQuizResultsView(root){
     ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">'
       + '<button type="button" onclick="quizExportResultsCsv('+(st.examIdFilter||'null')+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">⬇ تصدير Excel (CSV)</button>'
       + '<button type="button" onclick="quizPrintResults('+(st.examIdFilter||'null')+')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🖨️ طباعة / حفظ PDF</button>'
+      + (isTrueOwner() ? '<button type="button" onclick="window.__quizState={view:\'crosscompare\'};renderQuiz()" style="background:#8a6d00;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">📊 مقارنة الأقسام وجودة الأسئلة</button>' : '')
       + '</div>'
     : '';
   root.innerHTML = kbHeader(titleText, results.length+' نتيجة', backAction)
@@ -11075,19 +11219,115 @@ function renderQuizHistoryView(root){
           + '<div style="font-size:11px;color:#c0392b;font-weight:700;">أخطأ فيه '+s.wrong+' من '+s.asked+' مرات خاضه'+(s.lastCorrect===false?' — لسا يخطئ فيه بآخر مرة':(s.lastCorrect===true?' — صححه آخر مرة ✅':''))+'</div></li>';
       }).join('')+'</ol>'
     : '<div style="color:#0e6a5a;font-weight:700;">لا يوجد أسئلة تكرر الخطأ فيها أكثر من مرة — ممتاز.</div>';
+  const badges = quizComputeBadges(report);
+  const badgesHtml = badges.length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">'+badges.map(function(b){
+        return '<div style="background:#fff;border-radius:10px;padding:8px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);font-size:12px;font-weight:800;color:#16233f;display:flex;align-items:center;gap:6px;">'+b.icon+' '+b.label+'</div>';
+      }).join('')+'</div>'
+    : '';
   root.innerHTML = kbHeader('📈 الأداء عبر الوقت', (emp?emp.name:'')+' — '+report.attempts.length+' اختبار مجدول', backAction)
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);">'
     + '<div style="font-weight:900;font-size:15px;color:'+t.color+';margin-bottom:4px;">'+t.label+'</div>'
     + '<div style="font-size:11.5px;color:#8a93a6;margin-bottom:14px;">'+t.sub+'</div>'
     + chartSvg + '</div>'
+    + (badges.length ? '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">🏅 إنجازات:</div>' : '')
+    + badgesHtml
     + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">🔁 أسئلة يتكرر الخطأ فيها بأكثر من اختبار:</div>'
     + '<div style="background:#f8fafb;border-radius:12px;padding:14px;margin-bottom:20px;font-size:12px;">'+recurringHtml+'</div>'
     + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">سجل المحاولات (الأحدث أولا):</div>'
     + attemptsListHtml
     + '</div>';
 }
+// إنجازات بسيطة محسوبة من سجل محاولات الموظف — تحفيز خفيف بدون أي تعقيد إداري.
+function quizComputeBadges(report){
+  const badges = [];
+  const attempts = report.attempts;
+  if(!attempts.length) return badges;
+  const last5 = attempts.slice(-5);
+  if(last5.length>=5 && last5.every(function(a){ return (a.percent||0)>=90; })){
+    badges.push({ icon:'🔥', label:'5 اختبارات متتالية فوق 90%' });
+  }
+  if(attempts.length>=2 && report.recurring.length===0){
+    badges.push({ icon:'🎯', label:'ما تكرر خطأه بنفس السؤال مرتين' });
+  }
+  if(report.trend==='up'){
+    badges.push({ icon:'📈', label:'في تحسّن مستمر' });
+  }
+  if(attempts.some(function(a){ return a.percent===100; })){
+    badges.push({ icon:'💯', label:'حقق درجة كاملة 100% مرة على الأقل' });
+  }
+  if(attempts.length>=10){
+    badges.push({ icon:'🗓️', label:'10 اختبارات مجدولة أو أكثر' });
+  }
+  return badges;
+}
 
+// ---------- مقارنة الأقسام وجودة الأسئلة (للمالك فقط) ----------
+function renderQuizCrossCompareView(root){
+  if(!isTrueOwner()){ quizBackToKb(); return; }
+  const ov = loadAdminOverrides();
+  const results = (ov.quizResults||[]).filter(function(r){ return r.examId; }); // الاختبار المجدول فقط
+  const backAction = 'quizGoResultsList()';
+  if(!results.length){
+    root.innerHTML = kbHeader('📊 مقارنة الأقسام وجودة الأسئلة', '', backAction)
+      + '<div style="max-width:800px;margin:0 auto 60px;padding:24px 18px 0;text-align:center;color:#8a93a6;font-size:13px;">لا يوجد نتائج اختبارات مجدولة بعد.</div>';
+    return;
+  }
+  // متوسط كل قسم
+  const bySector = {};
+  results.forEach(function(r){
+    if(!bySector[r.sector]) bySector[r.sector] = { sum:0, count:0 };
+    bySector[r.sector].sum += (r.percent||0);
+    bySector[r.sector].count++;
+  });
+  const sectorRows = KB_SECTORS.map(function(s){
+    const d = bySector[s.id];
+    if(!d) return null;
+    return { name:s.name, avg:Math.round(d.sum/d.count), count:d.count };
+  }).filter(Boolean).sort(function(a,b){ return b.avg-a.avg; });
+  const maxAvg = Math.max.apply(null, sectorRows.map(function(r){ return r.avg; }).concat([1]));
+  const sectorHtml = sectorRows.map(function(r){
+    const barColor = r.avg>=80?'#0e6a5a':(r.avg>=60?'#d9a418':'#c0392b');
+    return '<div style="margin-bottom:14px;">'
+      + '<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:800;color:#16233f;margin-bottom:4px;"><span>'+kbEsc(r.name)+' ('+r.count+' نتيجة)</span><span>'+r.avg+'%</span></div>'
+      + '<div style="height:12px;background:#eef1f3;border-radius:6px;overflow:hidden;"><div style="width:'+Math.round(r.avg/maxAvg*100)+'%;height:100%;background:'+barColor+';"></div></div>'
+      + '</div>';
+  }).join('');
+  // أسئلة ضعيفة على مستوى البنك كامل (كل الاختبارات، كل الأقسام) — سؤال أخطأ
+  // فيه ناس كثير ومختلفين عبر أكثر من اختبار غالبا مشكلته بصياغته هو، مو
+  // بالضرورة ضعف بمستوى الموظفين.
+  const byQuestion = {};
+  results.forEach(function(r){
+    (r.detail||[]).forEach(function(d){
+      const key = d.question;
+      if(!byQuestion[key]) byQuestion[key] = { question:d.question, wrong:0, total:0, jobNos:new Set() };
+      const s = byQuestion[key];
+      s.total++;
+      if(!d.correct) s.wrong++;
+      s.jobNos.add(String(r.jobNo));
+    });
+  });
+  const weakQuestions = Object.values(byQuestion)
+    .map(function(s){ return { question:s.question, wrongRate:Math.round(s.wrong/s.total*100), distinctPeople:s.jobNos.size, total:s.total }; })
+    .filter(function(s){ return s.wrongRate>=70 && s.distinctPeople>=5; })
+    .sort(function(a,b){ return b.wrongRate-a.wrongRate; });
+  const weakHtml = weakQuestions.length
+    ? '<ol style="margin:0;padding-right:20px;">'+weakQuestions.map(function(s){
+        return '<li style="margin-bottom:10px;"><div style="font-weight:700;color:#16233f;">'+kbEsc(quizCleanQuestionText(s.question))+'</div>'
+          + '<div style="font-size:11px;color:#c0392b;font-weight:700;">نسبة الخطأ '+s.wrongRate+'% — أخطأ فيه '+s.distinctPeople+' شخص مختلف عبر '+s.total+' محاولة</div></li>';
+      }).join('')+'</ol>'
+    : '<div style="color:#0e6a5a;font-weight:700;">لا يوجد أسئلة يخطئ فيها عدد كبير من أشخاص مختلفين — بنك الأسئلة بحالة جيدة.</div>';
+  root.innerHTML = kbHeader('📊 مقارنة الأقسام وجودة الأسئلة', '', backAction)
+    + '<div style="max-width:800px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="background:#eef6f4;border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#16233f;font-weight:700;line-height:1.8;">'
+    + '💡 القسم الأول يقارن متوسط أداء الأقسام مع بعض. القسم الثاني يكتشف الأسئلة اللي يخطئ فيها عدد كبير من أشخاص مختلفين بأكثر من اختبار — هذا غالبا مؤشر إن السؤال نفسه مكتوب بطريقة ملخبطة، مو إن الموظفين ضعاف.</div>'
+    + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">مقارنة متوسط الأقسام:</div>'
+    + '<div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:24px;box-shadow:0 6px 18px rgba(15,46,61,.08);">'+sectorHtml+'</div>'
+    + '<div style="font-size:13px;font-weight:800;color:#16233f;margin-bottom:10px;">⚠ أسئلة يُحتمل إنها بحاجة مراجعة صياغة:</div>'
+    + '<div style="background:#f8fafb;border-radius:12px;padding:16px;font-size:12px;">'+weakHtml+'</div>'
+    + '</div>';
+}
 // ---------- نافذة صلاحيات مشاهدة النتائج ----------
 function renderQuizPermsList(){
   const holder = document.getElementById('quizPermsList');
