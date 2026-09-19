@@ -1712,18 +1712,37 @@
 
   <!-- QUIZ RESULTS PERMISSIONS MODAL (owner-only) -->
   <div class="modal-overlay" id="quizPermsModal">
-    <div class="modal-box" style="max-width:520px;">
+    <div class="modal-box" style="max-width:560px;">
       <button class="modal-close" id="closeQuizPermsModal" type="button"><svg class="ico" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg></button>
-      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg> صلاحيات نتائج الاختبار</h3>
-      <div class="modal-sub">نتائج الاختبار تظهر لك أنت (المالك) فقط، ولمن تفوّضه هنا (مدراء/مشرفين).</div>
+      <h3 class="modal-title"><svg class="ico" viewBox="0 0 24 24"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="8" cy="8.5" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.87"/><path d="M15 4.13a3.5 3.5 0 0 1 0 6.75"/></svg> صلاحيات الاختبار المجدول</h3>
+      <div class="modal-sub">ثلاث صلاحيات مستقلة عن بعض — فوّض كل وحدة لمن تحتاجه بس، بدون ما تعطيه باقي الصلاحيات.</div>
       <div style="margin-top:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--navy);margin-bottom:6px;">👁 مشاهدة نتائج الاختبار</div>
         <div style="display:flex;gap:6px;">
           <input list="quizPermsEmpOptions" id="quizPermsAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
           <datalist id="quizPermsEmpOptions"></datalist>
           <button type="button" id="quizPermsAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
         </div>
         <div id="quizPermsSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
-        <div id="quizPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:44vh;overflow:auto;"></div>
+        <div id="quizPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:28vh;overflow:auto;"></div>
+      </div>
+      <div style="margin-top:18px;border-top:1px solid var(--hair);padding-top:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--navy);margin-bottom:6px;">✎ إدارة كاملة (تعديل/حذف/إضافة الأسئلة والإعدادات والاختبارات)</div>
+        <div style="display:flex;gap:6px;">
+          <input list="quizPermsEmpOptions" id="quizMgmtAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <button type="button" id="quizMgmtAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="quizMgmtSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
+        <div id="quizMgmtPermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:28vh;overflow:auto;"></div>
+      </div>
+      <div style="margin-top:18px;border-top:1px solid var(--hair);padding-top:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--navy);margin-bottom:6px;">🚩 مراجعة اعتراضات الأسئلة والرد عليها</div>
+        <div style="display:flex;gap:6px;">
+          <input list="quizPermsEmpOptions" id="quizDisputeAddSearch" placeholder="اكتب اسم الموظف أو رقمه الوظيفي…" style="flex:1;padding:8px 10px;border:1px solid var(--hair);border-radius:8px;font-size:12.5px;">
+          <button type="button" id="quizDisputeAddBtn" class="act-btn" style="background:var(--navy);color:#fff;flex-shrink:0;">إضافة</button>
+        </div>
+        <div id="quizDisputeSaveStatus" style="min-height:16px;font-size:11px;font-weight:800;color:var(--teal,#0e6a5a);margin-top:6px;opacity:0;transition:opacity .25s;">✓ تم الحفظ</div>
+        <div id="quizDisputePermsList" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:28vh;overflow:auto;"></div>
       </div>
     </div>
   </div>
@@ -2257,6 +2276,8 @@ function loadAdminOverrides(){
     ov.quizResults = ov.quizResults || [];
     ov.quizResultViewers = ov.quizResultViewers || [];
     ov.quizResultScope = ov.quizResultScope || {};
+    ov.quizContentManagers = ov.quizContentManagers || [];
+    ov.quizDisputeHandlers = ov.quizDisputeHandlers || [];
     ov.quizQuestionCount = ov.quizQuestionCount || { work: 10, dev: 10 };
     ov.quizTotalMinutes = ov.quizTotalMinutes || { work: 15, dev: 15 };
     // عناصر بنك المعرفة نفسها (أسئلة/أجوبة) — تُخزَّن هنا وتُزامَن سحابيا
@@ -10001,6 +10022,7 @@ function renderSchedExamFormView(root){
     + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedWeightMode" value="equal" '+((!editExam || !editExam.useQuestionWeights)?'checked':'')+'> ⚖️ كل الأسئلة بنفس الدرجة (الافتراضي)</label>'
     + '<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="radio" name="schedWeightMode" value="custom" '+(editExam && editExam.useQuestionWeights?'checked':'')+'> ⚖️ استخدام وزن كل سؤال المحدد ببنك الأسئلة (سؤال يقدر يساوي درجة أكثر من ثاني)</label>'
     + '</div></div>'
+    + '<div><label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#16233f;cursor:pointer;"><input type="checkbox" id="schedAllowDisputes" '+((!editExam || editExam.allowDisputes!==false)?'checked':'')+'> 🚩 السماح للموظف بالاعتراض على سؤال أجاب عليه غلط بهذا الاختبار</label></div>'
     + '<div>'
     + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:6px;">الموظفون المسموح لهم بدخول هذا الاختبار</label>'
     + '<input id="schedEmpSearch" oninput="schedExamFilterEmployees()" placeholder="🔍 ابحث باسم الموظف…" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:12.5px;font-family:inherit;margin-bottom:6px;">'
@@ -10038,6 +10060,7 @@ function schedExamSave(){
   const totalMinutes = parseInt(document.getElementById('schedTotalMinutes').value, 10) || 15;
   const lateTimerMode = document.querySelector('input[name="schedLateMode"]:checked').value;
   const useQuestionWeights = document.querySelector('input[name="schedWeightMode"]:checked').value === 'custom';
+  const allowDisputes = document.getElementById('schedAllowDisputes').checked;
   const selectionMode = document.querySelector('input[name="schedSelMode"]:checked').value;
   const questionTypeFilter = document.querySelector('input[name="schedTypeFilter"]:checked').value;
   const manualQuestionIds = Array.from(document.querySelectorAll('#schedManualQList input.schedManualQChk:checked')).map(function(chk){ return parseInt(chk.value,10); });
@@ -10056,6 +10079,7 @@ function schedExamSave(){
       exam.examLocation=examLocation; exam.supervisorName=supervisorName; exam.managerName=managerName;
       exam.locationLabel=locationLabel; exam.supervisorLabel=supervisorLabel; exam.managerLabel=managerLabel;
       exam.useQuestionWeights=useQuestionWeights;
+      exam.allowDisputes=allowDisputes;
       exam.updatedByName = me?(me.username||me.name):'—'; exam.updatedAt = Date.now();
     }
   } else {
@@ -10065,7 +10089,7 @@ function schedExamSave(){
       selectionMode: selectionMode, manualQuestionIds: manualQuestionIds, questionTypeFilter: questionTypeFilter,
       examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
       locationLabel: locationLabel, supervisorLabel: supervisorLabel, managerLabel: managerLabel,
-      useQuestionWeights: useQuestionWeights,
+      useQuestionWeights: useQuestionWeights, allowDisputes: allowDisputes,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
     });
     // جدولة جماعية: نفس الإعدادات بالضبط لأي أقسام إضافية اخترتها — كل قسم
@@ -10088,7 +10112,7 @@ function schedExamSave(){
           selectionMode: secSelectionMode, manualQuestionIds: secManualIds, questionTypeFilter: questionTypeFilter,
           examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
           locationLabel: locationLabel, supervisorLabel: supervisorLabel, managerLabel: managerLabel,
-          useQuestionWeights: useQuestionWeights,
+          useQuestionWeights: useQuestionWeights, allowDisputes: allowDisputes,
           createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
         });
       });
@@ -11078,6 +11102,8 @@ function quizSubmitDispute(resultId, questionIndex){
   if(!result) return;
   const me = window.__currentEmployee;
   if(!me || String(result.jobNo)!==String(me.job_no)) return;
+  const exam = result.examId ? (ov.scheduledExams||[]).find(function(e){ return e.id===result.examId; }) : null;
+  if(!result.examId || (exam && exam.allowDisputes===false)){ alert('الاعتراض على الأسئلة غير متاح لهذا الاختبار.'); return; }
   const d = (result.detail||[])[questionIndex];
   if(!d) return;
   const reason = prompt('ليش تعتقد إجابتك صحيحة بهذا السؤال؟ (اختياري)', '') || '';
@@ -11102,12 +11128,14 @@ function quizRecomputeResultFromDetail(result){
   result.percent = total ? Math.round((score/total)*100) : 0;
 }
 function quizResolveDispute(disputeId, approve){
-  if(!canManageQuiz()) return;
+  if(!canHandleDisputes()) return;
   const ov = loadAdminOverrides();
   const dispute = (ov.quizDisputes||[]).find(function(dp){ return dp.id===disputeId; });
   if(!dispute) return;
   dispute.status = approve ? 'approved' : 'rejected';
   dispute.resolvedAt = Date.now();
+  const me = window.__currentEmployee;
+  dispute.resolvedByName = me?(me.username||me.name):'—';
   if(approve){
     const result = (ov.quizResults||[]).find(function(r){ return r.id===dispute.resultId; });
     if(result && result.detail && result.detail[dispute.questionIndex]){
@@ -11118,23 +11146,54 @@ function quizResolveDispute(disputeId, approve){
   saveAdminOverrides(ov);
   renderQuiz();
 }
+// تحويل/إسناد اعتراض معيّن لموظف بالذات لدراسته — مجرد ملاحظة توجيهية داخلية
+// تظهر لكل من عنده صلاحية مراجعة الاعتراضات، وما تمنح صلاحية جديدة للموظف
+// المُحال له تلقائيا (لازم يكون أصلا ضمن قائمة مراجعي الاعتراضات ليقدر يبت فيه).
+function quizForwardDispute(disputeId){
+  if(!canHandleDisputes()) return;
+  const raw = prompt('اكتب اسم أو رقم الموظف اللي تبي تحيل له هذا الاعتراض للدراسة:', '');
+  if(raw === null) return;
+  const jobNo = quizResolveJobNoFromSearch(raw);
+  if(!jobNo){ alert('لم يتم التعرف على الموظف.'); return; }
+  const emp = EMPLOYEES.find(function(e){ return e.job_no===jobNo; });
+  const ov = loadAdminOverrides();
+  const dispute = (ov.quizDisputes||[]).find(function(dp){ return dp.id===disputeId; });
+  if(!dispute) return;
+  dispute.assignedToJobNo = jobNo;
+  dispute.assignedToName = emp?emp.name:jobNo;
+  saveAdminOverrides(ov);
+  if(!canHandleDisputesFor(jobNo)){
+    alert('✓ تم تدوين الإحالة لـ'+dispute.assignedToName+'. تنبيه: هذا الموظف مو مفوَّض حاليا بمراجعة الاعتراضات، فلازم تضيفه من "صلاحيات الاختبار المجدول" حتى يقدر يبت فيه بنفسه.');
+  } else {
+    alert('✓ تم إحالة الاعتراض لـ'+dispute.assignedToName+'.');
+  }
+  renderQuiz();
+}
+function canHandleDisputesFor(jobNo){
+  if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO) return true;
+  const ov = loadAdminOverrides();
+  return (ov.quizDisputeHandlers||[]).map(String).includes(String(jobNo));
+}
 function renderQuizDisputesView(root){
-  if(!canManageQuiz()){ quizBackToKb(); return; }
+  if(!canHandleDisputes()){ quizBackToKb(); return; }
   const ov = loadAdminOverrides();
   const disputes = (ov.quizDisputes||[]).slice().sort(function(a,b){ return b.createdAt-a.createdAt; });
   const rows = disputes.map(function(dp){
     const statusBadge = dp.status==='pending'
       ? '<span style="color:#c9720a;font-weight:800;">⏳ قيد المراجعة</span>'
       : dp.status==='approved' ? '<span style="color:#0e6a5a;font-weight:800;">✅ مقبول</span>' : '<span style="color:#c0392b;font-weight:800;">❌ مرفوض</span>';
+    const assignedLine = dp.assignedToName ? '<div style="font-size:11px;color:#8a6d00;font-weight:700;margin-top:4px;">🔀 محال لـ: '+kbEsc(dp.assignedToName)+'</div>' : '';
     const actions = dp.status==='pending'
-      ? '<button type="button" onclick="quizResolveDispute('+dp.id+',true)" style="background:#0e6a5a;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;">قبول وتصحيح الدرجة</button>'
-        + '<button type="button" onclick="quizResolveDispute('+dp.id+',false)" style="background:#eef1f3;color:#16233f;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;">رفض</button>'
-      : '';
+      ? '<button type="button" onclick="quizResolveDispute('+dp.id+',true)" style="background:#0e6a5a;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;margin-bottom:6px;">قبول وتصحيح الدرجة</button>'
+        + '<button type="button" onclick="quizResolveDispute('+dp.id+',false)" style="background:#eef1f3;color:#16233f;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;margin-bottom:6px;">رفض</button>'
+        + '<button type="button" onclick="quizForwardDispute('+dp.id+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-bottom:6px;">🔀 حوّل لموظف للدراسة</button>'
+      : (dp.resolvedByName ? '<div style="font-size:10.5px;color:#8a93a6;">بواسطة: '+kbEsc(dp.resolvedByName)+'</div>' : '');
     return '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 4px 12px rgba(15,46,61,.06);">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"><div style="font-weight:800;font-size:13px;color:#16233f;">'+kbEsc(dp.employeeName)+'</div>'+statusBadge+'</div>'
       + '<div style="font-size:12px;color:#16233f;font-weight:700;margin-top:6px;">'+kbEsc(quizCleanQuestionText(dp.question))+'</div>'
       + (dp.reason ? '<div style="font-size:11.5px;color:#5b6685;margin-top:4px;">💬 '+kbEsc(dp.reason)+'</div>' : '')
       + '<div style="font-size:10.5px;color:#8a93a6;margin-top:4px;">'+kbFmtDateTime(dp.createdAt)+'</div>'
+      + assignedLine
       + (actions ? '<div style="margin-top:10px;">'+actions+'</div>' : '')
       + '</div>';
   }).join('');
@@ -11161,6 +11220,8 @@ function renderQuizReviewView(root){
     + (result.examId && (result.percent!=null?result.percent:0)>=quizCertPassThreshold() ? '<button type="button" onclick="quizPrintCertificate('+result.id+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🏅 شهادة</button>' : '')
     + '</div></div>';
   const disputes = (ov.quizDisputes||[]).filter(function(dp){ return dp.resultId===result.id; });
+  const examForDispute = result.examId ? (ov.scheduledExams||[]).find(function(e){ return e.id===result.examId; }) : null;
+  const disputesAllowed = !!result.examId && (!examForDispute || examForDispute.allowDisputes !== false);
   (result.detail||[]).forEach(function(d, i){
     let optsLines = '';
     if(d.q_type === 'tf'){
@@ -11173,7 +11234,7 @@ function renderQuizReviewView(root){
       : '';
     const existingDispute = disputes.find(function(dp){ return dp.questionIndex===i; });
     let disputeHtml = '';
-    if(!d.correct && isOwn && !existingDispute){
+    if(!d.correct && isOwn && !existingDispute && disputesAllowed){
       disputeHtml = '<button type="button" onclick="quizSubmitDispute('+result.id+','+i+')" style="margin-top:8px;margin-right:6px;background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">🚩 اعترض على هذا السؤال</button>';
     } else if(existingDispute){
       const statusLabel = existingDispute.status==='approved' ? '✅ تم قبول اعتراضك — صُححت الدرجة' : existingDispute.status==='rejected' ? '❌ تم رفض الاعتراض' : '⏳ اعتراضك قيد المراجعة';
@@ -11317,7 +11378,7 @@ function renderQuizResultsView(root){
       + '<button type="button" onclick="quizExportResultsCsv('+(st.examIdFilter||'null')+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">⬇ تصدير Excel (CSV)</button>'
       + '<button type="button" onclick="quizPrintResults('+(st.examIdFilter||'null')+')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🖨️ طباعة / حفظ PDF</button>'
       + (isTrueOwner() ? '<button type="button" onclick="window.__quizState={view:\'crosscompare\'};renderQuiz()" style="background:#8a6d00;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">📊 مقارنة الأقسام وجودة الأسئلة</button>' : '')
-      + (canManageQuiz() ? '<button type="button" onclick="window.__quizState={view:\'disputes\'};renderQuiz()" style="background:#c0392b;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🚩 اعتراضات الأسئلة'+(function(){ const p=(loadAdminOverrides().quizDisputes||[]).filter(function(dp){return dp.status==='pending';}).length; return p?(' ('+p+')'):''; })()+'</button>' : '')
+      + (canHandleDisputes() ? '<button type="button" onclick="window.__quizState={view:\'disputes\'};renderQuiz()" style="background:#c0392b;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🚩 اعتراضات الأسئلة'+(function(){ const p=(loadAdminOverrides().quizDisputes||[]).filter(function(dp){return dp.status==='pending';}).length; return p?(' ('+p+')'):''; })()+'</button>' : '')
       + '</div>'
     : '';
   root.innerHTML = kbHeader(titleText, results.length+' نتيجة', backAction)
@@ -11649,6 +11710,68 @@ function flashQuizSaveStatus(){
   clearTimeout(el.__hideTimer);
   el.__hideTimer = setTimeout(function(){ el.style.opacity = '0'; }, 1600);
 }
+function renderQuizMgmtPermsList(){
+  const holder = document.getElementById('quizMgmtPermsList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const list = ov.quizContentManagers || [];
+  if(!list.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — إدارة الأسئلة والإعدادات مقصورة عليك أنت فقط.</div>'; return; }
+  holder.innerHTML = list.map(function(jobNo){
+    const emp = EMPLOYEES.find(function(x){ return x.job_no===jobNo; });
+    const nm = emp ? emp.name : jobNo;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">'
+      +'<span style="font-size:12px;font-weight:700;">'+nm+' <span style="color:var(--muted);font-weight:500;">— '+jobNo+'</span></span>'
+      +'<button type="button" class="act-btn quiz-mgmt-revoke" data-jobno="'+jobNo+'" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button></div>';
+  }).join('');
+  holder.querySelectorAll('.quiz-mgmt-revoke').forEach(function(b){ b.addEventListener('click', function(){
+    revokeQuizContentManager(b.getAttribute('data-jobno'));
+    renderQuizMgmtPermsList();
+    flashQuizMgmtSaveStatus();
+  }); });
+}
+function flashQuizMgmtSaveStatus(){
+  const el = document.getElementById('quizMgmtSaveStatus');
+  if(!el) return;
+  el.style.opacity = '1'; clearTimeout(el.__hideTimer);
+  el.__hideTimer = setTimeout(function(){ el.style.opacity = '0'; }, 1600);
+}
+function renderQuizDisputePermsList(){
+  const holder = document.getElementById('quizDisputePermsList');
+  if(!holder) return;
+  const ov = loadAdminOverrides();
+  const list = ov.quizDisputeHandlers || [];
+  if(!list.length){ holder.innerHTML = '<div style="font-size:11.5px;color:var(--muted);">لا يوجد مفوَّضون حاليا — مراجعة الاعتراضات مقصورة عليك أنت فقط.</div>'; return; }
+  holder.innerHTML = list.map(function(jobNo){
+    const emp = EMPLOYEES.find(function(x){ return x.job_no===jobNo; });
+    const nm = emp ? emp.name : jobNo;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--hair);border-radius:8px;background:var(--field);">'
+      +'<span style="font-size:12px;font-weight:700;">'+nm+' <span style="color:var(--muted);font-weight:500;">— '+jobNo+'</span></span>'
+      +'<button type="button" class="act-btn quiz-dispute-revoke" data-jobno="'+jobNo+'" style="background:var(--coral-dim,rgba(192,57,43,.1));color:var(--coral,#c0392b);">إزالة</button></div>';
+  }).join('');
+  holder.querySelectorAll('.quiz-dispute-revoke').forEach(function(b){ b.addEventListener('click', function(){
+    revokeQuizDisputeHandler(b.getAttribute('data-jobno'));
+    renderQuizDisputePermsList();
+    flashQuizDisputeSaveStatus();
+  }); });
+}
+function flashQuizDisputeSaveStatus(){
+  const el = document.getElementById('quizDisputeSaveStatus');
+  if(!el) return;
+  el.style.opacity = '1'; clearTimeout(el.__hideTimer);
+  el.__hideTimer = setTimeout(function(){ el.style.opacity = '0'; }, 1600);
+}
+// يحوّل نص بحث حر (اسم أو رقم وظيفي، أو "اسم — رقم" من قائمة الاقتراحات) لرقم
+// وظيفي صحيح — يُستخدم بكل أقسام صلاحيات الاختبار الثلاثة بدل تكرار المنطق.
+function quizResolveJobNoFromSearch(raw){
+  raw = (raw||'').trim();
+  if(!raw) return null;
+  const dashMatch = raw.match(/—\s*(\S+)\s*$/);
+  if(dashMatch) return EMPLOYEES.some(function(e){ return e.job_no===dashMatch[1]; }) ? dashMatch[1] : null;
+  const byNo = EMPLOYEES.find(function(e){ return e.job_no === raw; });
+  if(byNo) return byNo.job_no;
+  const byName = EMPLOYEES.find(function(e){ return (e.name||'').trim() === raw; });
+  return byName ? byName.job_no : null;
+}
 (function quizPermsModalWiring(){
   const btn = document.getElementById('quizPermsBtn');
   const modal = document.getElementById('quizPermsModal');
@@ -11664,31 +11787,43 @@ function flashQuizSaveStatus(){
     }
     if(searchInput) searchInput.value = '';
     renderQuizPermsList();
+    renderQuizMgmtPermsList();
+    renderQuizDisputePermsList();
     modal.classList.add('open');
   });
   function close(){ modal.classList.remove('open'); }
   if(closeBtn) closeBtn.addEventListener('click', close);
   modal.addEventListener('click', function(ev){ if(ev.target === modal) close(); });
   if(addBtn) addBtn.addEventListener('click', function(){
-    const raw = (searchInput.value||'').trim();
-    if(!raw){ alert('اكتب اسم الموظف أو رقمه الوظيفي أولا.'); return; }
-    let jobNo = null;
-    const dashMatch = raw.match(/—\s*(\S+)\s*$/);
-    if(dashMatch){ jobNo = dashMatch[1]; }
-    else {
-      const byNo = EMPLOYEES.find(function(e){ return e.job_no === raw; });
-      const byName = EMPLOYEES.find(function(e){ return (e.name||'').trim() === raw; });
-      jobNo = byNo ? byNo.job_no : (byName ? byName.job_no : null);
-    }
-    if(!jobNo || !EMPLOYEES.some(function(e){ return e.job_no===jobNo; })){
-      alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.');
-      return;
-    }
+    const jobNo = quizResolveJobNoFromSearch(searchInput.value);
+    if(!jobNo){ alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.'); return; }
     if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){ alert('المالك يطّلع دائما.'); return; }
     grantQuizResultViewer(jobNo);
     searchInput.value = '';
     renderQuizPermsList();
     flashQuizSaveStatus();
+  });
+  const mgmtAddBtn = document.getElementById('quizMgmtAddBtn');
+  const mgmtSearchInput = document.getElementById('quizMgmtAddSearch');
+  if(mgmtAddBtn) mgmtAddBtn.addEventListener('click', function(){
+    const jobNo = quizResolveJobNoFromSearch(mgmtSearchInput.value);
+    if(!jobNo){ alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.'); return; }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){ alert('المالك عنده الصلاحية الكاملة دائما.'); return; }
+    grantQuizContentManager(jobNo);
+    mgmtSearchInput.value = '';
+    renderQuizMgmtPermsList();
+    flashQuizMgmtSaveStatus();
+  });
+  const disputeAddBtn = document.getElementById('quizDisputeAddBtn');
+  const disputeSearchInput = document.getElementById('quizDisputeAddSearch');
+  if(disputeAddBtn) disputeAddBtn.addEventListener('click', function(){
+    const jobNo = quizResolveJobNoFromSearch(disputeSearchInput.value);
+    if(!jobNo){ alert('لم يتم التعرف على الموظف. اختر اسمه من قائمة الاقتراحات.'); return; }
+    if(typeof OWNER_JOBNO !== 'undefined' && jobNo === OWNER_JOBNO){ alert('المالك يقدر يراجع الاعتراضات دائما.'); return; }
+    grantQuizDisputeHandler(jobNo);
+    disputeSearchInput.value = '';
+    renderQuizDisputePermsList();
+    flashQuizDisputeSaveStatus();
   });
 })();
 function latestKpiMonthFor(jobNo){
@@ -12678,7 +12813,26 @@ function refreshKnowledgeBankAccessUI(){
   if(typeof renderKnowledgeBank === 'function') renderKnowledgeBank();
 }
 // اختبر نفسك: إدارة الأسئلة (إضافة/تعديل/حذف) مقصورة على المالك فقط.
-function canManageQuiz(){ return isTrueOwner(); }
+// صلاحية "إدارة الاختبار المجدول الكاملة" (إضافة/تعديل/حذف الأسئلة، إعدادات
+// الاختبار، حذف نتائج...) — المالك دائما، أو أي موظف فوّضه المالك صراحة عبر
+// ov.quizContentManagers.
+function canManageQuiz(){
+  if(isTrueOwner()) return true;
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  const ov = loadAdminOverrides();
+  return (ov.quizContentManagers||[]).map(String).includes(String(me.job_no));
+}
+// صلاحية منفصلة تماما: مراجعة اعتراضات الموظفين على الأسئلة والرد عليها —
+// المالك دائما، أو من فوّضه صراحة عبر ov.quizDisputeHandlers (مستقلة تماما عن
+// صلاحية إدارة المحتوى، تقدر تفوّض شخص للاعتراضات فقط بدون صلاحية التعديل).
+function canHandleDisputes(){
+  if(isTrueOwner()) return true;
+  const me = window.__currentEmployee;
+  if(!me) return false;
+  const ov = loadAdminOverrides();
+  return (ov.quizDisputeHandlers||[]).map(String).includes(String(me.job_no));
+}
 // نطاق مشاهدة النتائج لكل مفوَّض: 'all' (الافتراضي — كل النتائج، نفس السلوك
 // القديم) أو 'team' (نتائج فريقه المباشر فقط، حسب حقل e.supervisor الموجود
 // أصلا بكل موظف). المالك دائما يشوف كل شي بغض النظر عن هذا الإعداد.
@@ -12769,6 +12923,32 @@ function revokeQuizResultViewer(jobNo){
   if(!isTrueOwner()) return;
   const ov = loadAdminOverrides();
   ov.quizResultViewers = (ov.quizResultViewers||[]).filter(j=>String(j)!==String(jobNo));
+  saveAdminOverrides(ov);
+}
+function grantQuizContentManager(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizContentManagers = ov.quizContentManagers || [];
+  if(!ov.quizContentManagers.map(String).includes(String(jobNo))) ov.quizContentManagers.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeQuizContentManager(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizContentManagers = (ov.quizContentManagers||[]).filter(j=>String(j)!==String(jobNo));
+  saveAdminOverrides(ov);
+}
+function grantQuizDisputeHandler(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizDisputeHandlers = ov.quizDisputeHandlers || [];
+  if(!ov.quizDisputeHandlers.map(String).includes(String(jobNo))) ov.quizDisputeHandlers.push(jobNo);
+  saveAdminOverrides(ov);
+}
+function revokeQuizDisputeHandler(jobNo){
+  if(!isTrueOwner()) return;
+  const ov = loadAdminOverrides();
+  ov.quizDisputeHandlers = (ov.quizDisputeHandlers||[]).filter(j=>String(j)!==String(jobNo));
   saveAdminOverrides(ov);
 }
 function refreshQuizAccessUI(){
