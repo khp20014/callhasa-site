@@ -10011,7 +10011,7 @@ function schedExamStart(id){
   if(schedExamStatus(exam) !== 'active'){ alert('هذا الاختبار غير متاح الآن — تحقق من وقت البداية والنهاية.'); return; }
   if(!schedExamIsAllowed(exam)){ alert('غير مسموح لك بدخول هذا الاختبار.'); return; }
   if(schedExamMyResult(exam.id)){ alert('سبق ودخلت هذا الاختبار.'); return; }
-  const savedProgress = quizLoadRunProgress(exam.id);
+  const savedProgress = quizLoadRunProgress('exam'+exam.id);
   if(savedProgress){
     __quizAutoFinishDone = false;
     window.__quizRun = { sector:savedProgress.sector, questions:savedProgress.questions, idx:savedProgress.idx, answers:savedProgress.answers, startedAt:savedProgress.startedAt, timerHandle:null, totalSeconds:Math.round((savedProgress.examEndsAt-Date.now())/1000), examEndsAt: savedProgress.examEndsAt, warned3min:false, examId: exam.id, useWeights: !!exam.useQuestionWeights };
@@ -10046,13 +10046,22 @@ function schedExamStart(id){
 
 function quizStart(sector){
   const ov = loadAdminOverrides();
+  const savedProgress = quizLoadRunProgress('practice_'+sector);
+  if(savedProgress){
+    __quizAutoFinishDone = false;
+    window.__quizRun = { sector:savedProgress.sector, questions:savedProgress.questions, idx:savedProgress.idx, answers:savedProgress.answers, startedAt:savedProgress.startedAt, timerHandle:null, totalSeconds:Math.round((savedProgress.examEndsAt-Date.now())/1000), examEndsAt: savedProgress.examEndsAt, warned3min:false, useWeights: !!savedProgress.useWeights };
+    window.__quizState = { view:'run', sector:sector };
+    renderQuiz();
+    quizStartGlobalTimer();
+    return;
+  }
   const pool = (ov.quizQuestions||[]).filter(function(q){ return q.sector===sector; });
   if(!pool.length){ alert('لا يوجد أسئلة اختبار بهذا القطاع بعد.'); return; }
   const count = Math.min((ov.quizQuestionCount||{})[sector] || 10, pool.length);
   const totalMinutes = (ov.quizTotalMinutes||{})[sector] || 15;
   const shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
   __quizAutoFinishDone = false;
-  window.__quizRun = { sector:sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), timerHandle:null, totalSeconds:totalMinutes*60, examEndsAt: Date.now() + totalMinutes*60000, warned3min:false };
+  window.__quizRun = { sector:sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), timerHandle:null, totalSeconds:totalMinutes*60, examEndsAt: Date.now() + totalMinutes*60000, warned3min:false, useWeights: quizPracticeUsesWeights(sector) };
   window.__quizState = { view:'run', sector:sector };
   renderQuiz();
   quizStartGlobalTimer();
@@ -10185,6 +10194,7 @@ function renderQuizManageView(root){
           + '<input type="number" min="1" id="quizCountInput" value="'+countVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
           + '<label style="font-size:12.5px;font-weight:700;color:#16233f;margin-right:10px;">مدة الاختبار الكاملة (دقيقة):</label>'
           + '<input type="number" min="1" id="quizMinutesInput" value="'+minutesVal+'" style="width:70px;padding:7px 8px;border:1.5px solid #e2e6ea;border-radius:8px;font-size:12.5px;font-family:inherit;">'
+          + '<label style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:#16233f;margin-right:10px;cursor:pointer;"><input type="checkbox" id="quizPracticeWeightsInput" '+(quizPracticeUsesWeights(window.__quizState.sector)?'checked':'')+'> ⚖️ استخدام وزن كل سؤال</label>'
           + '<button type="button" onclick="quizSaveCount()" style="background:#0e6a5a;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;">حفظ</button>'
           + '</div>')
     + quizBankStatsHtml(questions)
@@ -10212,6 +10222,12 @@ function quizBankStatsHtml(questions){
     + '<div>🔢 اختيار من متعدد: <span style="font-weight:900;">'+mcqQs.length+'</span>'+(optBreakdown?(' <span style="color:#8a93a6;font-weight:600;">('+optBreakdown+')</span>'):'')+'</div>'
     + '</div>';
 }
+// هل قسم معيّن بالاختبار التدريبي يستخدم وزن مخصص لكل سؤال؟ (افتراضي: لا —
+// كل الأسئلة متساوية، نفس السلوك القديم).
+function quizPracticeUsesWeights(sector){
+  const ov = loadAdminOverrides();
+  return !!(ov.quizPracticeWeights && ov.quizPracticeWeights[sector]);
+}
 function quizSaveCount(){
   const ov = loadAdminOverrides();
   const v = parseInt(document.getElementById('quizCountInput').value, 10) || 10;
@@ -10220,6 +10236,11 @@ function quizSaveCount(){
   ov.quizQuestionCount[window.__quizState.sector] = v;
   ov.quizTotalMinutes = ov.quizTotalMinutes || {};
   ov.quizTotalMinutes[window.__quizState.sector] = mins;
+  const weightsBox = document.getElementById('quizPracticeWeightsInput');
+  if(weightsBox){
+    ov.quizPracticeWeights = ov.quizPracticeWeights || {};
+    ov.quizPracticeWeights[window.__quizState.sector] = weightsBox.checked;
+  }
   saveAdminOverrides(ov);
   alert('تم الحفظ ✓');
 }
@@ -10621,27 +10642,28 @@ function quizAnswer(chosenIndex){
 // وهذا الاختبار بالذات) — لو صار انقطاع فجائي (تطفّى الجهاز، تهنّق التطبيق،
 // انقطع النت) ما تلحق فيه أحداث الخروج العادية (pagehide/beforeunload) تشتغل،
 // يقدر الموظف يرجع لنفس الاختبار ويكمل من نفس السؤال بدل ما يضيع كل شي.
-function quizProgressKey(examId){
+function quizProgressKey(runKey){
   const me = window.__currentEmployee;
-  return 'quizProgress_' + examId + '_' + (me?me.job_no:'anon');
+  return 'quizProgress_' + runKey + '_' + (me?me.job_no:'anon');
 }
 function quizSaveRunProgress(){
   const run = window.__quizRun;
-  if(!run || !run.examId) return; // نحفظ فقط للاختبار المجدول (مو التدريبي)
+  if(!run) return;
+  const runKey = run.examId ? ('exam'+run.examId) : ('practice_'+run.sector);
   try{
-    localStorage.setItem(quizProgressKey(run.examId), JSON.stringify({
+    localStorage.setItem(quizProgressKey(runKey), JSON.stringify({
       sector: run.sector, questions: run.questions, idx: run.idx, answers: run.answers,
-      startedAt: run.startedAt, examEndsAt: run.examEndsAt, examId: run.examId
+      startedAt: run.startedAt, examEndsAt: run.examEndsAt, examId: run.examId||null, useWeights: !!run.useWeights
     }));
   }catch(err){}
 }
-function quizClearRunProgress(examId){
-  if(!examId) return;
-  try{ localStorage.removeItem(quizProgressKey(examId)); }catch(err){}
+function quizClearRunProgress(runKey){
+  if(!runKey) return;
+  try{ localStorage.removeItem(quizProgressKey(runKey)); }catch(err){}
 }
-function quizLoadRunProgress(examId){
+function quizLoadRunProgress(runKey){
   try{
-    const raw = localStorage.getItem(quizProgressKey(examId));
+    const raw = localStorage.getItem(quizProgressKey(runKey));
     if(!raw) return null;
     const saved = JSON.parse(raw);
     if(!saved || !saved.examEndsAt || saved.examEndsAt <= Date.now()) return null; // انتهى وقته أصلا
@@ -10760,7 +10782,7 @@ function quizAutoFinishOnAbandon(){
   run.__autoSubmitFlag = true;
   const result = quizBuildResultObject(run);
   window.__quizRun = null;
-  if(run.examId) quizClearRunProgress(run.examId);
+  if(run.examId) quizClearRunProgress('exam'+run.examId); else quizClearRunProgress('practice_'+run.sector);
   if(typeof quizSaveResultSafely === 'function') quizSaveResultSafely(result).catch(function(){});
 }
 window.addEventListener('pagehide', quizAutoFinishOnAbandon);
@@ -10779,7 +10801,7 @@ function quizFinish(){
   __quizAutoFinishDone = true; // تسليم طبيعي حصل — عطّل شبكة أمان الخروج المفاجئ حتى لا تكرر الحفظ
   quizClearGlobalTimer();
   const result = quizBuildResultObject(run);
-  if(run.examId) quizClearRunProgress(run.examId);
+  if(run.examId) quizClearRunProgress('exam'+run.examId); else quizClearRunProgress('practice_'+run.sector);
   window.__quizLastResult = result;
   window.__quizRun = null;
   window.__quizState = { view:'done' };
@@ -11143,7 +11165,7 @@ function quizGoHistory(jobNo, isMine){
 // بأكثر من اختبار — بمقارنة نص السؤال نفسه عبر كل التفاصيل المحفوظة.
 function quizBuildHistoryReport(jobNo){
   const ov = loadAdminOverrides();
-  const attempts = (ov.quizResults||[]).filter(function(r){ return String(r.jobNo)===String(jobNo) && r.examId; })
+  const attempts = (ov.quizResults||[]).filter(function(r){ return String(r.jobNo)===String(jobNo); })
     .sort(function(a,b){ return a.takenAt - b.takenAt; });
   const questionStats = {}; // question text -> {asked, wrong, lastCorrect, lastTakenAt}
   attempts.forEach(function(r){
@@ -11180,7 +11202,7 @@ function renderQuizHistoryView(root){
   const backAction = isMine ? 'quizGoMyResults()' : 'quizGoResultsList()';
   if(!report.attempts.length){
     root.innerHTML = kbHeader('📈 الأداء عبر الوقت', emp?emp.name:'', backAction)
-      + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;text-align:center;color:#8a93a6;font-size:13px;">لا يوجد اختبارات مجدولة كافية لهذا الموظف بعد لعرض تقرير مقارن.</div>';
+      + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;text-align:center;color:#8a93a6;font-size:13px;">لا يوجد اختبارات كافية لهذا الموظف بعد لعرض تقرير مقارن.</div>';
     return;
   }
   const trendMap = {
@@ -11208,9 +11230,11 @@ function renderQuizHistoryView(root){
     + dots + '</svg>';
   const attemptsListHtml = report.attempts.slice().reverse().map(function(a, i){
     const ov0 = loadAdminOverrides();
-    const exam = (ov0.scheduledExams||[]).find(function(e){ return e.id===a.examId; });
+    const exam = a.examId ? (ov0.scheduledExams||[]).find(function(e){ return e.id===a.examId; }) : null;
+    const sectorInfo0 = KB_SECTORS.find(function(s){ return s.id===a.sector; });
+    const label = a.examId ? (exam?exam.title:'اختبار مجدول محذوف') : ('🎯 تدريبي — '+(sectorInfo0?sectorInfo0.name:''));
     return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 2px 8px rgba(15,46,61,.05);">'
-      + '<div><div style="font-weight:800;font-size:12.5px;color:#16233f;">'+kbEsc(exam?exam.title:'اختبار محذوف')+'</div><div style="font-size:10.5px;color:#8a93a6;">'+kbFmtDate(a.takenAt)+'</div></div>'
+      + '<div><div style="font-weight:800;font-size:12.5px;color:#16233f;">'+kbEsc(label)+'</div><div style="font-size:10.5px;color:#8a93a6;">'+kbFmtDate(a.takenAt)+'</div></div>'
       + '<div style="font-weight:900;color:#0e6a5a;">'+(a.percent!=null?a.percent:0)+'%</div></div>';
   }).join('');
   const recurringHtml = report.recurring.length
@@ -11225,7 +11249,7 @@ function renderQuizHistoryView(root){
         return '<div style="background:#fff;border-radius:10px;padding:8px 14px;box-shadow:0 4px 12px rgba(15,46,61,.06);font-size:12px;font-weight:800;color:#16233f;display:flex;align-items:center;gap:6px;">'+b.icon+' '+b.label+'</div>';
       }).join('')+'</div>'
     : '';
-  root.innerHTML = kbHeader('📈 الأداء عبر الوقت', (emp?emp.name:'')+' — '+report.attempts.length+' اختبار مجدول', backAction)
+  root.innerHTML = kbHeader('📈 الأداء عبر الوقت', (emp?emp.name:'')+' — '+report.attempts.length+' محاولة (تدريبي + مجدول)', backAction)
     + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;">'
     + '<div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 6px 18px rgba(15,46,61,.08);">'
     + '<div style="font-weight:900;font-size:15px;color:'+t.color+';margin-bottom:4px;">'+t.label+'</div>'
@@ -11258,7 +11282,7 @@ function quizComputeBadges(report){
     badges.push({ icon:'💯', label:'حقق درجة كاملة 100% مرة على الأقل' });
   }
   if(attempts.length>=10){
-    badges.push({ icon:'🗓️', label:'10 اختبارات مجدولة أو أكثر' });
+    badges.push({ icon:'🗓️', label:'10 اختبارات أو أكثر' });
   }
   return badges;
 }
