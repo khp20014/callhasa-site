@@ -9313,6 +9313,39 @@ function schedExamStatus(exam){
   if(now > exam.endAt) return 'ended';
   return 'active';
 }
+// النافذة الزمنية الفعلية لموظف معيّن — تُستخدم فقط وقت التحقق من أحقيته
+// بدخول الاختبار فعليا (مو لعرض حالة البطاقة العامة للمالك، اللي تبقى تعكس
+// الجدول الأساسي دايما). لو عنده استثناء فردي (نافذة تعويضية)، يُستخدم
+// بدل الجدول العام لهذا الموظف بس.
+function schedExamEffectiveWindow(exam, jobNo){
+  const ex = (exam.individualExceptions||{})[String(jobNo)];
+  if(ex && ex.startAt && ex.endAt) return { startAt:ex.startAt, endAt:ex.endAt };
+  return { startAt:exam.startAt, endAt:exam.endAt };
+}
+function schedExamStatusFor(exam, jobNo){
+  const w = schedExamEffectiveWindow(exam, jobNo);
+  const now = Date.now();
+  if(now < w.startAt) return 'upcoming';
+  if(now > w.endAt) return 'ended';
+  return 'active';
+}
+function schedExamSetException(examId, jobNo, startAt, endAt){
+  if(!canManageQuiz()) return;
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===examId; });
+  if(!exam) return;
+  exam.individualExceptions = exam.individualExceptions || {};
+  exam.individualExceptions[String(jobNo)] = { startAt:startAt, endAt:endAt };
+  saveAdminOverrides(ov);
+}
+function schedExamClearException(examId, jobNo){
+  if(!canManageQuiz()) return;
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===examId; });
+  if(!exam || !exam.individualExceptions) return;
+  delete exam.individualExceptions[String(jobNo)];
+  saveAdminOverrides(ov);
+}
 function schedExamMyResult(examId){
   const me = window.__currentEmployee;
   if(!me) return null;
@@ -9406,15 +9439,17 @@ function renderSchedExamListView(root){
       const status = schedExamStatus(exam);
       const statusInfo = status==='active' ? {label:'🟢 جارٍ الآن', color:'#0e6a5a'} : status==='upcoming' ? {label:'🕓 قادم', color:'#c9720a'} : {label:'⏹ منتهي', color:'#8a93a6'};
       const myResult = schedExamMyResult(exam.id);
+      const myStatus = schedExamStatusFor(exam, window.__currentEmployee?window.__currentEmployee.job_no:null);
+      const hasException = window.__currentEmployee && (exam.individualExceptions||{})[String(window.__currentEmployee.job_no)];
       let actionBtn;
       if(!schedExamIsAllowed(exam) && !canManage){
         actionBtn = '<span style="font-size:11.5px;color:#8a93a6;">غير مسموح لك بهذا الاختبار</span>';
       } else if(myResult){
         actionBtn = '<button type="button" onclick="window.__quizReviewFromResultsList=false;quizReviewResult('+myResult.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">📋 مراجعة نتيجتي ('+myResult.percent+'/100)</button>';
-      } else if(status === 'active'){
-        actionBtn = '<button type="button" onclick="schedExamStart('+exam.id+')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🚀 دخول الاختبار</button>';
-      } else if(status === 'upcoming'){
-        actionBtn = '<span style="font-size:11.5px;color:#c9720a;font-weight:700;">يبدأ '+kbFmtDateTime(exam.startAt)+'</span>';
+      } else if(myStatus === 'active'){
+        actionBtn = '<button type="button" onclick="schedExamStart('+exam.id+')" style="background:linear-gradient(135deg,#0f2e3d,#0e6a5a);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🚀 دخول الاختبار'+(hasException?' (فترة تعويضية)':'')+'</button>';
+      } else if(myStatus === 'upcoming'){
+        actionBtn = '<span style="font-size:11.5px;color:#c9720a;font-weight:700;">يبدأ '+kbFmtDateTime(schedExamEffectiveWindow(exam, window.__currentEmployee?window.__currentEmployee.job_no:null).startAt)+'</span>';
       } else {
         actionBtn = '<span style="font-size:11.5px;color:#8a93a6;">انتهى الوقت المحدد</span>';
       }
@@ -9429,6 +9464,9 @@ function renderSchedExamListView(root){
       const analysisBtn = (typeof canViewQuizResults === 'function' && canViewQuizResults())
         ? '<button type="button" onclick="schedExamViewAnalysis('+exam.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12px;cursor:pointer;">📊 تحليل الاختبار</button>'
         : '';
+      const attendanceBtn = (typeof canViewQuizResults === 'function' && canViewQuizResults())
+        ? '<button type="button" onclick="schedExamViewAttendance('+exam.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12px;cursor:pointer;">👥 الحضور</button>'
+        : '';
       const bigScreenBtn = canManage
         ? '<button type="button" onclick="quizGoBigScreen('+exam.id+')" style="background:#16233f;color:#f0c33d;border:none;border-radius:9px;padding:9px 14px;font-weight:800;font-size:12px;cursor:pointer;">🖥️ شاشة العرض الكبيرة</button>'
         : '';
@@ -9438,7 +9476,7 @@ function renderSchedExamListView(root){
         + '<div style="font-size:11.5px;color:#8a93a6;margin-top:4px;">من '+kbFmtDateTime(exam.startAt)+' إلى '+kbFmtDateTime(exam.endAt)+'</div>'
         + '<div style="font-size:11.5px;color:#8a93a6;margin-top:2px;">'+(exam.selectionMode==='manual'?((exam.manualQuestionIds||[]).length+' سؤال محدد يدويا'):(exam.questionCount+' سؤال عشوائي'))+' — مدة الاختبار '+(exam.totalMinutes||15)+' دقيقة — '+(exam.allowedJobNos||[]).length+' مشارك مسموح'+(canManage?(' — أنشأه '+kbEsc(kbNormalizeAuthorName(exam.createdByName))):'')+'</div>'
         + '</div>'
-        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+actionBtn+resultsBtn+analysisBtn+bigScreenBtn+mgmtBtns+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'+actionBtn+resultsBtn+analysisBtn+attendanceBtn+bigScreenBtn+mgmtBtns+'</div>'
         + '</div>';
     }).join('') + '</div>';
   }
@@ -9572,6 +9610,10 @@ function schedExamDelete(id){
 // نتائج المشاركين بامتحان مجدول واحد بالذات — كل اللي دخلوه بكل تفاصيلهم
 function schedExamViewResults(examId){
   window.__quizState = { view:'results', sector:null, examIdFilter: examId };
+  renderQuiz();
+}
+function schedExamViewAttendance(examId){
+  window.__quizState = { view:'attendance', examIdFilter: examId };
   renderQuiz();
 }
 // تحليل تلقائي لأداء الجميع بكل سؤال — يوضح الأسئلة اللي أغلب المشاركين غلطوا فيها
@@ -9871,6 +9913,13 @@ function renderSchedExamFormView(root){
     + '<div style="background:#fff;border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(15,46,61,.08);display:flex;flex-direction:column;gap:12px;">'
     + '<div><label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:4px;">عنوان الاختبار</label>'
     + '<input id="schedTitle" value="'+kbEsc(editExam?editExam.title:'')+'" placeholder="مثال: اختبار دوري — قطاع العمل" style="width:100%;box-sizing:border-box;padding:9px 10px;border:1.5px solid #e2e6ea;border-radius:9px;font-size:13px;font-family:inherit;"></div>'
+    + (!editExam ? ('<div style="background:#f8fafb;border-radius:12px;padding:12px;">'
+      + '<label style="font-size:12px;font-weight:700;color:#16233f;display:block;margin-bottom:8px;">جدولة نفس الاختبار (بنفس الإعدادات) بأقسام إضافية مرة وحدة؟ اختياري:</label>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:12px;">'
+      + KB_SECTORS.filter(function(s){ return s.id!==st.sector; }).map(function(s){
+          return '<label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#16233f;cursor:pointer;"><input type="checkbox" class="schedExtraSector" value="'+s.id+'"> '+kbEsc(s.name)+'</label>';
+        }).join('')
+      + '</div></div>') : '')
     + '<div style="background:#f8fafb;border-radius:12px;padding:12px;">'
     + '<div style="font-size:11px;color:#8a93a6;font-weight:700;margin-bottom:8px;">✏ تقدر تغيّر عنوان كل حقل من هذي (يظهر بنفس التسمية بشاشة العرض الكبيرة)، وتعبّي قيمته تحته:</div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap;">'
@@ -9997,18 +10046,114 @@ function schedExamSave(){
       useQuestionWeights: useQuestionWeights,
       createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
     });
+    // جدولة جماعية: نفس الإعدادات بالضبط لأي أقسام إضافية اخترتها — كل قسم
+    // ياخذ أسئلته من بنكه الخاص هو. غير متاح لو الاختيار "يدوي" لأن معرّفات
+    // الأسئلة اليدوية خاصة ببنك القسم الأصلي فقط وما تنطبق على بنك ثاني.
+    const extraSectorEls = document.querySelectorAll('.schedExtraSector:checked');
+    const extraSectors = Array.from(extraSectorEls).map(function(chk){ return chk.value; });
+    if(extraSectors.length && selectionMode === 'manual'){
+      alert('تنبيه: الجدولة الجماعية للأقسام الإضافية ما تشتغل مع "اختيار يدوي للأسئلة" (لأن الأسئلة المحددة خاصة ببنك هذا القسم فقط) — انحفظ الاختبار لقسمك الحالي بس.');
+    } else if(extraSectors.length){
+      extraSectors.forEach(function(secId){
+        ov.scheduledExams.push({
+          id: schedExamNextId(), sector: secId, title: title, startAt: startAt, endAt: endAt,
+          questionCount: questionCount, totalMinutes: totalMinutes, lateTimerMode: lateTimerMode, allowedJobNos: allowedJobNos.slice(),
+          selectionMode: 'random', manualQuestionIds: [], questionTypeFilter: questionTypeFilter,
+          examLocation: examLocation, supervisorName: supervisorName, managerName: managerName,
+          locationLabel: locationLabel, supervisorLabel: supervisorLabel, managerLabel: managerLabel,
+          useQuestionWeights: useQuestionWeights,
+          createdByName: me?(me.username||me.name):'—', createdAt: Date.now()
+        });
+      });
+      alert('✓ تم إنشاء الاختبار لقسمك الحالي + '+extraSectors.length+' قسم إضافي بنفس الإعدادات.');
+    }
   }
   saveAdminOverrides(ov);
   window.__schedExamEditingId = null;
   window.__schedExamState.view = 'list';
   renderQuiz();
 }
+// يعيد ترتيب خيارات كل سؤال اختيار-من-متعدد عشوائيا لهذه المحاولة بالذات (مو
+// بالبنك الأصلي — نسخة مؤقتة بالذاكرة فقط)، ويصحح correct_index ليطابق
+// الترتيب الجديد. هذا يمنع نمط غش شائع ("الإجابة دايما الخيار 2") لأن كل
+// موظف يشوف الخيارات بترتيب مختلف عشوائيا رغم إنها نفس الأسئلة والخيارات.
+function quizShuffleOptionsForRun(questions){
+  return questions.map(function(q){
+    if(q.q_type !== 'mcq' || !Array.isArray(q.options) || q.options.length<2) return q;
+    const indices = q.options.map(function(_,i){ return i; });
+    for(let i=indices.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=indices[i]; indices[i]=indices[j]; indices[j]=t; }
+    const newOptions = indices.map(function(i){ return q.options[i]; });
+    const newCorrectIndex = indices.indexOf(q.correct_index);
+    return Object.assign({}, q, { options:newOptions, correct_index:newCorrectIndex });
+  });
+}
+// ---------- تتبّع الحضور: مين دخل الاختبار المجدول ومين لسا ما دخل ----------
+function quizGrantMakeup(examId, jobNo){
+  if(!canManageQuiz()) return;
+  const hoursStr = prompt('كم ساعة تبي تفتح للموظف نافذة تعويضية يدخل فيها الاختبار (تبدأ من الآن)؟', '24');
+  if(hoursStr === null) return;
+  const hours = parseFloat(hoursStr);
+  if(isNaN(hours) || hours<=0){ alert('أدخل رقم ساعات صحيح.'); return; }
+  const startAt = Date.now();
+  const endAt = startAt + hours*3600000;
+  schedExamSetException(examId, jobNo, startAt, endAt);
+  alert('✓ تم فتح فترة تعويضية له لمدة '+hours+' ساعة من الآن.');
+  renderQuiz();
+}
+function renderQuizAttendanceView(root){
+  if(!(typeof canViewQuizResults === 'function' && canViewQuizResults())){ quizBackToKb(); return; }
+  const st = window.__quizState || {};
+  const ov = loadAdminOverrides();
+  const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===st.examIdFilter; });
+  const backAction = exam ? ("quizBackToSchedList('"+exam.sector+"')") : 'quizBackToKb()';
+  if(!exam){
+    root.innerHTML = kbHeader('👥 الحضور', '', backAction) + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;text-align:center;color:#8a93a6;">هذا الاختبار غير موجود.</div>';
+    return;
+  }
+  const me = window.__currentEmployee;
+  const isOwner = typeof isTrueOwner === 'function' && isTrueOwner();
+  const scope = isOwner ? 'all' : quizResultScopeFor(me.job_no);
+  const teamNames = scope==='team' ? new Set(EMPLOYEES.filter(function(e){ return e.supervisor === me.name; }).map(function(e){ return String(e.job_no); })) : null;
+  let allowedList = (exam.allowedJobNos||[]).map(String);
+  if(scope==='team') allowedList = allowedList.filter(function(jn){ return teamNames.has(jn); });
+  const enteredJobNos = new Set((ov.quizResults||[]).filter(function(r){ return r.examId===exam.id; }).map(function(r){ return String(r.jobNo); }));
+  const entered = [], pending = [];
+  allowedList.forEach(function(jn){
+    const emp = EMPLOYEES.find(function(e){ return String(e.job_no)===jn; });
+    const row = { jobNo:jn, name: emp?emp.name:jn };
+    if(enteredJobNos.has(jn)) entered.push(row); else pending.push(row);
+  });
+  const pct = allowedList.length ? Math.round(entered.length/allowedList.length*100) : 0;
+  const canManage = typeof canManageQuiz === 'function' && canManageQuiz();
+  const rowsHtml = function(list, isPending){
+    if(!list.length) return '<div style="color:#8a93a6;font-size:12px;">لا يوجد.</div>';
+    return list.map(function(r){
+      const hasException = (exam.individualExceptions||{})[r.jobNo];
+      const exceptionBtn = (canManage && isPending)
+        ? '<button type="button" onclick="quizGrantMakeup('+exam.id+',\''+r.jobNo+'\')" style="background:#f0c33d;color:#16233f;border:none;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:800;cursor:pointer;margin-right:6px;">'+(hasException?'✏️ عدّل الفترة التعويضية':'➕ فترة تعويضية')+'</button>'
+        : '';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:9px;padding:8px 12px;margin-bottom:6px;box-shadow:0 2px 8px rgba(15,46,61,.05);flex-wrap:wrap;gap:6px;">'
+        + '<span style="font-size:12.5px;font-weight:700;color:#16233f;">'+kbEsc(r.name)+' <span style="color:#8a93a6;font-weight:500;">— '+r.jobNo+'</span>'+(hasException?' <span style="color:#c9720a;font-size:10px;">(له فترة تعويضية)</span>':'')+'</span>'
+        + '<span>'+exceptionBtn+(isPending ? '<span style="font-size:10.5px;font-weight:800;color:#c0392b;">⏳ لسا ما دخل</span>' : '<span style="font-size:10.5px;font-weight:800;color:#0e6a5a;">✓ دخل</span>')+'</span>'
+        + '</div>';
+    }).join('');
+  };
+  root.innerHTML = kbHeader('👥 الحضور: '+exam.title, entered.length+' من '+allowedList.length+' ('+pct+'%)', backAction)
+    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;">'
+    + '<div style="height:14px;background:#eef1f3;border-radius:7px;overflow:hidden;margin-bottom:20px;"><div style="width:'+pct+'%;height:100%;background:#0e6a5a;"></div></div>'
+    + '<div style="font-size:13px;font-weight:800;color:#c0392b;margin-bottom:10px;">⏳ لسا ما دخل ('+pending.length+'):</div>'
+    + rowsHtml(pending, true)
+    + '<div style="font-size:13px;font-weight:800;color:#0e6a5a;margin:20px 0 10px;">✓ دخل ('+entered.length+'):</div>'
+    + rowsHtml(entered, false)
+    + '</div>';
+}
 // ---------- دخول الاختبار المجدول وتشغيله (بيستخدم نفس محرك اختبار المعرفة) ----------
 function schedExamStart(id){
   const ov = loadAdminOverrides();
   const exam = (ov.scheduledExams||[]).find(function(e){ return e.id===id; });
   if(!exam){ alert('هذا الاختبار غير موجود.'); return; }
-  if(schedExamStatus(exam) !== 'active'){ alert('هذا الاختبار غير متاح الآن — تحقق من وقت البداية والنهاية.'); return; }
+  const me0 = window.__currentEmployee;
+  if(!(isTrueOwner() && schedExamStatus(exam)==='active') && schedExamStatusFor(exam, me0?me0.job_no:null) !== 'active'){ alert('هذا الاختبار غير متاح الآن — تحقق من وقت البداية والنهاية.'); return; }
   if(!schedExamIsAllowed(exam)){ alert('غير مسموح لك بدخول هذا الاختبار.'); return; }
   if(schedExamMyResult(exam.id)){ alert('سبق ودخلت هذا الاختبار.'); return; }
   const savedProgress = quizLoadRunProgress('exam'+exam.id);
@@ -10038,7 +10183,7 @@ function schedExamStart(id){
   const fullEndsAt = startedAtNow + (exam.totalMinutes||15)*60000;
   const examEndsAt = (exam.lateTimerMode === 'capped') ? Math.min(fullEndsAt, exam.endAt) : fullEndsAt;
   __quizAutoFinishDone = false;
-  window.__quizRun = { sector:exam.sector, questions:shuffled, idx:0, answers:[], startedAt:startedAtNow, timerHandle:null, totalSeconds:Math.round((examEndsAt-startedAtNow)/1000), examEndsAt: examEndsAt, warned3min:false, examId: exam.id, useWeights: !!exam.useQuestionWeights };
+  window.__quizRun = { sector:exam.sector, questions:quizShuffleOptionsForRun(shuffled), idx:0, answers:[], startedAt:startedAtNow, timerHandle:null, totalSeconds:Math.round((examEndsAt-startedAtNow)/1000), examEndsAt: examEndsAt, warned3min:false, examId: exam.id, useWeights: !!exam.useQuestionWeights };
   window.__quizState = { view:'run', sector:exam.sector };
   renderQuiz();
   quizStartGlobalTimer();
@@ -10061,7 +10206,7 @@ function quizStart(sector){
   const totalMinutes = (ov.quizTotalMinutes||{})[sector] || 15;
   const shuffled = pool.slice().sort(function(){ return Math.random()-0.5; }).slice(0, count);
   __quizAutoFinishDone = false;
-  window.__quizRun = { sector:sector, questions:shuffled, idx:0, answers:[], startedAt:Date.now(), timerHandle:null, totalSeconds:totalMinutes*60, examEndsAt: Date.now() + totalMinutes*60000, warned3min:false, useWeights: quizPracticeUsesWeights(sector) };
+  window.__quizRun = { sector:sector, questions:quizShuffleOptionsForRun(shuffled), idx:0, answers:[], startedAt:Date.now(), timerHandle:null, totalSeconds:totalMinutes*60, examEndsAt: Date.now() + totalMinutes*60000, warned3min:false, useWeights: quizPracticeUsesWeights(sector) };
   window.__quizState = { view:'run', sector:sector };
   renderQuiz();
   quizStartGlobalTimer();
@@ -10084,6 +10229,8 @@ function renderQuiz(){
   if(st.view === 'analysis') return renderQuizAnalysisView(root);
   if(st.view === 'history') return renderQuizHistoryView(root);
   if(st.view === 'crosscompare') return renderQuizCrossCompareView(root);
+  if(st.view === 'attendance') return renderQuizAttendanceView(root);
+  if(st.view === 'disputes') return renderQuizDisputesView(root);
   return renderQuizSectorsView(root);
 }
 
@@ -10892,6 +11039,77 @@ function quizReviewOptionLine(text, isCorrect, isChosen){
   const tag = isCorrect ? '✔ الإجابة الصحيحة' : (isChosen ? '✕ اخترت هذه' : '');
   return '<div style="'+style+'"><span>'+kbEsc(quizCleanOptionText(text))+'</span>'+(tag?'<span style="font-size:10.5px;">'+tag+'</span>':'')+'</div>';
 }
+// اعتراض موظف على سؤال معيّن بنتيجته (يظن إجابته صحيحة فعليا) — يروح لقائمة
+// مراجعة عند المالك/المخوّل بدل ما يصير نقاش خارج النظام.
+function quizSubmitDispute(resultId, questionIndex){
+  const ov = loadAdminOverrides();
+  const result = (ov.quizResults||[]).find(function(r){ return r.id===resultId; });
+  if(!result) return;
+  const me = window.__currentEmployee;
+  if(!me || String(result.jobNo)!==String(me.job_no)) return;
+  const d = (result.detail||[])[questionIndex];
+  if(!d) return;
+  const reason = prompt('ليش تعتقد إجابتك صحيحة بهذا السؤال؟ (اختياري)', '') || '';
+  ov.quizDisputes = ov.quizDisputes || [];
+  ov.quizDisputes.push({
+    id: Date.now()*1000 + Math.floor(Math.random()*1000),
+    resultId: resultId, questionIndex: questionIndex, question: d.question,
+    jobNo: result.jobNo, employeeName: result.employeeName, reason: reason,
+    status: 'pending', createdAt: Date.now()
+  });
+  saveAdminOverrides(ov);
+  alert('✓ تم إرسال اعتراضك — راح تشوف الرد بنفس صفحة المراجعة لاحقا.');
+  renderQuiz();
+}
+// يعيد حساب درجة/نسبة النتيجة من تفاصيلها بعد أي تعديل يدوي (مثل قبول اعتراض) —
+// يحترم وزن كل سؤال تلقائيا (وزن 1 للكل = نفس السلوك القديم بدون تغيير).
+function quizRecomputeResultFromDetail(result){
+  const detail = result.detail || [];
+  const total = detail.reduce(function(s,d){ return s+(d.weight||1); }, 0);
+  const score = detail.reduce(function(s,d){ return s+(d.correct?(d.weight||1):0); }, 0);
+  result.score = score; result.total = total;
+  result.percent = total ? Math.round((score/total)*100) : 0;
+}
+function quizResolveDispute(disputeId, approve){
+  if(!canManageQuiz()) return;
+  const ov = loadAdminOverrides();
+  const dispute = (ov.quizDisputes||[]).find(function(dp){ return dp.id===disputeId; });
+  if(!dispute) return;
+  dispute.status = approve ? 'approved' : 'rejected';
+  dispute.resolvedAt = Date.now();
+  if(approve){
+    const result = (ov.quizResults||[]).find(function(r){ return r.id===dispute.resultId; });
+    if(result && result.detail && result.detail[dispute.questionIndex]){
+      result.detail[dispute.questionIndex].correct = true;
+      quizRecomputeResultFromDetail(result);
+    }
+  }
+  saveAdminOverrides(ov);
+  renderQuiz();
+}
+function renderQuizDisputesView(root){
+  if(!canManageQuiz()){ quizBackToKb(); return; }
+  const ov = loadAdminOverrides();
+  const disputes = (ov.quizDisputes||[]).slice().sort(function(a,b){ return b.createdAt-a.createdAt; });
+  const rows = disputes.map(function(dp){
+    const statusBadge = dp.status==='pending'
+      ? '<span style="color:#c9720a;font-weight:800;">⏳ قيد المراجعة</span>'
+      : dp.status==='approved' ? '<span style="color:#0e6a5a;font-weight:800;">✅ مقبول</span>' : '<span style="color:#c0392b;font-weight:800;">❌ مرفوض</span>';
+    const actions = dp.status==='pending'
+      ? '<button type="button" onclick="quizResolveDispute('+dp.id+',true)" style="background:#0e6a5a;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;margin-left:6px;">قبول وتصحيح الدرجة</button>'
+        + '<button type="button" onclick="quizResolveDispute('+dp.id+',false)" style="background:#eef1f3;color:#16233f;border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:800;cursor:pointer;">رفض</button>'
+      : '';
+    return '<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 4px 12px rgba(15,46,61,.06);">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;"><div style="font-weight:800;font-size:13px;color:#16233f;">'+kbEsc(dp.employeeName)+'</div>'+statusBadge+'</div>'
+      + '<div style="font-size:12px;color:#16233f;font-weight:700;margin-top:6px;">'+kbEsc(quizCleanQuestionText(dp.question))+'</div>'
+      + (dp.reason ? '<div style="font-size:11.5px;color:#5b6685;margin-top:4px;">💬 '+kbEsc(dp.reason)+'</div>' : '')
+      + '<div style="font-size:10.5px;color:#8a93a6;margin-top:4px;">'+kbFmtDateTime(dp.createdAt)+'</div>'
+      + (actions ? '<div style="margin-top:10px;">'+actions+'</div>' : '')
+      + '</div>';
+  }).join('');
+  root.innerHTML = kbHeader('🚩 اعتراضات الموظفين على الأسئلة', disputes.length+' اعتراض', 'quizGoResultsList()')
+    + '<div style="max-width:700px;margin:0 auto 60px;padding:24px 18px 0;">'+(rows||'<div style="text-align:center;color:#8a93a6;">لا يوجد اعتراضات.</div>')+'</div>';
+}
 function renderQuizReviewView(root){
   const ov = loadAdminOverrides();
   const me = window.__currentEmployee;
@@ -10911,6 +11129,7 @@ function renderQuizReviewView(root){
     + '<button type="button" onclick="quizExportResultExcel('+result.id+')" style="background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">📊 تصدير إكسل</button>'
     + (result.examId && (result.percent!=null?result.percent:0)>=quizCertPassThreshold() ? '<button type="button" onclick="quizPrintCertificate('+result.id+')" style="background:#f0c33d;color:#16233f;border:none;border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer;">🏅 شهادة</button>' : '')
     + '</div></div>';
+  const disputes = (ov.quizDisputes||[]).filter(function(dp){ return dp.resultId===result.id; });
   (result.detail||[]).forEach(function(d, i){
     let optsLines = '';
     if(d.q_type === 'tf'){
@@ -10921,10 +11140,18 @@ function renderQuizReviewView(root){
     const sourceBtn = (d.sourceSectionId && d.sourceItemId)
       ? '<button type="button" onclick="quizGoToSource(\''+result.sector+'\','+d.sourceSectionId+','+d.sourceItemId+')" style="margin-top:8px;background:#eef1f3;color:#16233f;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">📍 تحقق من المصدر بنك المعرفة</button>'
       : '';
+    const existingDispute = disputes.find(function(dp){ return dp.questionIndex===i; });
+    let disputeHtml = '';
+    if(!d.correct && isOwn && !existingDispute){
+      disputeHtml = '<button type="button" onclick="quizSubmitDispute('+result.id+','+i+')" style="margin-top:8px;margin-right:6px;background:rgba(192,57,43,.1);color:#c0392b;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">🚩 اعترض على هذا السؤال</button>';
+    } else if(existingDispute){
+      const statusLabel = existingDispute.status==='approved' ? '✅ تم قبول اعتراضك — صُححت الدرجة' : existingDispute.status==='rejected' ? '❌ تم رفض الاعتراض' : '⏳ اعتراضك قيد المراجعة';
+      disputeHtml = '<div style="margin-top:8px;font-size:11px;font-weight:700;color:#8a6d00;">🚩 '+statusLabel+'</div>';
+    }
     html += '<div style="background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(15,46,61,.06);">'
       + '<div style="font-weight:800;font-size:13.5px;color:#16233f;margin-bottom:8px;">'+(i+1)+'. '+kbEsc(quizCleanQuestionText(d.question))+'</div>'
       + '<div style="display:flex;flex-direction:column;gap:6px;">'+optsLines+'</div>'
-      + sourceBtn + '</div>';
+      + sourceBtn + disputeHtml + '</div>';
   });
   html += '</div>';
   root.innerHTML = html;
@@ -11059,6 +11286,7 @@ function renderQuizResultsView(root){
       + '<button type="button" onclick="quizExportResultsCsv('+(st.examIdFilter||'null')+')" style="background:#0e6a5a;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">⬇ تصدير Excel (CSV)</button>'
       + '<button type="button" onclick="quizPrintResults('+(st.examIdFilter||'null')+')" style="background:#16233f;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🖨️ طباعة / حفظ PDF</button>'
       + (isTrueOwner() ? '<button type="button" onclick="window.__quizState={view:\'crosscompare\'};renderQuiz()" style="background:#8a6d00;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">📊 مقارنة الأقسام وجودة الأسئلة</button>' : '')
+      + (canManageQuiz() ? '<button type="button" onclick="window.__quizState={view:\'disputes\'};renderQuiz()" style="background:#c0392b;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:12.5px;cursor:pointer;">🚩 اعتراضات الأسئلة'+(function(){ const p=(loadAdminOverrides().quizDisputes||[]).filter(function(dp){return dp.status==='pending';}).length; return p?(' ('+p+')'):''; })()+'</button>' : '')
       + '</div>'
     : '';
   root.innerHTML = kbHeader(titleText, results.length+' نتيجة', backAction)
